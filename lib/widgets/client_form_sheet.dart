@@ -9,12 +9,14 @@ class ClientFormResult {
     this.phone,
     this.email,
     this.address,
+    this.taxId,
   });
 
   final String name;
   final String? phone;
   final String? email;
   final String? address;
+  final String? taxId;
 }
 
 Future<ClientFormResult?> showClientFormSheet(
@@ -44,6 +46,7 @@ class _ClientFormSheetState extends State<ClientFormSheet> {
   late final TextEditingController _phone;
   late final TextEditingController _email;
   late final TextEditingController _address;
+  late final TextEditingController _taxId;
 
   @override
   void initState() {
@@ -52,6 +55,7 @@ class _ClientFormSheetState extends State<ClientFormSheet> {
     _phone = TextEditingController(text: widget.client?.phone ?? '');
     _email = TextEditingController(text: widget.client?.email ?? '');
     _address = TextEditingController(text: widget.client?.address ?? '');
+    _taxId = TextEditingController(text: widget.client?.taxId ?? '');
   }
 
   @override
@@ -60,6 +64,7 @@ class _ClientFormSheetState extends State<ClientFormSheet> {
     _phone.dispose();
     _email.dispose();
     _address.dispose();
+    _taxId.dispose();
     super.dispose();
   }
 
@@ -72,6 +77,7 @@ class _ClientFormSheetState extends State<ClientFormSheet> {
         phone: _emptyToNull(_phone.text),
         email: _emptyToNull(_email.text),
         address: _emptyToNull(_address.text),
+        taxId: _emptyToNull(_taxId.text),
       ),
     );
   }
@@ -152,6 +158,16 @@ class _ClientFormSheetState extends State<ClientFormSheet> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _taxId,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: strings.taxId,
+                  hintText: strings.taxIdHint,
+                  prefixIcon: const Icon(Icons.badge_outlined),
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(

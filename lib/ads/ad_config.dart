@@ -11,12 +11,17 @@ class AdConfig {
   static const androidAppId = 'ca-app-pub-3940256099942544~3347511713';
   static const iosAppId = 'ca-app-pub-3940256099942544~1458002511';
 
-  /// Google's official native advanced test units.
-  static const _androidNativeUnit = 'ca-app-pub-3940256099942544/2247696110';
-  static const _iosNativeUnit = 'ca-app-pub-3940256099942544/3986624511';
+  /// Set to your hosted JSON (Firebase Remote Config export, CDN, etc.).
+  /// Keys: ad_native_android, ad_native_ios, ad_interstitial_android, ad_interstitial_ios,
+  /// ad_app_open_android, ad_app_open_ios
+  static const String? remoteAdConfigUrl = null;
 
-  static String get nativeAdUnitId {
-    if (defaultTargetPlatform == TargetPlatform.iOS) return _iosNativeUnit;
-    return _androidNativeUnit;
-  }
+  /// Google test unit IDs (defaults until remote config loads).
+  static const defaultAndroidNative = 'ca-app-pub-3940256099942544/2247696110';
+  static const defaultIosNative = 'ca-app-pub-3940256099942544/3986624511';
+  static const defaultAndroidInterstitial = 'ca-app-pub-3940256099942544/1033173712';
+  static const defaultIosInterstitial = 'ca-app-pub-3940256099942544/4411468910';
+  static const defaultAndroidAppOpen = 'ca-app-pub-3940256099942544/9257395921';
+  static const defaultIosAppOpen = 'ca-app-pub-3940256099942544/5575463023';
+
 }

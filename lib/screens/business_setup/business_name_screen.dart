@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../navigation/app_page_route.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_texts.dart';
 import '../../core/theme/app_theme.dart';
@@ -27,7 +29,7 @@ class _BusinessNameScreenState extends State<BusinessNameScreen> {
     final name = _controller.text.trim().isEmpty ? AppTexts.defaultBusinessName : _controller.text.trim();
     provider.setBusinessName(name);
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const InvoicesHomeScreen()),
+      appPageRoute(const InvoicesHomeScreen(), adScopeKey: 'home'),
     );
   }
 

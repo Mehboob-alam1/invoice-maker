@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice_item.dart';
 import '../../providers/invoice_provider.dart';
+import '../../ads/ad_action.dart';
 import '../../widgets/item_form_sheet.dart';
 
 class ItemsScreen extends StatelessWidget {
@@ -32,7 +33,7 @@ class ItemsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(strings.catalogItems)),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _edit(context),
+        onPressed: () => runMajorActionAsync(context, () => _edit(context)),
         child: const Icon(Icons.add_rounded),
       ),
       body: items.isEmpty
@@ -54,9 +55,11 @@ class ItemsScreen extends StatelessWidget {
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline_rounded),
-                      onPressed: () => context.read<InvoiceProvider>().deleteCatalogItem(item.id),
+                      onPressed: () => runWithInterstitial(context, () {
+                        context.read<InvoiceProvider>().deleteCatalogItem(item.id);
+                      }),
                     ),
-                    onTap: () => _edit(context, item: item),
+                    onTap: () => runMajorActionAsync(context, () => _edit(context, item: item)),
                   ),
                 );
               },

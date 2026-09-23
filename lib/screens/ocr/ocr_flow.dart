@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import '../../navigation/app_page_route.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../l10n/app_strings.dart';
@@ -54,7 +56,7 @@ Future<void> startOcrScan(BuildContext context) async {
 
   var loadingShown = false;
   try {
-    final picked = await ImagePicker().pickImage(source: source, imageQuality: 90);
+    final picked = await ImagePicker().pickImage(source: source, imageQuality: 100);
     if (picked == null || !context.mounted) return;
 
     loadingShown = true;
@@ -81,7 +83,10 @@ Future<void> startOcrScan(BuildContext context) async {
     final parsed = InvoiceParser.parse(text, imagePath: picked.path);
     if (!context.mounted) return;
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => OcrReviewScreen(parsed: parsed)),
+      appPageRoute(
+        OcrReviewScreen(parsed: parsed),
+        adScopeKey: 'ocr_review_${parsed.hashCode}',
+      ),
     );
   } catch (error) {
     if (!context.mounted) return;

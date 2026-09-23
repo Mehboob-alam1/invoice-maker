@@ -6,18 +6,24 @@ import 'core/theme/app_theme.dart';
 import 'l10n/app_languages.dart';
 import 'providers/invoice_provider.dart';
 import 'providers/theme_provider.dart';
-import 'screens/home/invoices_home_screen.dart';
-import 'screens/onboarding/onboarding_screen.dart';
-import 'widgets/native_ad_host.dart';
+import 'screens/splash/splash_screen.dart';
+import 'services/auth_service.dart';
+import 'services/subscription_service.dart';
+import 'navigation/app_route_observer.dart';
+import 'widgets/app_open_lifecycle.dart';
 
 class InvoiceApp extends StatelessWidget {
   final InvoiceProvider invoiceProvider;
   final ThemeProvider themeProvider;
+  final SubscriptionService subscriptionService;
+  final AuthService authService;
 
   const InvoiceApp({
     super.key,
     required this.invoiceProvider,
     required this.themeProvider,
+    required this.subscriptionService,
+    required this.authService,
   });
 
   @override
@@ -26,6 +32,8 @@ class InvoiceApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: invoiceProvider),
+        ChangeNotifierProvider.value(value: subscriptionService),
+        ChangeNotifierProvider.value(value: authService),
       ],
       child: Consumer2<ThemeProvider, InvoiceProvider>(
         builder: (context, theme, invoices, _) {
@@ -42,8 +50,9 @@ class InvoiceApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            builder: (context, child) => NativeAdHost(child: child),
-            home: const _StartupGate(),
+            navigatorObservers: [appRouteObserver],
+            builder: (context, child) => AppOpenLifecycle(child: child ?? const SizedBox.shrink()),
+            home: const SplashScreen(),
           );
         },
       ),
@@ -51,14 +60,3 @@ class InvoiceApp extends StatelessWidget {
   }
 }
 
-class _StartupGate extends StatelessWidget {
-  const _StartupGate();
-
-  @override
-  Widget build(BuildContext context) {
-    final invoiceProvider = context.watch<InvoiceProvider>();
-    return invoiceProvider.hasCompletedOnboarding
-        ? const InvoicesHomeScreen()
-        : const OnboardingScreen();
-  }
-}

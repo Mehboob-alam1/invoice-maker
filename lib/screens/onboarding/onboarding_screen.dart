@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/constants/app_texts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
+import '../../navigation/app_page_route.dart';
+import '../../providers/invoice_provider.dart';
 import '../../widgets/onboarding_page.dart';
-import 'language_screen.dart';
+import 'google_login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -28,9 +31,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_page < pageCount - 1) {
       _controller.nextPage(duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
     } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LanguageScreen(fromOnboarding: true)),
-      );
+      context.read<InvoiceProvider>().completeOnboardingCarouselStep();
+      Navigator.of(context).pushReplacement(appPageRoute(const GoogleLoginScreen()));
     }
   }
 

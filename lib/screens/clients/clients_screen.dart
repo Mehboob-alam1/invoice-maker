@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/client.dart';
 import '../../providers/invoice_provider.dart';
+import '../../ads/ad_action.dart';
 import '../../widgets/client_form_sheet.dart';
 
 class ClientsScreen extends StatelessWidget {
@@ -19,6 +20,7 @@ class ClientsScreen extends StatelessWidget {
         email: result.email,
         phone: result.phone,
         address: result.address,
+        taxId: result.taxId,
       );
     } else {
       provider.updateClient(
@@ -27,6 +29,7 @@ class ClientsScreen extends StatelessWidget {
           email: result.email,
           phone: result.phone,
           address: result.address,
+          taxId: result.taxId,
         ),
       );
     }
@@ -39,7 +42,7 @@ class ClientsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(strings.clients)),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _edit(context),
+        onPressed: () => runMajorActionAsync(context, () => _edit(context)),
         child: const Icon(Icons.add_rounded),
       ),
       body: clients.isEmpty
@@ -65,9 +68,11 @@ class ClientsScreen extends StatelessWidget {
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline_rounded),
-                      onPressed: () => context.read<InvoiceProvider>().deleteClient(client.id),
+                      onPressed: () => runWithInterstitial(context, () {
+                        context.read<InvoiceProvider>().deleteClient(client.id);
+                      }),
                     ),
-                    onTap: () => _edit(context, client: client),
+                    onTap: () => runMajorActionAsync(context, () => _edit(context, client: client)),
                   ),
                 );
               },

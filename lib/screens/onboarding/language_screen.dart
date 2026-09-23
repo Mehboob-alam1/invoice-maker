@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+
+import '../../navigation/app_page_route.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_languages.dart';
 import '../../l10n/app_strings.dart';
 import '../../providers/invoice_provider.dart';
-import '../business_setup/business_name_screen.dart';
+import 'onboarding_screen.dart';
 
 class LanguageScreen extends StatefulWidget {
   final bool fromOnboarding;
@@ -42,11 +44,11 @@ class _LanguageScreenState extends State<LanguageScreen> {
   }
 
   void _continue() {
-    context.read<InvoiceProvider>().setLanguage(_selected);
+    final provider = context.read<InvoiceProvider>();
+    provider.setLanguage(_selected);
     if (widget.fromOnboarding) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const BusinessNameScreen()),
-      );
+      provider.completeOnboardingLanguageStep();
+      Navigator.of(context).pushReplacement(appPageRoute(const OnboardingScreen()));
     } else {
       Navigator.of(context).pop();
     }

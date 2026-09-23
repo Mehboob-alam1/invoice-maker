@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
+
+import '../../navigation/app_page_route.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/currency_format.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice.dart';
+import '../../models/invoice_template.dart';
 import '../../providers/invoice_provider.dart';
+import '../../ads/ad_action.dart';
+import '../../services/invoice_pdf_export.dart';
+import '../../widgets/invoice_document_view.dart';
+import 'invoice_preview_edit_screen.dart';
 
 class InvoiceDetailScreen extends StatelessWidget {
   final String invoiceId;
 
   const InvoiceDetailScreen({super.key, required this.invoiceId});
+
+  Future<void> _exportPdf(BuildContext context, Invoice invoice, {required bool share}) async {
+    await InvoicePdfExport.export(context, invoice, share: share);
+  }
 
   Future<void> _share(BuildContext context, Invoice invoice) async {
     final provider = context.read<InvoiceProvider>();
@@ -20,17 +32,32 @@ class InvoiceDetailScreen extends StatelessWidget {
     final buffer = StringBuffer()
       ..writeln(provider.businessName)
       ..writeln(strings.invoiceShare(invoice.number))
-      ..writeln('${strings.date}: ${DateFormat.yMMMd(provider.languageCode).format(invoice.date)}')
-      ..writeln(strings.clientShare(invoice.client.name))
-      ..writeln();
+      ..writeln('${strings.issueDate}: ${DateFormat.yMMMd(provider.languageCode).format(invoice.date)}');
+    if (invoice.dueDate != null) {
+      buffer.writeln('${strings.dueDate}: ${DateFormat.yMMMd(provider.languageCode).format(invoice.dueDate!)}');
+    }
+    if (invoice.poNumber?.isNotEmpty == true) buffer.writeln('${strings.poNumber}: ${invoice.poNumber}');
+    buffer.writeln(strings.clientShare(invoice.client.name));
+    if (invoice.client.taxId?.isNotEmpty == true) buffer.writeln('${strings.taxId}: ${invoice.client.taxId}');
+    buffer.writeln();
     for (final item in invoice.items) {
-      buffer.writeln('${item.description}  ${item.quantity} × ${item.unitCost.toStringAsFixed(2)} = ${item.total.toStringAsFixed(2)}');
+      buffer.writeln(
+        '${item.description}  ${item.quantity} × ${CurrencyFormat.format(invoice.currency, item.unitCost)} = ${CurrencyFormat.format(invoice.currency, item.total)}',
+      );
       if (item.notes?.isNotEmpty == true) buffer.writeln('  ${item.notes}');
     }
     buffer
       ..writeln()
-      ..writeln(strings.totalShare('${invoice.currency} ${invoice.total.toStringAsFixed(2)}'))
+      ..writeln('${strings.subtotal}: ${CurrencyFormat.format(invoice.currency, invoice.subtotal)}');
+    if (invoice.taxRate > 0) {
+      buffer.writeln('${strings.tax} (${invoice.taxRate}%): ${CurrencyFormat.format(invoice.currency, invoice.taxAmount)}');
+    }
+    buffer
+      ..writeln(strings.totalShare(CurrencyFormat.format(invoice.currency, invoice.total)))
       ..writeln(strings.statusShare(_statusLabel(strings, invoice.displayStatus)));
+    if (invoice.paymentTerms?.isNotEmpty == true) {
+      buffer.writeln('${strings.paymentTerms}: ${invoice.paymentTerms}');
+    }
     await SharePlus.instance.share(ShareParams(text: buffer.toString(), subject: invoice.number));
   }
 
@@ -61,18 +88,41 @@ class InvoiceDetailScreen extends StatelessWidget {
     final muted = theme.extension<AppSemanticColors>()?.textMuted;
     final status = invoice.displayStatus;
     final paid = invoice.status == InvoiceStatus.paid;
+    final templateName = InvoiceTemplateInfo.infoFor(invoice.template);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(invoice.number),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_rounded),
-            onPressed: () => _share(context, invoice),
+            tooltip: strings.editInvoiceForPdf,
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => runWithInterstitial(context, () {
+              Navigator.of(context).push(
+                appPageRoute<void>(
+                  InvoicePreviewEditScreen(invoiceId: invoiceId),
+                  adScopeKey: 'invoice_preview_$invoiceId',
+                ),
+              );
+            }),
+          ),
+          IconButton(
+            tooltip: strings.printPdf,
+            icon: const Icon(Icons.print_outlined),
+            onPressed: () => runMajorActionAsync(context, () => _exportPdf(context, invoice, share: false)),
+          ),
+          IconButton(
+            tooltip: strings.sharePdf,
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            onPressed: () => runMajorActionAsync(context, () => _exportPdf(context, invoice, share: true)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.ios_share_rounded),
+            onPressed: () => runMajorActionAsync(context, () => _share(context, invoice)),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded),
-            onPressed: () async {
+            onPressed: () => runMajorActionAsync(context, () async {
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (ctx) {
@@ -91,75 +141,35 @@ class InvoiceDetailScreen extends StatelessWidget {
                 provider.deleteInvoice(invoice.id);
                 Navigator.pop(context);
               }
-            },
+            }),
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person_rounded)),
-              title: Text(invoice.client.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text(
-                [
-                  invoice.client.email,
-                  invoice.client.phone,
-                ].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
-                style: TextStyle(color: muted),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
           Row(
             children: [
               _StatusChip(status: status, label: _statusLabel(strings, status)),
               const Spacer(),
-              Text(DateFormat.yMMMd(provider.languageCode).format(invoice.date), style: TextStyle(color: muted)),
+              Text(strings.t(templateName.labelKey), style: TextStyle(color: muted, fontWeight: FontWeight.w600)),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(strings.items, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          ...invoice.items.map(
-            (item) => Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                title: Text(item.description, style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text(
-                  [
-                    '${item.quantity} × ${item.unitCost.toStringAsFixed(2)}',
-                    if (item.notes?.isNotEmpty == true) item.notes!,
-                  ].join('\n'),
-                ),
-                isThreeLine: item.notes?.isNotEmpty == true,
-                trailing: Text('${invoice.currency} ${item.total.toStringAsFixed(2)}'),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  Text(strings.total, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-                  const Spacer(),
-                  Text(
-                    '${invoice.currency} ${invoice.total.toStringAsFixed(2)}',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                ],
-              ),
+          const SizedBox(height: 12),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 820),
+              child: InvoiceDocumentView(invoice: invoice, provider: provider, strings: strings),
             ),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => provider.setInvoiceStatus(
-              invoice.id,
-              paid ? InvoiceStatus.unpaid : InvoiceStatus.paid,
-            ),
+            onPressed: () => runWithInterstitial(context, () {
+              provider.setInvoiceStatus(
+                invoice.id,
+                paid ? InvoiceStatus.unpaid : InvoiceStatus.paid,
+              );
+            }),
             icon: Icon(paid ? Icons.undo_rounded : Icons.check_circle_rounded),
             label: Text(paid ? strings.markAsUnpaid : strings.markAsPaid),
           ),

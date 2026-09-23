@@ -3,16 +3,19 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_texts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
+import '../../models/subscription_tier.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../business_setup/edit_business_screen.dart';
 import '../clients/clients_screen.dart';
 import '../items/items_screen.dart';
 import '../onboarding/language_screen.dart';
-import '../subscription/pro_paywall_screen.dart';
+import '../subscription/subscription_plans_screen.dart';
+import '../../services/subscription_service.dart';
+import '../../ads/ad_action.dart';
+import '../../navigation/app_page_route.dart';
+import '../../widgets/settings_profile_header.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -50,7 +53,6 @@ class SettingsScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final provider = context.watch<InvoiceProvider>();
     final strings = context.l10n;
-    final businessName = provider.businessName;
     final themeProvider = context.watch<ThemeProvider>();
     final isDark = themeProvider.isDark(context);
 
@@ -59,46 +61,31 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                    businessName.isEmpty ? AppTexts.defaultBusinessName : businessName,
-                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
-              ),
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: theme.colorScheme.primary,
-                child: Text(
-                  businessName.isNotEmpty ? businessName[0].toUpperCase() : 'M',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ),
+          const SettingsProfileHeader(),
           const SizedBox(height: 20),
-          _UnlockBanner(
-            unlocked: provider.isPro,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProPaywallScreen()),
-            ),
+          _PlanBanner(
+            tier: provider.subscriptionTier,
+            remaining: provider.invoicesRemainingToday,
+            limit: provider.dailyInvoiceLimit,
+            onTap: () => runWithInterstitial(context, () {
+              Navigator.of(context).push(appPageRoute(const SubscriptionPlansScreen()));
+            }),
           ),
           const SizedBox(height: 20),
           _SettingsSection(items: [
             _SettingsItem(
-              icon: Icons.apartment_rounded,
-              label: strings.manageBusiness,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditBusinessScreen())),
-            ),
-            _SettingsItem(
               icon: Icons.groups_rounded,
               label: strings.client,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClientsScreen())),
+              onTap: () => runWithInterstitial(context, () {
+                Navigator.push(context, appPageRoute(const ClientsScreen()));
+              }),
             ),
             _SettingsItem(
               icon: Icons.menu_book_rounded,
               label: strings.catalogItems,
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ItemsScreen())),
+              onTap: () => runWithInterstitial(context, () {
+                Navigator.push(context, appPageRoute(const ItemsScreen()));
+              }),
             ),
           ]),
           const SizedBox(height: 16),
@@ -119,10 +106,9 @@ class SettingsScreen extends StatelessWidget {
             _SettingsItem(
               icon: Icons.public_rounded,
               label: strings.language,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LanguageScreen()),
-              ),
+              onTap: () => runWithInterstitial(context, () {
+                Navigator.push(context, appPageRoute(const LanguageScreen()));
+              }),
             ),
             _SettingsItem(
               icon: Icons.star_rounded,
@@ -158,12 +144,14 @@ class SettingsScreen extends StatelessWidget {
             _SettingsItem(
               icon: Icons.lock_open_rounded,
               label: strings.restorePurchases,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(provider.isPro ? strings.proAlreadyActive : strings.noPurchaseFound),
-                  ),
-                );
+              onTap: () async {
+                final sub = context.read<SubscriptionService>();
+                await sub.restorePurchases();
+                if (!context.mounted) return;
+                final message = provider.isPremiumOrAbove
+                    ? strings.restoreCompletePro
+                    : strings.restoreCompleteNone;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
               },
             ),
             _SettingsItem(
@@ -195,60 +183,64 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-class _UnlockBanner extends StatelessWidget {
+class _PlanBanner extends StatelessWidget {
+  final SubscriptionTier tier;
+  final int? remaining;
+  final int limit;
   final VoidCallback onTap;
-  final bool unlocked;
-  const _UnlockBanner({required this.onTap, required this.unlocked});
+
+  const _PlanBanner({
+    required this.tier,
+    required this.remaining,
+    required this.limit,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final strings = context.l10n;
-    if (unlocked) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Text(strings.proUnlocked,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-      );
-    }
+    final theme = Theme.of(context);
+    final isPro = tier == SubscriptionTier.pro;
+
     return InkWell(
       borderRadius: BorderRadius.circular(22),
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: AppColors.unlockGradient),
+          gradient: isPro ? const LinearGradient(colors: AppColors.unlockGradient) : null,
+          color: isPro ? null : theme.colorScheme.primaryContainer.withValues(alpha: 0.55),
           borderRadius: BorderRadius.circular(22),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(strings.goUnlimited,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
-                  const SizedBox(height: 6),
-                  Text(
-                    strings.goUnlimitedBody,
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.92), fontSize: 13),
-                  ),
-                  const SizedBox(height: 14),
-                  ElevatedButton.icon(
-                    onPressed: onTap,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF5B5BF6),
-                      minimumSize: const Size(0, 42),
-                    ),
-                    icon: const Icon(Icons.lock_open_rounded, size: 18),
-                    label: Text(strings.unlock),
-                  ),
-                ],
+            Text(
+              strings.currentPlanLabel(strings.tierDisplayName(tier)),
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 17,
+                color: isPro ? Colors.white : null,
               ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              limit < 0
+                  ? strings.unlimitedInvoicesToday
+                  : strings.homeQuotaBanner(remaining ?? 0, limit),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isPro ? Colors.white.withValues(alpha: 0.92) : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: onTap,
+              style: TextButton.styleFrom(
+                foregroundColor: isPro ? Colors.white : theme.colorScheme.primary,
+              ),
+              child: Text(strings.subscriptionPlansTitle),
             ),
           ],
         ),

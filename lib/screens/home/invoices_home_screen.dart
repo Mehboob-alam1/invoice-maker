@@ -11,6 +11,11 @@ import '../invoice/create_invoice_options_screen.dart';
 import '../invoice/invoice_detail_screen.dart';
 import '../ocr/ocr_flow.dart';
 import '../settings/settings_screen.dart';
+import '../../ads/ad_action.dart';
+import '../../navigation/app_page_route.dart';
+import '../../navigation/invoice_flow.dart';
+import '../../navigation/app_route_observer.dart';
+import '../../services/premium_upsell_service.dart';
 
 class InvoicesHomeScreen extends StatefulWidget {
   const InvoicesHomeScreen({super.key});
@@ -19,38 +24,78 @@ class InvoicesHomeScreen extends StatefulWidget {
   State<InvoicesHomeScreen> createState() => _InvoicesHomeScreenState();
 }
 
-class _InvoicesHomeScreenState extends State<InvoicesHomeScreen> with SingleTickerProviderStateMixin {
+class _InvoicesHomeScreenState extends State<InvoicesHomeScreen> with SingleTickerProviderStateMixin, RouteAware {
   late final TabController _tabController = TabController(length: 2, vsync: this);
 
-  void _openCreateInvoice() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const CreateInvoiceOptionsScreen()),
-    );
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PremiumUpsellService.maybeShow(context);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      appRouteObserver.unsubscribe(this);
+      appRouteObserver.subscribe(this, route);
+    }
   }
 
   @override
   void dispose() {
+    appRouteObserver.unsubscribe(this);
     _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    PremiumUpsellService.maybeShow(context);
+  }
+
+  void _openCreateInvoice() {
+    runWithInterstitial(context, () {
+      Navigator.of(context).push(
+        appInvoiceFlowRoute(const CreateInvoiceOptionsScreen(), adScopeKey: 'create_invoice_options'),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final invoiceProvider = context.watch<InvoiceProvider>();
     final strings = context.l10n;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(strings.invoices),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(strings.invoices),
+            if (invoiceProvider.dailyInvoiceLimit >= 0)
+              Text(
+                strings.homeQuotaBanner(
+                  invoiceProvider.invoicesRemainingToday ?? 0,
+                  invoiceProvider.dailyInvoiceLimit,
+                ),
+                style: theme.textTheme.labelSmall,
+              ),
+          ],
+        ),
         leading: const SizedBox.shrink(),
         leadingWidth: 0,
         actions: [
           const ThemeToggleButton(),
           IconButton(
             icon: const Icon(Icons.settings_rounded),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            ),
+            onPressed: () => runWithInterstitial(context, () {
+              Navigator.of(context).push(appPageRoute(const SettingsScreen()));
+            }),
           ),
           const SizedBox(width: 4),
         ],
@@ -59,10 +104,13 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen> with SingleTick
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: _OcrScannerBanner(onScan: () => startOcrScan(context)),
+            child: _OcrScannerBanner(
+              onScan: () => runWithInterstitial(context, () => startOcrScan(context)),
+            ),
           ),
           TabBar(
             controller: _tabController,
+            onTap: (_) => afterMajorAction(context),
             tabs: [
               Tab(text: strings.unpaid),
               Tab(text: strings.paid),
@@ -196,9 +244,14 @@ class _InvoiceList extends StatelessWidget {
         final invoice = invoices[i];
         return InvoiceCard(
           invoice: invoice,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => InvoiceDetailScreen(invoiceId: invoice.id)),
-          ),
+          onTap: () => runWithInterstitial(context, () {
+            Navigator.of(context).push(
+              appPageRoute(
+                InvoiceDetailScreen(invoiceId: invoice.id),
+                adScopeKey: 'invoice_detail_${invoice.id}',
+              ),
+            );
+          }),
         );
       },
     );

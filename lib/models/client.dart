@@ -4,6 +4,7 @@ class Client {
   final String? email;
   final String? phone;
   final String? address;
+  final String? taxId;
 
   Client({
     required this.id,
@@ -11,6 +12,7 @@ class Client {
     this.email,
     this.phone,
     this.address,
+    this.taxId,
   });
 
   Client copyWith({
@@ -19,6 +21,7 @@ class Client {
     String? email,
     String? phone,
     String? address,
+    String? taxId,
   }) {
     return Client(
       id: id ?? this.id,
@@ -26,6 +29,7 @@ class Client {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      taxId: taxId ?? this.taxId,
     );
   }
 
@@ -35,6 +39,7 @@ class Client {
         'email': email,
         'phone': phone,
         'address': address,
+        'taxId': taxId,
       };
 
   factory Client.fromJson(Map<String, dynamic> json) {
@@ -44,6 +49,7 @@ class Client {
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       address: json['address'] as String?,
+      taxId: json['taxId'] as String?,
     );
   }
 }

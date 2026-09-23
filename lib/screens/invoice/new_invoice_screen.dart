@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/currency_format.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/client.dart';
+import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
+import '../../models/invoice_template.dart';
 import '../../providers/invoice_provider.dart';
+import '../../services/invoice_create_gate.dart';
 import '../../widgets/client_form_sheet.dart';
 import '../../widgets/item_form_sheet.dart';
+import '../../widgets/invoice_template_preview_sheet.dart';
+import '../../widgets/template_picker.dart';
+import '../../ads/ad_action.dart';
+import '../../navigation/invoice_flow.dart';
 
 class NewInvoiceScreen extends StatefulWidget {
   final Client? initialClient;
@@ -26,9 +35,13 @@ class NewInvoiceScreen extends StatefulWidget {
 }
 
 class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
+  bool _saving = false;
   Client? _client;
   final List<InvoiceItem> _items = [];
   String _currency = 'USD';
+  InvoiceTemplateId _template = InvoiceTemplateId.classic;
+  final _taxRateController = TextEditingController();
+  DateTime? _dueDate;
 
   @override
   void initState() {
@@ -38,7 +51,17 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
     if (widget.currency != null) _currency = widget.currency!;
   }
 
-  double get _total => _items.fold(0, (sum, i) => sum + i.total);
+  @override
+  void dispose() {
+    _taxRateController.dispose();
+    super.dispose();
+  }
+
+  double get _subtotal => _items.fold(0, (sum, i) => sum + i.total);
+
+  double get _taxRate => double.tryParse(_taxRateController.text.trim()) ?? 0;
+
+  double get _total => _subtotal + _subtotal * (_taxRate / 100);
 
   Future<void> _chooseClient() async {
     final provider = context.read<InvoiceProvider>();
@@ -102,6 +125,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
           phone: result.phone,
           email: result.email,
           address: result.address,
+          taxId: result.taxId,
         );
       });
     } else {
@@ -110,6 +134,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         phone: result.phone,
         email: result.email,
         address: result.address,
+        taxId: result.taxId,
       );
       provider.updateClient(updated);
       setState(() => _client = updated);
@@ -180,18 +205,62 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
   }
 
   Future<void> _addCustomItem() async {
-    final result = await showItemFormSheet(context);
+    final result = await showItemFormSheet(
+      context,
+      currencyCode: _currency,
+      onCurrencyChanged: (c) => setState(() => _currency = c),
+    );
     if (!mounted || result == null) return;
     setState(() => _items.add(result));
   }
 
   Future<void> _editItem(int index) async {
-    final result = await showItemFormSheet(context, item: _items[index]);
+    final result = await showItemFormSheet(
+      context,
+      item: _items[index],
+      currencyCode: _currency,
+      onCurrencyChanged: (c) => setState(() => _currency = c),
+    );
     if (!mounted || result == null) return;
     setState(() => _items[index] = result);
   }
 
-  void _saveInvoice() {
+  Invoice _buildPreviewInvoice() {
+    final strings = AppStrings.read(context);
+    final client = _client ??
+        Client(
+          id: 'preview',
+          name: strings.clientNameHint,
+        );
+    final items = _items.isEmpty
+        ? [
+            InvoiceItem(
+              id: 'sample',
+              description: strings.serviceThisMonth,
+              unitCost: 0,
+              quantity: 1,
+            ),
+          ]
+        : List<InvoiceItem>.of(_items);
+    return Invoice(
+      id: 'preview',
+      number: '#PREVIEW',
+      client: client,
+      items: items,
+      date: DateTime.now(),
+      dueDate: _dueDate,
+      currency: _currency,
+      taxRate: _taxRate,
+      templateId: _template.name,
+    );
+  }
+
+  Future<void> _saveInvoice() async {
+    if (_saving) return;
+    if (!await ensureInvoiceQuotaOrPrompt(context)) return;
+    if (!mounted) return;
+    if (!await confirmProTemplateUse(context, _template)) return;
+    if (!mounted) return;
     final strings = AppStrings.read(context);
     if (_client == null || _items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -199,8 +268,23 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
       );
       return;
     }
-    context.read<InvoiceProvider>().createInvoice(client: _client!, items: _items, currency: _currency);
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _saving = true);
+    try {
+      final invoice = context.read<InvoiceProvider>().createInvoice(
+            client: _client!,
+            items: _items,
+            currency: _currency,
+            dueDate: _dueDate,
+            taxRate: _taxRate,
+            templateId: _template.name,
+          );
+      if (!mounted) return;
+      await showInterstitialWithLoadingIfEligible(context);
+      if (!mounted) return;
+      await navigateAfterInvoiceCreated(context, invoice.id);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -240,13 +324,59 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                     ),
                   ),
                 ),
+          const SizedBox(height: 16),
+          TemplatePicker(
+            selected: _template,
+            onChanged: (v) => setState(() => _template = v),
+            buildPreviewInvoice: _buildPreviewInvoice,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _taxRateController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(labelText: strings.taxRate, suffixText: '%'),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _dueDate ?? DateTime.now().add(const Duration(days: 30)),
+                firstDate: DateTime.now(),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) setState(() => _dueDate = picked);
+            },
+            icon: const Icon(Icons.event),
+            label: Text(
+              _dueDate == null
+                  ? strings.dueDate
+                  : '${strings.dueDate}: ${DateFormat.yMMMd().format(_dueDate!)}',
+            ),
+          ),
           const SizedBox(height: 24),
-          Text(strings.items, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          Row(
+            children: [
+              Text(strings.items, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const Spacer(),
+              Text(strings.currency, style: theme.textTheme.labelMedium?.copyWith(color: muted)),
+              const SizedBox(width: 6),
+              DropdownButton<String>(
+                value: _currency,
+                underline: const SizedBox.shrink(),
+                items: CurrencyFormat.supportedCodes
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                    .toList(),
+                onChanged: (v) => setState(() => _currency = v ?? 'USD'),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           ..._items.asMap().entries.map((entry) {
             final item = entry.value;
             final details = [
-              '${item.quantity} × \$${item.unitCost.toStringAsFixed(2)}',
+              '${item.quantity} × ${CurrencyFormat.format(_currency, item.unitCost)}',
               if (item.notes?.isNotEmpty == true) item.notes!,
             ].join('\n');
             return Card(
@@ -259,7 +389,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('\$${item.total.toStringAsFixed(2)}',
+                    Text(CurrencyFormat.format(_currency, item.total),
                         style: const TextStyle(fontWeight: FontWeight.w700)),
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
@@ -282,16 +412,13 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                   DropdownButton<String>(
                     value: _currency,
                     underline: const SizedBox.shrink(),
-                    items: const [
-                      DropdownMenuItem(value: 'USD', child: Text('USD')),
-                      DropdownMenuItem(value: 'EUR', child: Text('EUR')),
-                      DropdownMenuItem(value: 'GBP', child: Text('GBP')),
-                      DropdownMenuItem(value: 'PKR', child: Text('PKR')),
-                    ],
+                    items: CurrencyFormat.supportedCodes
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
                     onChanged: (v) => setState(() => _currency = v ?? 'USD'),
                   ),
                   const SizedBox(width: 12),
-                  Text(_total.toStringAsFixed(2),
+                  Text(CurrencyFormat.format(_currency, _total),
                       style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
                 ],
               ),
@@ -302,7 +429,18 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
             Center(child: Text(strings.startByAddingClient, style: TextStyle(color: muted))),
           ],
           const SizedBox(height: 24),
-          ElevatedButton(onPressed: _saveInvoice, child: Text(strings.saveInvoice)),
+          FilledButton.icon(
+            onPressed: _saving ? null : _saveInvoice,
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+            icon: _saving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.check_circle_outline_rounded),
+            label: Text(_saving ? strings.creatingInvoice : strings.saveInvoice),
+          ),
         ],
       ),
     );

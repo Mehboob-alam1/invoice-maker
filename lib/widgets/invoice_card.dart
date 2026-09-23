@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../core/constants/app_colors.dart';
+import '../core/utils/currency_format.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_strings.dart';
 import '../models/invoice.dart';
@@ -63,7 +64,7 @@ class InvoiceCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '\$${invoice.total.toStringAsFixed(2)}',
+                    CurrencyFormat.format(invoice.currency, invoice.total),
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 6),

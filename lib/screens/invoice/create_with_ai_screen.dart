@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice_item.dart';
 import '../../providers/invoice_provider.dart';
+import '../../ads/ad_action.dart';
+import '../../services/invoice_create_gate.dart';
+import '../../navigation/invoice_flow.dart';
 
 class CreateWithAiScreen extends StatefulWidget {
   const CreateWithAiScreen({super.key});
@@ -57,28 +60,39 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
   }
 
   Future<void> _generate() async {
+    final strings = AppStrings.read(context);
+    final combinedInput = '${_clientController.text}\n${_descriptionController.text}';
+    if (!await ensureAiGenerationAllowed(context, inputText: combinedInput)) return;
+    if (!mounted) return;
+    if (!await ensureInvoiceQuotaOrPrompt(context)) return;
     setState(() => _generating = true);
     await Future.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
 
-    final strings = AppStrings.read(context);
     final provider = context.read<InvoiceProvider>();
+    final estimatedTokens = InvoiceProvider.estimateAiTokensForInput(combinedInput);
+    provider.recordAiTokenUsage(estimatedTokens);
     final clientName =
         _clientController.text.trim().isEmpty ? strings.newClientFallback : _clientController.text.trim();
     final client = provider.findOrCreateClient(name: clientName);
-    provider.createInvoice(
+    final invoice = provider.createInvoice(
       client: client,
       items: _itemsFromDescription(_descriptionController.text, strings.serviceThisMonth),
     );
 
     if (!mounted) return;
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _generating = false);
+    await showInterstitialWithLoadingIfEligible(context);
+    if (!mounted) return;
+    await navigateAfterInvoiceCreated(context, invoice.id);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final strings = context.l10n;
+    final provider = context.watch<InvoiceProvider>();
+    final maxChars = provider.maxAiInputCharacters;
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.createWithAi)),
@@ -91,7 +105,12 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
               strings.aiIntro,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            Text(
+              strings.aiTokensRemainingHint(provider.aiTokensRemainingThisMonth, provider.monthlyAiTokenLimit),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary),
+            ),
+            const SizedBox(height: 16),
             Text(strings.clientNameOptional, style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             TextField(
@@ -107,6 +126,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
             TextField(
               controller: _descriptionController,
               maxLines: 4,
+              maxLength: maxChars,
               decoration: InputDecoration(hintText: strings.invoiceThisMonthHint),
             ),
             const Spacer(),

@@ -1,26 +1,37 @@
 import 'package:flutter/material.dart';
 
+import '../core/utils/currency_format.dart';
 import '../l10n/app_strings.dart';
 import '../models/invoice_item.dart';
 
 Future<InvoiceItem?> showItemFormSheet(
   BuildContext context, {
   InvoiceItem? item,
+  String? currencyCode,
+  ValueChanged<String>? onCurrencyChanged,
 }) {
   return showModalBottomSheet<InvoiceItem>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (ctx) => ItemFormSheet(item: item),
+    builder: (ctx) => ItemFormSheet(
+      item: item,
+      currencyCode: currencyCode,
+      onCurrencyChanged: onCurrencyChanged,
+    ),
   );
 }
 
 class ItemFormSheet extends StatefulWidget {
   final InvoiceItem? item;
+  final String? currencyCode;
+  final ValueChanged<String>? onCurrencyChanged;
 
   const ItemFormSheet({
     super.key,
     this.item,
+    this.currencyCode,
+    this.onCurrencyChanged,
   });
 
   @override
@@ -33,11 +44,16 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
   late final TextEditingController _notes;
   late final TextEditingController _price;
   late final TextEditingController _quantity;
+  late String _currency;
+
+  bool get _showCurrency => widget.onCurrencyChanged != null;
 
   @override
   void initState() {
     super.initState();
     final item = widget.item;
+    final code = widget.currencyCode ?? 'USD';
+    _currency = CurrencyFormat.supportedCodes.contains(code) ? code : 'USD';
     _name = TextEditingController(text: item?.description ?? '');
     _notes = TextEditingController(text: item?.notes ?? '');
     _price = TextEditingController(
@@ -70,12 +86,19 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
     );
   }
 
+  void _setCurrency(String? code) {
+    if (code == null || code == _currency) return;
+    setState(() => _currency = code);
+    widget.onCurrencyChanged?.call(code);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final isEdit = widget.item != null;
     final strings = context.l10n;
+    final pricePrefix = CurrencyFormat.symbol(_currency).trim();
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottom),
@@ -84,12 +107,32 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 isEdit ? strings.editItem : strings.newItem,
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
+              if (_showCurrency) ...[
+                const SizedBox(height: 14),
+                InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: strings.currency,
+                    prefixIcon: const Icon(Icons.payments_outlined),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _currency,
+                      isExpanded: true,
+                      items: CurrencyFormat.supportedCodes
+                          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                          .toList(),
+                      onChanged: _setCurrency,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 18),
               TextFormField(
                 controller: _name,
@@ -149,7 +192,8 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
                 decoration: InputDecoration(
                   labelText: strings.price,
                   hintText: '0.00',
-                  prefixIcon: const Icon(Icons.attach_money_rounded),
+                  prefixText: pricePrefix.isNotEmpty ? '$pricePrefix ' : null,
+                  prefixIcon: pricePrefix.isEmpty ? const Icon(Icons.attach_money_rounded) : null,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
