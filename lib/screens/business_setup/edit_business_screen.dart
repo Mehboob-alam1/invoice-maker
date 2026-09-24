@@ -5,6 +5,7 @@ import '../../core/constants/app_texts.dart';
 import '../../l10n/app_strings.dart';
 import '../../ads/ad_action.dart';
 import '../../providers/invoice_provider.dart';
+import '../../widgets/ui/app_page_shell.dart';
 
 class EditBusinessScreen extends StatefulWidget {
   const EditBusinessScreen({super.key});
@@ -57,9 +58,10 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
     final strings = context.l10n;
     return Scaffold(
       appBar: AppBar(title: Text(strings.manageBusiness)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        children: [
+      body: AppPageShell(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          children: [
           Text(
             strings.companyLogoComingSoon,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -77,11 +79,12 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
           const SizedBox(height: 12),
           TextField(controller: _address, maxLines: 2, decoration: InputDecoration(labelText: strings.businessAddress)),
           const SizedBox(height: 24),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => runWithInterstitial(context, _save),
             child: Text(strings.save),
           ),
         ],
+        ),
       ),
     );
   }

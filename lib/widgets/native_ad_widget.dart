@@ -9,11 +9,15 @@ import '../core/constants/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../l10n/app_strings.dart';
 
-/// Bottom native ad — AdMob **small** template.
+/// Edge-to-edge bottom native ad (AdMob small template).
 class NativeAdWidget extends StatefulWidget {
   const NativeAdWidget({super.key});
 
-  static const double barHeight = 88;
+  /// Matches AdMob small template min height so assets stay inside the platform view.
+  static const double barHeight = 91;
+
+  static double totalHeight(BuildContext context) =>
+      barHeight + MediaQuery.paddingOf(context).bottom;
 
   @override
   State<NativeAdWidget> createState() => _NativeAdWidgetState();
@@ -43,7 +47,6 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
     final isDark = theme.brightness == Brightness.dark;
     final muted = theme.extension<AppSemanticColors>()?.textMuted ?? AppColors.lightTextSecondary;
 
-    // Use cached/default unit id immediately; refresh remote config in background.
     unawaited(AdRemoteConfig.instance.load());
 
     final ad = NativeAd(
@@ -74,22 +77,22 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
       nativeTemplateStyle: NativeTemplateStyle(
         templateType: TemplateType.small,
         mainBackgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-        cornerRadius: 10,
+        cornerRadius: 0,
         callToActionTextStyle: NativeTemplateTextStyle(
           textColor: Colors.white,
           backgroundColor: theme.colorScheme.primary,
           style: NativeTemplateFontStyle.bold,
-          size: 11.0,
+          size: 10.0,
         ),
         primaryTextStyle: NativeTemplateTextStyle(
           textColor: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
           style: NativeTemplateFontStyle.bold,
-          size: 12.0,
+          size: 11.0,
         ),
         secondaryTextStyle: NativeTemplateTextStyle(
           textColor: muted,
           style: NativeTemplateFontStyle.normal,
-          size: 10.0,
+          size: 9.0,
         ),
       ),
     );
@@ -104,33 +107,49 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     final showRealAd = _isAdLoaded && _nativeAd != null;
+    final borderColor = theme.dividerColor.withValues(alpha: 0.85);
 
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-        child: SizedBox(
-          height: NativeAdWidget.barHeight,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              const NativeAdPlaceholder(),
-              AnimatedOpacity(
-                opacity: showRealAd ? 1 : 0,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-                child: showRealAd ? AdWidget(ad: _nativeAd!) : const SizedBox.shrink(),
+    return Material(
+      color: theme.cardColor,
+      elevation: 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Divider(height: 1, thickness: 1, color: borderColor),
+          ClipRect(
+            child: SizedBox(
+              width: double.infinity,
+              height: NativeAdWidget.barHeight,
+              child: Stack(
+                clipBehavior: Clip.hardEdge,
+                fit: StackFit.expand,
+                children: [
+                  const Positioned.fill(child: NativeAdPlaceholder()),
+                  if (showRealAd)
+                    Positioned.fill(
+                      child: ClipRect(
+                        clipBehavior: Clip.hardEdge,
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width,
+                          height: NativeAdWidget.barHeight,
+                          child: AdWidget(ad: _nativeAd!),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          if (bottomInset > 0) SizedBox(height: bottomInset),
+        ],
       ),
     );
   }
 }
 
-/// Skeleton bar while the real ad loads — same size as the live ad to avoid layout jump.
 class NativeAdPlaceholder extends StatefulWidget {
   const NativeAdPlaceholder({super.key});
 
@@ -165,64 +184,62 @@ class _NativeAdPlaceholderState extends State<NativeAdPlaceholder> with SingleTi
       builder: (context, child) {
         return Opacity(opacity: 0.55 + pulse.value * 0.35, child: child);
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: theme.extension<AppSemanticColors>()?.border ?? scheme.outlineVariant),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: scheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+      child: ColoredBox(
+        color: theme.cardColor,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    height: 10,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: muted?.withValues(alpha: 0.25) ?? scheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(4),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 10,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: muted?.withValues(alpha: 0.25) ?? scheme.outlineVariant,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    height: 8,
-                    width: 120,
-                    decoration: BoxDecoration(
-                      color: muted?.withValues(alpha: 0.18) ?? scheme.outlineVariant.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(4),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 8,
+                      width: 140,
+                      decoration: BoxDecoration(
+                        color: muted?.withValues(alpha: 0.18) ?? scheme.outlineVariant.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 56,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: scheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+              const SizedBox(width: 10),
+              Container(
+                width: 64,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  strings.adLabel,
+                  style: TextStyle(color: scheme.primary, fontSize: 9, fontWeight: FontWeight.w700),
+                ),
               ),
-              child: Text(
-                strings.adLabel,
-                style: TextStyle(color: scheme.primary, fontSize: 9, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

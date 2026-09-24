@@ -11,6 +11,7 @@ import '../ocr/ocr_flow.dart';
 import 'create_with_ai_screen.dart';
 import 'new_invoice_screen.dart';
 import '../../ads/ad_action.dart';
+import '../../widgets/ui/app_page_shell.dart';
 
 class CreateInvoiceOptionsScreen extends StatelessWidget {
   const CreateInvoiceOptionsScreen({super.key});
@@ -22,14 +23,14 @@ class CreateInvoiceOptionsScreen extends StatelessWidget {
     final aiUnlocked = invoiceProvider.subscriptionTier.canUseAiInvoice;
     return Scaffold(
       appBar: AppBar(title: Text(strings.createInvoice)),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-        child: Column(
+      body: AppPageShell(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
             Text(
               strings.howCreateInvoice,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 28),
             _OptionTile(
@@ -99,8 +100,8 @@ class _OptionTile extends StatelessWidget {
     final muted = theme.extension<AppSemanticColors>()?.textMuted;
 
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(18),
@@ -110,7 +111,14 @@ class _OptionTile extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.14),
+                  gradient: LinearGradient(
+                    colors: [
+                      iconColor.withValues(alpha: 0.22),
+                      iconColor.withValues(alpha: 0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: iconColor, size: 28),

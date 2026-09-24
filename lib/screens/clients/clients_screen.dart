@@ -6,6 +6,8 @@ import '../../models/client.dart';
 import '../../providers/invoice_provider.dart';
 import '../../ads/ad_action.dart';
 import '../../widgets/client_form_sheet.dart';
+import '../../widgets/ui/app_page_shell.dart';
+import '../../widgets/ui/empty_state_view.dart';
 
 class ClientsScreen extends StatelessWidget {
   const ClientsScreen({super.key});
@@ -45,17 +47,26 @@ class ClientsScreen extends StatelessWidget {
         onPressed: () => runMajorActionAsync(context, () => _edit(context)),
         child: const Icon(Icons.add_rounded),
       ),
-      body: clients.isEmpty
-          ? Center(child: Text(strings.noClientsYet))
-          : ListView.separated(
+      body: AppPageShell(
+        child: clients.isEmpty
+            ? EmptyStateView(
+                icon: Icons.groups_rounded,
+                title: strings.noClientsYet,
+                actionLabel: strings.addNewClient,
+                onAction: () => runMajorActionAsync(context, () => _edit(context)),
+              )
+            : ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 88),
               itemCount: clients.length,
               separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, i) {
                 final client = clients[i];
+                final scheme = Theme.of(context).colorScheme;
                 return Card(
                   child: ListTile(
                     leading: CircleAvatar(
+                      backgroundColor: scheme.primary.withValues(alpha: 0.14),
+                      foregroundColor: scheme.primary,
                       child: Text(client.name.isEmpty ? '?' : client.name[0].toUpperCase()),
                     ),
                     title: Text(client.name, style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -77,6 +88,7 @@ class ClientsScreen extends StatelessWidget {
                 );
               },
             ),
+      ),
     );
   }
 }

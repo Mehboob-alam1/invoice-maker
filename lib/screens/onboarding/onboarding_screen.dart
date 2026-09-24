@@ -89,8 +89,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       }),
                     ),
                     const Spacer(),
-                    OutlinedButton(
+                    FilledButton(
                       onPressed: _next,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(120, 44),
+                        backgroundColor: theme.colorScheme.surface,
+                        foregroundColor: theme.colorScheme.primary,
+                      ),
                       child: Text(isLast ? strings.getStarted : strings.next),
                     ),
                   ],

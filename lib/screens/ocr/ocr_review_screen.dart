@@ -15,6 +15,8 @@ import '../../widgets/invoice_document_view.dart';
 import '../../widgets/invoice_template_preview_sheet.dart';
 import '../../widgets/item_form_sheet.dart';
 import '../../widgets/template_picker.dart';
+import '../../widgets/ui/app_page_shell.dart';
+import '../../widgets/ui/app_section_card.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../ads/ad_action.dart';
 import 'ocr_flow.dart';
@@ -241,7 +243,6 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final strings = context.l10n;
     final locale = context.watch<InvoiceProvider>().languageCode;
     return Scaffold(
@@ -254,110 +255,124 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
           ),
         ],
       ),
-      body: ListView(
+      body: AppPageShell(
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
-          scannedImagePreview(widget.parsed.imagePath),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: scannedImagePreview(widget.parsed.imagePath),
+          ),
           const SizedBox(height: 16),
-          Text(strings.billTo, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _clientController,
-            decoration: InputDecoration(labelText: strings.clientName, prefixIcon: const Icon(Icons.person_rounded)),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _addressController,
-            minLines: 2,
-            maxLines: 4,
-            decoration: InputDecoration(labelText: strings.address, prefixIcon: const Icon(Icons.location_on_outlined)),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _taxIdController,
-            decoration: InputDecoration(labelText: strings.taxId, hintText: strings.taxIdHint),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(labelText: strings.email, prefixIcon: const Icon(Icons.email_outlined)),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(labelText: strings.phoneNumber, prefixIcon: const Icon(Icons.phone_outlined)),
-          ),
-          const SizedBox(height: 20),
-          Text(strings.invoice, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _invoiceNumberController,
-            decoration: InputDecoration(labelText: strings.invoiceNumber, prefixIcon: const Icon(Icons.tag)),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickDate(due: false),
-                  icon: const Icon(Icons.event),
-                  label: Text('${strings.issueDate}\n${DateFormat.yMMMd(locale).format(_issueDate)}', textAlign: TextAlign.center),
+          AppSectionCard(
+            title: strings.billTo,
+            icon: Icons.person_outline_rounded,
+            child: Column(
+              children: [
+                TextField(
+                  controller: _clientController,
+                  decoration: InputDecoration(labelText: strings.clientName, prefixIcon: const Icon(Icons.person_rounded)),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickDate(due: true),
-                  icon: const Icon(Icons.event_available),
-                  label: Text(
-                    _dueDate == null
-                        ? strings.dueDate
-                        : '${strings.dueDate}\n${DateFormat.yMMMd(locale).format(_dueDate!)}',
-                    textAlign: TextAlign.center,
-                  ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _addressController,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: InputDecoration(labelText: strings.address, prefixIcon: const Icon(Icons.location_on_outlined)),
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _taxIdController,
+                  decoration: InputDecoration(labelText: strings.taxId, hintText: strings.taxIdHint),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(labelText: strings.email, prefixIcon: const Icon(Icons.email_outlined)),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(labelText: strings.phoneNumber, prefixIcon: const Icon(Icons.phone_outlined)),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _poController,
-            decoration: InputDecoration(labelText: strings.poNumber),
+          const SizedBox(height: 16),
+          AppSectionCard(
+            title: strings.invoice,
+            icon: Icons.receipt_long_outlined,
+            child: Column(
+              children: [
+                TextField(
+                  controller: _invoiceNumberController,
+                  decoration: InputDecoration(labelText: strings.invoiceNumber, prefixIcon: const Icon(Icons.tag)),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _pickDate(due: false),
+                        icon: const Icon(Icons.event),
+                        label: Text('${strings.issueDate}\n${DateFormat.yMMMd(locale).format(_issueDate)}', textAlign: TextAlign.center),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _pickDate(due: true),
+                        icon: const Icon(Icons.event_available),
+                        label: Text(
+                          _dueDate == null
+                              ? strings.dueDate
+                              : '${strings.dueDate}\n${DateFormat.yMMMd(locale).format(_dueDate!)}',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _poController,
+                  decoration: InputDecoration(labelText: strings.poNumber),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _paymentTermsController,
+                  decoration: InputDecoration(labelText: strings.paymentTerms, hintText: strings.paymentTermsHint),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _taxRateController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(labelText: strings.taxRate, suffixText: '%'),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _paymentTermsController,
-            decoration: InputDecoration(labelText: strings.paymentTerms, hintText: strings.paymentTermsHint),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _taxRateController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(labelText: strings.taxRate, suffixText: '%'),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           TemplatePicker(
             selected: _template,
             onChanged: (v) => setState(() => _template = v),
             buildPreviewInvoice: () => _previewInvoice(_previewClient(context.l10n)),
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Text(strings.items, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-              const Spacer(),
-              DropdownButton<String>(
-                value: _currency,
-                items: CurrencyFormat.supportedCodes
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (v) => setState(() => _currency = v ?? 'USD'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          AppSectionCard(
+            title: strings.items,
+            icon: Icons.list_alt_rounded,
+            trailing: DropdownButton<String>(
+              value: _currency,
+              underline: const SizedBox.shrink(),
+              items: CurrencyFormat.supportedCodes
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (v) => setState(() => _currency = v ?? 'USD'),
+            ),
+            child: Column(
+              children: [
           ..._items.asMap().entries.map((entry) {
             final item = entry.value;
             return Card(
@@ -375,25 +390,30 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
               ),
             );
           }),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _totalRow(strings.subtotal, _subtotal),
-                  if (_taxRate > 0) _totalRow('${strings.tax} ($_taxRate%)', _subtotal * _taxRate / 100),
-                  const Divider(),
-                  _totalRow(strings.grandTotal, _grandTotal, bold: true),
-                ],
-              ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    children: [
+                      _totalRow(strings.subtotal, _subtotal),
+                      if (_taxRate > 0) _totalRow('${strings.tax} ($_taxRate%)', _subtotal * _taxRate / 100),
+                      const Divider(),
+                      _totalRow(strings.grandTotal, _grandTotal, bold: true),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _notesController,
-            minLines: 2,
-            maxLines: 4,
-            decoration: InputDecoration(labelText: strings.notesOptional, hintText: strings.notesHint),
+          const SizedBox(height: 16),
+          AppSectionCard(
+            title: strings.notesOptional,
+            icon: Icons.notes_rounded,
+            child: TextField(
+              controller: _notesController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: InputDecoration(hintText: strings.notesHint),
+            ),
           ),
           const SizedBox(height: 12),
           TextButton(
@@ -421,6 +441,7 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
             label: Text(_creating ? strings.creatingInvoice : strings.createInvoice),
           ),
         ],
+        ),
       ),
     );
   }

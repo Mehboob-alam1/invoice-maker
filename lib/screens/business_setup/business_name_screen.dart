@@ -6,6 +6,7 @@ import '../../core/constants/app_texts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
 import '../../providers/invoice_provider.dart';
+import '../../widgets/ui/app_page_shell.dart';
 import '../home/invoices_home_screen.dart';
 
 class BusinessNameScreen extends StatefulWidget {
@@ -39,33 +40,53 @@ class _BusinessNameScreenState extends State<BusinessNameScreen> {
     final muted = theme.extension<AppSemanticColors>()?.textMuted;
     final strings = AppStrings.of(context);
 
+    final primary = theme.colorScheme.primary;
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                strings.businessNameTitle,
-                style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.25),
-              ),
-              const SizedBox(height: 28),
-              TextField(
-                controller: _controller,
-                autofocus: true,
-                decoration: InputDecoration(labelText: strings.businessNameHint),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _continue(),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                strings.businessNameHelp,
-                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-              ),
-              const Spacer(),
-              ElevatedButton(onPressed: _continue, child: Text(strings.continueLabel)),
-            ],
+      body: AppPageShell(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Icon(Icons.storefront_rounded, size: 36, color: primary),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  strings.businessNameTitle,
+                  style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.25),
+                ),
+                const SizedBox(height: 28),
+                TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: strings.businessNameHint,
+                    prefixIcon: const Icon(Icons.business_rounded),
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _continue(),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  strings.businessNameHelp,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: _continue,
+                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                  child: Text(strings.continueLabel),
+                ),
+              ],
+            ),
           ),
         ),
       ),

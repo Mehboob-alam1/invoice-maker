@@ -17,6 +17,7 @@ import '../../widgets/invoice_template_preview_sheet.dart';
 import '../../widgets/template_picker.dart';
 import '../../ads/ad_action.dart';
 import '../../navigation/invoice_flow.dart';
+import '../../widgets/ui/app_page_shell.dart';
 
 class NewInvoiceScreen extends StatefulWidget {
   final Client? initialClient;
@@ -298,9 +299,10 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         title: Text(strings.newInvoice),
         leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-        children: [
+      body: AppPageShell(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          children: [
           Text(strings.client, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 10),
           _client == null
@@ -442,6 +444,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
             label: Text(_saving ? strings.creatingInvoice : strings.saveInvoice),
           ),
         ],
+        ),
       ),
     );
   }

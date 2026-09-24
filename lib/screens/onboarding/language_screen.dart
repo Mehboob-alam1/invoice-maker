@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../l10n/app_languages.dart';
 import '../../l10n/app_strings.dart';
 import '../../providers/invoice_provider.dart';
+import '../../widgets/ui/app_page_shell.dart';
 import 'onboarding_screen.dart';
 
 class LanguageScreen extends StatefulWidget {
@@ -65,7 +66,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
       appBar: widget.fromOnboarding
           ? null
           : AppBar(title: Text(strings.selectLanguage)),
-      body: SafeArea(
+      body: AppPageShell(
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           child: Column(
@@ -144,12 +146,14 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              ElevatedButton(
+              FilledButton(
                 onPressed: _continue,
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                 child: Text(strings.continueLabel),
               ),
             ],
           ),
+        ),
         ),
       ),
     );

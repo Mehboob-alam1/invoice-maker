@@ -7,6 +7,7 @@ import '../../l10n/app_strings.dart';
 import '../../navigation/app_page_route.dart';
 import '../../providers/invoice_provider.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/ui/app_page_shell.dart';
 import '../business_setup/business_name_screen.dart';
 
 /// Shown once after onboarding carousel — optional Google sign-in before business setup.
@@ -46,7 +47,8 @@ class GoogleLoginScreen extends StatelessWidget {
         [AppColors.primary, AppColors.primary.withValues(alpha: 0.85)];
 
     return Scaffold(
-      body: SafeArea(
+      body: AppPageShell(
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(28, 8, 28, 24),
           child: Column(
@@ -94,6 +96,7 @@ class GoogleLoginScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

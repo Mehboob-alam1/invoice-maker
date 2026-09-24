@@ -6,6 +6,7 @@ import '../../providers/invoice_provider.dart';
 import '../../ads/ad_action.dart';
 import '../../services/invoice_create_gate.dart';
 import '../../navigation/invoice_flow.dart';
+import '../../widgets/ui/app_page_shell.dart';
 
 class CreateWithAiScreen extends StatefulWidget {
   const CreateWithAiScreen({super.key});
@@ -96,9 +97,10 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.createWithAi)),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-        child: Column(
+      body: AppPageShell(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -130,7 +132,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
               decoration: InputDecoration(hintText: strings.invoiceThisMonthHint),
             ),
             const Spacer(),
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: _generating ? null : _generate,
               icon: _generating
                   ? const SizedBox(
@@ -149,6 +151,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

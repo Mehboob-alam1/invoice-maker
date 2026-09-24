@@ -21,6 +21,7 @@ import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../services/premium_upsell_service.dart';
 import '../../ads/ad_action.dart';
+import '../../widgets/ui/app_page_shell.dart';
 import '../subscription/pro_paywall_screen.dart';
 import 'invoice_detail_screen.dart';
 
@@ -247,7 +248,7 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     if (draft == null) {
       return Scaffold(
         appBar: AppBar(title: Text(strings.invoice)),
-        body: Center(child: Text(strings.invoiceDeleted)),
+        body: AppPageShell(child: Center(child: Text(strings.invoiceDeleted))),
       );
     }
 
@@ -290,7 +291,8 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
             ),
         ],
       ),
-      body: ListView(
+      body: AppPageShell(
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
           if (widget.justCreated)
@@ -336,10 +338,12 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          ExpansionTile(
+          Card(
+            margin: EdgeInsets.zero,
+            child: ExpansionTile(
             initiallyExpanded: _editExpanded,
             onExpansionChanged: (v) => setState(() => _editExpanded = v),
-            title: Text(strings.editInvoiceForPdf, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+            title: Text(strings.editInvoiceForPdf, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
             children: [
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -460,7 +464,9 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
               ),
             ],
           ),
+          ),
         ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(

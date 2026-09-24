@@ -16,6 +16,8 @@ import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../navigation/app_route_observer.dart';
 import '../../services/premium_upsell_service.dart';
+import '../../widgets/ui/app_page_shell.dart';
+import '../../widgets/ui/empty_state_view.dart';
 
 class InvoicesHomeScreen extends StatefulWidget {
   const InvoicesHomeScreen({super.key});
@@ -100,49 +102,69 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen> with SingleTick
           const SizedBox(width: 4),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: _OcrScannerBanner(
-              onScan: () => runWithInterstitial(context, () => startOcrScan(context)),
-            ),
-          ),
-          TabBar(
-            controller: _tabController,
-            onTap: (_) => afterMajorAction(context),
-            tabs: [
-              Tab(text: strings.unpaid),
-              Tab(text: strings.paid),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _InvoiceList(
-                  invoices: invoiceProvider.unpaidInvoices,
-                  onCreate: _openCreateInvoice,
-                ),
-                _InvoiceList(
-                  invoices: invoiceProvider.paidInvoices,
-                  onCreate: _openCreateInvoice,
-                ),
-              ],
-            ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: ElevatedButton.icon(
-                onPressed: _openCreateInvoice,
-                icon: const Icon(Icons.add_rounded),
-                label: Text(strings.createInvoice),
+      body: AppPageShell(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: _OcrScannerBanner(
+                onScan: () => runWithInterstitial(context, () => startOcrScan(context)),
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.dividerColor),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  onTap: (_) => afterMajorAction(context),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  ),
+                  labelColor: theme.colorScheme.primary,
+                  tabs: [
+                    Tab(text: strings.unpaid),
+                    Tab(text: strings.paid),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _InvoiceList(
+                    invoices: invoiceProvider.unpaidInvoices,
+                    onCreate: _openCreateInvoice,
+                  ),
+                  _InvoiceList(
+                    invoices: invoiceProvider.paidInvoices,
+                    onCreate: _openCreateInvoice,
+                  ),
+                ],
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                child: FilledButton.icon(
+                  onPressed: _openCreateInvoice,
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(strings.createInvoice),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -217,22 +239,14 @@ class _InvoiceList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.extension<AppSemanticColors>()?.textMuted;
     final strings = context.l10n;
 
     if (invoices.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.description_outlined, size: 72, color: muted),
-            const SizedBox(height: 16),
-            Text(strings.startByCreatingInvoice, style: theme.textTheme.bodyLarge?.copyWith(color: muted)),
-            const SizedBox(height: 16),
-            TextButton(onPressed: onCreate, child: Text(strings.createInvoice)),
-          ],
-        ),
+      return EmptyStateView(
+        icon: Icons.description_outlined,
+        title: strings.startByCreatingInvoice,
+        actionLabel: strings.createInvoice,
+        onAction: onCreate,
       );
     }
 

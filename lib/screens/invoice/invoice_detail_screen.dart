@@ -14,6 +14,7 @@ import '../../models/invoice_template.dart';
 import '../../providers/invoice_provider.dart';
 import '../../ads/ad_action.dart';
 import '../../services/invoice_pdf_export.dart';
+import '../../widgets/ui/app_page_shell.dart';
 import '../../widgets/invoice_document_view.dart';
 import 'invoice_preview_edit_screen.dart';
 
@@ -145,9 +146,10 @@ class InvoiceDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        children: [
+      body: AppPageShell(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          children: [
           Row(
             children: [
               _StatusChip(status: status, label: _statusLabel(strings, status)),
@@ -163,7 +165,7 @@ class InvoiceDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
+          FilledButton.icon(
             onPressed: () => runWithInterstitial(context, () {
               provider.setInvoiceStatus(
                 invoice.id,
@@ -174,6 +176,7 @@ class InvoiceDetailScreen extends StatelessWidget {
             label: Text(paid ? strings.markAsUnpaid : strings.markAsPaid),
           ),
         ],
+        ),
       ),
     );
   }

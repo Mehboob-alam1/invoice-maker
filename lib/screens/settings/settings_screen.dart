@@ -16,6 +16,7 @@ import '../../services/subscription_service.dart';
 import '../../ads/ad_action.dart';
 import '../../navigation/app_page_route.dart';
 import '../../widgets/settings_profile_header.dart';
+import '../../widgets/ui/app_page_shell.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -58,9 +59,10 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.settings)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-        children: [
+      body: AppPageShell(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          children: [
           const SettingsProfileHeader(),
           const SizedBox(height: 20),
           _PlanBanner(
@@ -178,6 +180,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ]),
         ],
+        ),
       ),
     );
   }
