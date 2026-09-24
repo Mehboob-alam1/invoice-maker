@@ -228,12 +228,23 @@ class AppTexts {
   static const catalogItems = 'Items';
   static const darkMode = 'Dark Mode';
   static const language = 'Language';
-  static const rateUs = 'Rate Us';
-  static const rateUsTitle = 'Rate Invoice Maker';
+  static const rateUs = 'Rate & Feedback';
+  static const rateUsTitle = 'Enjoying Invoice GO?';
   static const rateUsBody = 'Thanks for using the app. If this were in a store, this would open the listing.';
+  static const rateUsCombinedSubtitle =
+      'Tap a star rating. Love it? We\'ll open Google Play. Otherwise tell us how to improve.';
+  static const feedbackOptionalLabel = 'Comments (optional)';
+  static const submitRating = 'Submit';
   static const feedback = 'Feedback';
   static const feedbackHint = 'Tell us what to improve';
-  static const thanksFeedback = 'Thanks — your feedback was saved on this device.';
+  static const thanksFeedback = 'Thanks — we received your rating and feedback.';
+  static const notNow = 'Not now';
+  static const lastUpdated = 'Last updated: {date}';
+  static const subscriptionExpiredTitle = 'Subscription ended';
+  static const subscriptionExpiredBody =
+      'Your Premium or Pro plan is no longer active on Google Play. Renew to restore unlimited invoices, AI, and ad-free use.';
+  static const playStoreSubscriptionHint =
+      'Product IDs must match Google Play → Monetize → Subscriptions. Prices load live from the store.';
   static const privacyPolicy = 'Privacy Policy';
   static const privacyBody =
       'Invoices, clients, and scans stay on this device. Camera and gallery access is used only when you scan a document. Nothing is uploaded unless you share it yourself.';
@@ -241,7 +252,7 @@ class AppTexts {
   static const proAlreadyActive = 'Pro access is already active.';
   static const noPurchaseFound = 'No previous purchase found.';
   static const shareApp = 'Share App';
-  static const shareAppText = 'Invoice Maker — create and scan invoices on your phone.';
+  static const shareAppText = 'Invoice GO — create and scan invoices on your phone.';
   static const communityGuidelines = 'Community Guidelines';
   static const communityBody =
       'Use the app to create genuine invoices. Do not scan or store other people’s documents without permission.';
@@ -369,7 +380,7 @@ class AppTexts {
   static const adLabel = 'Ad';
   static const loadingAd = 'Loading ad…';
   static const growBusiness = 'Grow your business faster';
-  static const sponsored = 'Sponsored · Invoice Maker';
+  static const sponsored = 'Sponsored · Invoice GO';
   static const open = 'Open';
 
   static const onboardingTitle1 = 'Create Accurate Invoices\nIn Just a Few Clicks';
@@ -594,9 +605,17 @@ class AppTexts {
     'rateUs': rateUs,
     'rateUsTitle': rateUsTitle,
     'rateUsBody': rateUsBody,
+    'rateUsCombinedSubtitle': rateUsCombinedSubtitle,
+    'feedbackOptionalLabel': feedbackOptionalLabel,
+    'submitRating': submitRating,
     'feedback': feedback,
     'feedbackHint': feedbackHint,
     'thanksFeedback': thanksFeedback,
+    'notNow': notNow,
+    'lastUpdated': lastUpdated,
+    'subscriptionExpiredTitle': subscriptionExpiredTitle,
+    'subscriptionExpiredBody': subscriptionExpiredBody,
+    'playStoreSubscriptionHint': playStoreSubscriptionHint,
     'privacyPolicy': privacyPolicy,
     'privacyBody': privacyBody,
     'restorePurchases': restorePurchases,

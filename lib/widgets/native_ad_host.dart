@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../ads/ad_remote_config.dart';
 import '../providers/invoice_provider.dart';
 import 'native_ad_widget.dart';
 
@@ -18,7 +19,9 @@ class NativeAdHost extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final showNative = context.watch<InvoiceProvider>().subscriptionTier.showNativeAds;
+    final rc = AdRemoteConfig.instance;
+    final showNative =
+        rc.adsEnabled && context.watch<InvoiceProvider>().subscriptionTier.showNativeAds;
     final showBar = !keyboardOpen && showNative;
 
     return ColoredBox(
@@ -35,7 +38,19 @@ class NativeAdHost extends StatelessWidget {
                 : child ?? const SizedBox.shrink(),
           ),
           if (showBar)
-            NativeAdWidget(key: ValueKey('native_ad_$adScopeKey')),
+            MediaQuery.removePadding(
+              context: context,
+              removeLeft: true,
+              removeRight: true,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                widthFactor: 1,
+                child: SizedBox(
+                  width: MediaQuery.sizeOf(context).width,
+                  child: NativeAdWidget(key: ValueKey('native_ad_$adScopeKey')),
+                ),
+              ),
+            ),
         ],
       ),
     );

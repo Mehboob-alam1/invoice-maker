@@ -1,0 +1,10 @@
+{
+  "ads_enabled": true,
+  "push_notifications_enabled": true,
+  "ad_native_android": "ca-app-pub-3940256099942544/2247696110",
+  "ad_native_ios": "ca-app-pub-3940256099942544/3986624511",
+  "ad_interstitial_android": "ca-app-pub-3940256099942544/1033173712",
+  "ad_interstitial_ios": "ca-app-pub-3940256099942544/4411468910",
+  "ad_app_open_android": "ca-app-pub-3940256099942544/9257395921",
+  "ad_app_open_ios": "ca-app-pub-3940256099942544/5575463023"
+}

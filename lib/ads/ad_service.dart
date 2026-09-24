@@ -40,7 +40,10 @@ class AdService {
 
   /// Whether an interstitial may be shown (tier, cooldown, not already showing).
   bool shouldAttemptInterstitial(SubscriptionTier tier) {
-    if (!AdConfig.isSupported || !tier.showInterstitialAds || _isShowingFullScreenAd) {
+    if (!AdConfig.isSupported ||
+        !AdRemoteConfig.instance.adsEnabled ||
+        !tier.showInterstitialAds ||
+        _isShowingFullScreenAd) {
       return false;
     }
     final now = DateTime.now();
@@ -186,7 +189,12 @@ class AdService {
   }
 
   Future<void> showAppOpenIfAvailable({SubscriptionTier tier = SubscriptionTier.free}) async {
-    if (!AdConfig.isSupported || !tier.showAppOpenAds || _isShowingFullScreenAd) return;
+    if (!AdConfig.isSupported ||
+        !AdRemoteConfig.instance.adsEnabled ||
+        !tier.showAppOpenAds ||
+        _isShowingFullScreenAd) {
+      return;
+    }
     final now = DateTime.now();
     final minGap = tier.reducedAppOpenAds ? _minAppOpenIntervalPremium : _minAppOpenInterval;
     if (_lastAppOpenShown != null && now.difference(_lastAppOpenShown!) < minGap) {

@@ -1,0 +1,61 @@
+{
+  "conditions": [],
+  "parameters": {
+    "ads_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Master switch: false disables ALL ads for every user (Free, Premium, Pro).",
+      "valueType": "BOOLEAN"
+    },
+    "push_notifications_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "When false, the app skips requesting notification permission.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_native_android": {
+      "defaultValue": {
+        "value": "ca-app-pub-3940256099942544/2247696110"
+      },
+      "description": "AdMob native ad unit ID (Android). Replace with production ID before release.",
+      "valueType": "STRING"
+    },
+    "ad_native_ios": {
+      "defaultValue": {
+        "value": "ca-app-pub-3940256099942544/3986624511"
+      },
+      "description": "AdMob native ad unit ID (iOS).",
+      "valueType": "STRING"
+    },
+    "ad_interstitial_android": {
+      "defaultValue": {
+        "value": "ca-app-pub-3940256099942544/1033173712"
+      },
+      "description": "AdMob interstitial unit ID (Android).",
+      "valueType": "STRING"
+    },
+    "ad_interstitial_ios": {
+      "defaultValue": {
+        "value": "ca-app-pub-3940256099942544/4411468910"
+      },
+      "description": "AdMob interstitial unit ID (iOS).",
+      "valueType": "STRING"
+    },
+    "ad_app_open_android": {
+      "defaultValue": {
+        "value": "ca-app-pub-3940256099942544/9257395921"
+      },
+      "description": "AdMob app open unit ID (Android).",
+      "valueType": "STRING"
+    },
+    "ad_app_open_ios": {
+      "defaultValue": {
+        "value": "ca-app-pub-3940256099942544/5575463023"
+      },
+      "description": "AdMob app open unit ID (iOS).",
+      "valueType": "STRING"
+    }
+  }
+}

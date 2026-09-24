@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/blue_screen.dart';
 import '../onboarding/language_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../home/invoices_home_screen.dart';
@@ -63,77 +64,226 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    return Theme(
+      data: buildBlueTheme(Theme.of(context)),
+      child: Builder(builder: _buildContent),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
-    final gradient = theme.extension<AppSemanticColors>()?.heroGradient ??
-        [AppColors.primary, AppColors.primary.withValues(alpha: 0.82)];
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final size = MediaQuery.sizeOf(context);
+    final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
+
+    final bgColors = isDark
+        ? const [Color(0xFF0B1220), Color(0xFF0F1B33), Color(0xFF0B1220)]
+        : const [Color(0xFFEFF6FF), Color(0xFFFFFFFF), Color(0xFFE0F2FE)];
+    final titleColor = isDark ? Colors.white : BlueColors.navy;
+    final subtitleColor = isDark ? Colors.white.withValues(alpha: 0.78) : BlueColors.navy.withValues(alpha: 0.75);
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradient,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      backgroundColor: bgColors.first,
+      body: Stack(
+        children: [
+          // Background gradient
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: bgColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: FadeTransition(
-            opacity: _fade,
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
-                ScaleTransition(
+          // Soft decorative glows
+          Positioned(
+            top: -size.shortestSide * 0.25,
+            right: -size.shortestSide * 0.25,
+            child: IgnorePointer(child: _GlowBlob(diameter: size.shortestSide * 0.85, color: BlueColors.sky, isDark: isDark)),
+          ),
+          Positioned(
+            bottom: -size.shortestSide * 0.3,
+            left: -size.shortestSide * 0.3,
+            child: IgnorePointer(child: _GlowBlob(diameter: size.shortestSide * 0.9, color: BlueColors.light, isDark: isDark)),
+          ),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final w = constraints.maxWidth;
+                final isWide = w >= 900;
+                final hPad = w < 360 ? 16.0 : 24.0;
+                final tileSize = (isWide ? 128.0 : 112.0) * textScale.clamp(1.0, 1.25);
+
+                final tile = ScaleTransition(
                   scale: _scale,
                   child: Container(
-                    width: 112,
-                    height: 112,
+                    width: tileSize,
+                    height: tileSize,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.95),
+                      gradient: const LinearGradient(
+                        colors: [BlueColors.bright, BlueColors.sky],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.5),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 24,
+                          color: scheme.primary.withValues(alpha: 0.35),
+                          blurRadius: 28,
                           offset: const Offset(0, 12),
                         ),
                       ],
                     ),
-                    child: Icon(Icons.receipt_long_rounded, size: 56, color: theme.colorScheme.primary),
+                    child: Icon(Icons.receipt_long_rounded, size: tileSize * 0.5, color: Colors.white),
                   ),
-                ),
-                const SizedBox(height: 28),
-                Text(
-                  'Invoice Maker',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
+                );
+
+                final titleBlock = Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: isWide ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      AppConfig.appDisplayName,
+                      textAlign: isWide ? TextAlign.start : TextAlign.center,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: isWide ? 44 : 30,
+                        fontWeight: FontWeight.w800,
+                        color: titleColor,
+                        letterSpacing: -0.8,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: scheme.surface,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: scheme.primary.withValues(alpha: 0.08),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.bolt_rounded, size: 16, color: scheme.primary),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'Receipts · OCR · PDF',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: subtitleColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+
+                final brand = isWide
+                    ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    tile,
+                    const SizedBox(width: 36),
+                    Flexible(child: titleBlock),
+                  ],
+                )
+                    : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    tile,
+                    const SizedBox(height: 28),
+                    titleBlock,
+                  ],
+                );
+
+                final loader = Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: scheme.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: scheme.primary.withValues(alpha: 0.08),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Receipts · OCR · PDF',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withValues(alpha: 0.88),
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: scheme.primary),
+                );
+
+                return SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 48),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight - 64),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1000),
+                        child: FadeTransition(
+                          opacity: _fade,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              brand,
+                              const SizedBox(height: 56),
+                              loader,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                const Spacer(flex: 3),
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-                ),
-                const SizedBox(height: 48),
-              ],
+                );
+              },
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlowBlob extends StatelessWidget {
+  const _GlowBlob({required this.diameter, required this.color, required this.isDark});
+
+  final double diameter;
+  final Color color;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: diameter,
+      height: diameter,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withValues(alpha: isDark ? 0.18 : 0.28),
+            color.withValues(alpha: 0),
+          ],
         ),
       ),
     );

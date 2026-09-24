@@ -76,30 +76,17 @@ class _SettingsProfileHeaderState extends State<SettingsProfileHeader> {
     final avatarLetter = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'B';
     final subtitle = user?.email ?? (provider.businessEmail.isNotEmpty ? provider.businessEmail : null);
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
+    return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  backgroundImage: user?.photoURL != null ? NetworkImage(user!.photoURL!) : null,
-                  child: user?.photoURL == null
-                      ? Text(
-                          avatarLetter,
-                          style: TextStyle(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 22,
-                          ),
-                        )
-                      : null,
+                _ProfileAvatar(
+                  photoUrl: user?.photoURL,
+                  letter: avatarLetter,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -167,14 +154,11 @@ class _SettingsProfileHeaderState extends State<SettingsProfileHeader> {
               controller: _nameController,
               focusNode: _nameFocus,
               textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               decoration: InputDecoration(
-                isDense: true,
                 hintText: strings.businessNameHint,
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                prefixIcon: const Icon(Icons.storefront_outlined),
                 suffixIcon: IconButton(
                   tooltip: strings.save,
                   icon: const Icon(Icons.check_rounded),
@@ -190,17 +174,62 @@ class _SettingsProfileHeaderState extends State<SettingsProfileHeader> {
               style: theme.textTheme.bodySmall?.copyWith(color: muted, fontStyle: FontStyle.italic),
             ),
             const Divider(height: 24),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.storefront_outlined, color: theme.colorScheme.primary),
-              title: Text(strings.manageBusiness, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(strings.editProfileDetails, style: theme.textTheme.bodySmall?.copyWith(color: muted)),
-              trailing: Icon(Icons.chevron_right_rounded, color: muted),
+            InkWell(
               onTap: () => runWithInterstitial(context, () {
                 Navigator.push(context, appPageRoute(const EditBusinessScreen()));
               }),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, color: theme.colorScheme.primary, size: 22),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(strings.manageBusiness, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          Text(
+                            strings.editProfileDetails,
+                            style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, size: 22, color: muted),
+                  ],
+                ),
+              ),
             ),
           ],
+        ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({required this.photoUrl, required this.letter});
+
+  final String? photoUrl;
+  final String letter;
+
+  @override
+  Widget build(BuildContext context) {
+    if (photoUrl != null) {
+      return CircleAvatar(
+        radius: 30,
+        backgroundImage: NetworkImage(photoUrl!),
+      );
+    }
+    return CircleAvatar(
+      radius: 28,
+      backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+      child: Text(
+        letter,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.w600,
+          fontSize: 22,
         ),
       ),
     );

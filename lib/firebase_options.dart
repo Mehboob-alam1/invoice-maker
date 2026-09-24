@@ -51,18 +51,19 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAW_ElKsqwbYmWMwsadCB6-Ov5JdmgP-7c',
-    appId: '1:668634441558:android:5da2d3bb103dd86b59d8f7',
+    appId: '1:668634441558:android:6f461dc7239f507959d8f7',
     messagingSenderId: '668634441558',
     projectId: 'aiinvoicemaker-3a0af',
     storageBucket: 'aiinvoicemaker-3a0af.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyB8CkSeXnQmVE0ATeh5_l516VikbDQaZ94',
-    appId: '1:668634441558:ios:5f4f990cbf921d8059d8f7',
+    appId: '1:668634441558:ios:f39841e51e14ce6b59d8f7',
     messagingSenderId: '668634441558',
     projectId: 'aiinvoicemaker-3a0af',
     storageBucket: 'aiinvoicemaker-3a0af.firebasestorage.app',
+    androidClientId: '668634441558-52c7rbu6ul7ohpgdptjnvslafj6gefcs.apps.googleusercontent.com',
+    iosClientId: '668634441558-6h68dgai9ggkatekj6m6cihe3lqhi6ed.apps.googleusercontent.com',
     iosBundleId: 'com.invoice.maker.estimate.billing.ocr.appomatrix',
   );
 }

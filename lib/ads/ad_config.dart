@@ -11,9 +11,8 @@ class AdConfig {
   static const androidAppId = 'ca-app-pub-3940256099942544~3347511713';
   static const iosAppId = 'ca-app-pub-3940256099942544~1458002511';
 
-  /// Set to your hosted JSON (Firebase Remote Config export, CDN, etc.).
-  /// Keys: ad_native_android, ad_native_ios, ad_interstitial_android, ad_interstitial_ios,
-  /// ad_app_open_android, ad_app_open_ios
+  /// Optional HTTP override (CDN). Primary source is Firebase Remote Config.
+  /// Same keys as [firebase/remote_config_values.json].
   static const String? remoteAdConfigUrl = null;
 
   /// Google test unit IDs (defaults until remote config loads).

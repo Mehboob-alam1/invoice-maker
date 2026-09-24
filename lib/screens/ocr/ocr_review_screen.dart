@@ -1,4 +1,12 @@
+// New packages needed:
+//   google_fonts: ^6.2.1   (add to pubspec.yaml)
+// New imports needed:
+//   import 'package:google_fonts/google_fonts.dart';
+//   import '../../core/theme/blue_theme.dart';
+
+import 'package:ai_invoice_maker_receipt_app/widgets/blue_screen.dart' show BlueGradientButton, buildBlueTheme, BlueColors;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -223,19 +231,35 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => ListView(
-          controller: controller,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          children: [
-            Text(strings.previewInvoice, style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 12),
-            InvoiceDocumentView(invoice: _previewInvoice(client), provider: provider, strings: strings),
-          ],
+      builder: (ctx) => Theme(
+        data: buildBlueTheme(Theme.of(ctx)),
+        child: Builder(
+          builder: (ctx) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.85,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              builder: (_, controller) => ListView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                children: [
+                  Text(
+                    strings.previewInvoice,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 19,
+                      letterSpacing: -0.4,
+                      color: isDark ? Colors.white : BlueColors.navy,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InvoiceDocumentView(invoice: _previewInvoice(client), provider: provider, strings: strings),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -243,205 +267,299 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = context.l10n;
-    final locale = context.watch<InvoiceProvider>().languageCode;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(strings.reviewScan),
-        actions: [
-          TextButton(
-            onPressed: () => runWithInterstitial(context, _showPreview),
-            child: Text(strings.previewInvoice),
-          ),
-        ],
-      ),
-      body: AppPageShell(
-        child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: scannedImagePreview(widget.parsed.imagePath),
-          ),
-          const SizedBox(height: 16),
-          AppSectionCard(
-            title: strings.billTo,
-            icon: Icons.person_outline_rounded,
-            child: Column(
-              children: [
-                TextField(
-                  controller: _clientController,
-                  decoration: InputDecoration(labelText: strings.clientName, prefixIcon: const Icon(Icons.person_rounded)),
+    return Theme(
+      data: buildBlueTheme(Theme.of(context)),
+      child: Builder(
+        builder: (context) {
+          final strings = context.l10n;
+          final locale = context.watch<InvoiceProvider>().languageCode;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final scheme = Theme.of(context).colorScheme;
+
+          return Scaffold(
+            extendBodyBehindAppBar: true,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              title: Text(
+                strings.reviewScan,
+                style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 19,
+                  letterSpacing: -0.4,
+                  color: isDark ? Colors.white : BlueColors.navy,
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _addressController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: InputDecoration(labelText: strings.address, prefixIcon: const Icon(Icons.location_on_outlined)),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _taxIdController,
-                  decoration: InputDecoration(labelText: strings.taxId, hintText: strings.taxIdHint),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(labelText: strings.email, prefixIcon: const Icon(Icons.email_outlined)),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(labelText: strings.phoneNumber, prefixIcon: const Icon(Icons.phone_outlined)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          AppSectionCard(
-            title: strings.invoice,
-            icon: Icons.receipt_long_outlined,
-            child: Column(
-              children: [
-                TextField(
-                  controller: _invoiceNumberController,
-                  decoration: InputDecoration(labelText: strings.invoiceNumber, prefixIcon: const Icon(Icons.tag)),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _pickDate(due: false),
-                        icon: const Icon(Icons.event),
-                        label: Text('${strings.issueDate}\n${DateFormat.yMMMd(locale).format(_issueDate)}', textAlign: TextAlign.center),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _pickDate(due: true),
-                        icon: const Icon(Icons.event_available),
-                        label: Text(
-                          _dueDate == null
-                              ? strings.dueDate
-                              : '${strings.dueDate}\n${DateFormat.yMMMd(locale).format(_dueDate!)}',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _poController,
-                  decoration: InputDecoration(labelText: strings.poNumber),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _paymentTermsController,
-                  decoration: InputDecoration(labelText: strings.paymentTerms, hintText: strings.paymentTermsHint),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _taxRateController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: strings.taxRate, suffixText: '%'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          TemplatePicker(
-            selected: _template,
-            onChanged: (v) => setState(() => _template = v),
-            buildPreviewInvoice: () => _previewInvoice(_previewClient(context.l10n)),
-          ),
-          AppSectionCard(
-            title: strings.items,
-            icon: Icons.list_alt_rounded,
-            trailing: DropdownButton<String>(
-              value: _currency,
-              underline: const SizedBox.shrink(),
-              items: CurrencyFormat.supportedCodes
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                  .toList(),
-              onChanged: (v) => setState(() => _currency = v ?? 'USD'),
-            ),
-            child: Column(
-              children: [
-          ..._items.asMap().entries.map((entry) {
-            final item = entry.value;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                title: Text(item.description, style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text(
-                  [
-                    '${item.quantity} × ${CurrencyFormat.format(_currency, item.unitCost)}',
-                    if (item.notes?.isNotEmpty == true) item.notes!,
-                  ].join('\n'),
-                ),
-                trailing: Text(CurrencyFormat.format(_currency, item.total), style: const TextStyle(fontWeight: FontWeight.w800)),
-                onTap: () => _editItem(entry.key),
               ),
-            );
-          }),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Column(
-                    children: [
-                      _totalRow(strings.subtotal, _subtotal),
-                      if (_taxRate > 0) _totalRow('${strings.tax} ($_taxRate%)', _subtotal * _taxRate / 100),
-                      const Divider(),
-                      _totalRow(strings.grandTotal, _grandTotal, bold: true),
-                    ],
+              actions: [
+                TextButton(
+                  onPressed: () => runWithInterstitial(context, _showPreview),
+                  style: TextButton.styleFrom(foregroundColor: BlueColors.bright),
+                  child: Text(
+                    strings.previewInvoice,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
+                const SizedBox(width: 4),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          AppSectionCard(
-            title: strings.notesOptional,
-            icon: Icons.notes_rounded,
-            child: TextField(
-              controller: _notesController,
-              minLines: 2,
-              maxLines: 4,
-              decoration: InputDecoration(hintText: strings.notesHint),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => setState(() => _showRaw = !_showRaw),
-            child: Text(_showRaw ? strings.hideScannedText : strings.showScannedText),
-          ),
-          if (_showRaw)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(widget.parsed.rawText.isEmpty ? strings.noExtraText : widget.parsed.rawText),
+            body: AppPageShell(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final horizontalPadding = width < 360 ? 12.0 : 20.0;
+                  final maxContentWidth = width >= 900 ? 1000.0 : width;
+                  final bottomSafe = MediaQuery.paddingOf(context).bottom;
+
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxContentWidth),
+                      child: ListView(
+                        padding: EdgeInsets.fromLTRB(
+                          horizontalPadding,
+                          8,
+                          horizontalPadding,
+                          24 + bottomSafe,
+                        ),
+                        children: [
+                          scannedImagePreview(widget.parsed.imagePath),
+                          const SizedBox(height: 16),
+                          AppSectionCard(
+                            title: strings.billTo,
+                            icon: Icons.person_outline_rounded,
+                            child: Column(
+                              children: [
+                                TextField(
+                                  controller: _clientController,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: strings.clientName,
+                                    prefixIcon: const Icon(Icons.person_rounded),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _addressController,
+                                  minLines: 2,
+                                  maxLines: 4,
+                                  textInputAction: TextInputAction.next,
+                                  keyboardType: TextInputType.streetAddress,
+                                  decoration: InputDecoration(
+                                    labelText: strings.address,
+                                    prefixIcon: const Icon(Icons.location_on_outlined),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _taxIdController,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: strings.taxId,
+                                    hintText: strings.taxIdHint,
+                                    prefixIcon: const Icon(Icons.badge_outlined),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: strings.email,
+                                    prefixIcon: const Icon(Icons.email_outlined),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  textInputAction: TextInputAction.done,
+                                  decoration: InputDecoration(
+                                    labelText: strings.phoneNumber,
+                                    prefixIcon: const Icon(Icons.phone_outlined),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          AppSectionCard(
+                            title: strings.invoice,
+                            icon: Icons.receipt_long_outlined,
+                            child: Column(
+                              children: [
+                                TextField(
+                                  controller: _invoiceNumberController,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: strings.invoiceNumber,
+                                    prefixIcon: const Icon(Icons.tag),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                LayoutBuilder(
+                                  builder: (context, dateConstraints) {
+                                    final stacked = dateConstraints.maxWidth < 340;
+                                    final issueBtn = _DateChipButton(
+                                      icon: Icons.event,
+                                      label: strings.issueDate,
+                                      value: DateFormat.yMMMd(locale).format(_issueDate),
+                                      onTap: () => _pickDate(due: false),
+                                    );
+                                    final dueBtn = _DateChipButton(
+                                      icon: Icons.event_available,
+                                      label: strings.dueDate,
+                                      value: _dueDate == null ? null : DateFormat.yMMMd(locale).format(_dueDate!),
+                                      onTap: () => _pickDate(due: true),
+                                    );
+                                    if (stacked) {
+                                      return Column(
+                                        children: [
+                                          issueBtn,
+                                          const SizedBox(height: 10),
+                                          dueBtn,
+                                        ],
+                                      );
+                                    }
+                                    return Row(
+                                      children: [
+                                        Expanded(child: issueBtn),
+                                        const SizedBox(width: 10),
+                                        Expanded(child: dueBtn),
+                                      ],
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _poController,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: strings.poNumber,
+                                    prefixIcon: const Icon(Icons.numbers_rounded),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _paymentTermsController,
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: strings.paymentTerms,
+                                    hintText: strings.paymentTermsHint,
+                                    prefixIcon: const Icon(Icons.schedule_rounded),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: _taxRateController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  textInputAction: TextInputAction.done,
+                                  decoration: InputDecoration(
+                                    labelText: strings.taxRate,
+                                    prefixIcon: const Icon(Icons.percent_rounded),
+                                    suffixText: '%',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TemplatePicker(
+                            selected: _template,
+                            onChanged: (v) => setState(() => _template = v),
+                            buildPreviewInvoice: () => _previewInvoice(_previewClient(context.l10n)),
+                          ),
+                          const SizedBox(height: 16),
+                          AppSectionCard(
+                            title: strings.items,
+                            icon: Icons.list_alt_rounded,
+                            trailing: _CurrencyPill(
+                              currency: _currency,
+                              onChanged: (v) => setState(() => _currency = v ?? 'USD'),
+                            ),
+                            child: Column(
+                              children: [
+                                ..._items.asMap().entries.map((entry) {
+                                  final item = entry.value;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: _OcrItemRow(
+                                      item: item,
+                                      currency: _currency,
+                                      onTap: () => _editItem(entry.key),
+                                    ),
+                                  );
+                                }),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Column(
+                                    children: [
+                                      _totalRow(strings.subtotal, _subtotal),
+                                      if (_taxRate > 0)
+                                        _totalRow('${strings.tax} ($_taxRate%)', _subtotal * _taxRate / 100),
+                                      Divider(color: scheme.primary.withValues(alpha: 0.12)),
+                                      _totalRow(strings.grandTotal, _grandTotal, bold: true),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          AppSectionCard(
+                            title: strings.notesOptional,
+                            icon: Icons.notes_rounded,
+                            child: TextField(
+                              controller: _notesController,
+                              minLines: 2,
+                              maxLines: 4,
+                              textInputAction: TextInputAction.newline,
+                              decoration: InputDecoration(hintText: strings.notesHint),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: () => setState(() => _showRaw = !_showRaw),
+                              style: TextButton.styleFrom(foregroundColor: BlueColors.bright),
+                              icon: Icon(_showRaw ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 18),
+                              label: Text(
+                                _showRaw ? strings.hideScannedText : strings.showScannedText,
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                          if (_showRaw)
+                            Container(
+                              margin: const EdgeInsets.only(top: 8),
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: scheme.primary.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
+                              ),
+                              child: Text(
+                                widget.parsed.rawText.isEmpty ? strings.noExtraText : widget.parsed.rawText,
+                                style: TextStyle(color: scheme.onSurfaceVariant, height: 1.4),
+                              ),
+                            ),
+                          const SizedBox(height: 20),
+                          BlueGradientButton(
+                            label: _creating ? strings.creatingInvoice : strings.createInvoice,
+                            icon: Icons.check_rounded,
+                            loading: _creating,
+                            onPressed: _creating ? null : _createInvoice,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          const SizedBox(height: 20),
-          FilledButton.icon(
-            onPressed: _creating ? null : _createInvoice,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-            icon: _creating
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.check_rounded),
-            label: Text(_creating ? strings.creatingInvoice : strings.createInvoice),
-          ),
-        ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -457,6 +575,206 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
             style: TextStyle(fontWeight: bold ? FontWeight.w800 : FontWeight.w600),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Date picker chip button (replaces OutlinedButton.icon for issue/due date).
+// ---------------------------------------------------------------------------
+
+class _DateChipButton extends StatelessWidget {
+  const _DateChipButton({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: scheme.primary.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: scheme.primary.withValues(alpha: 0.15)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: BlueColors.bright),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(fontSize: 11.5, color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      value ?? '—',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                        color: isDark ? Colors.white : BlueColors.navy,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Currency pill dropdown (trailing widget for the Items section card).
+// ---------------------------------------------------------------------------
+
+class _CurrencyPill extends StatelessWidget {
+  const _CurrencyPill({required this.currency, required this.onChanged});
+
+  final String currency;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: currency,
+          isDense: true,
+          icon: Icon(Icons.expand_more_rounded, size: 18, color: scheme.primary),
+          style: GoogleFonts.spaceGrotesk(
+            fontWeight: FontWeight.w700,
+            fontSize: 13.5,
+            color: scheme.primary,
+          ),
+          items: CurrencyFormat.supportedCodes
+              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Styled invoice item row.
+// ---------------------------------------------------------------------------
+
+class _OcrItemRow extends StatelessWidget {
+  const _OcrItemRow({required this.item, required this.currency, required this.onTap});
+
+  final InvoiceItem item;
+  final String currency;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final subtitle = [
+      '${item.quantity} × ${CurrencyFormat.format(currency, item.unitCost)}',
+      if (item.notes?.isNotEmpty == true) item.notes!,
+    ].join(' · ');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
+            boxShadow: [
+              BoxShadow(
+                color: BlueColors.bright.withValues(alpha: isDark ? 0.0 : 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [BlueColors.bright, BlueColors.sky],
+                  ),
+                ),
+                child: const Icon(Icons.sell_outlined, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.description,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
+                        letterSpacing: -0.1,
+                        color: isDark ? Colors.white : BlueColors.navy,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                CurrencyFormat.format(currency, item.total),
+                style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

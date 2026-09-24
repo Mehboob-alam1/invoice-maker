@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants/subscription_products.dart';
 import '../models/subscription_tier.dart';
@@ -26,6 +27,12 @@ class SubscriptionService extends ChangeNotifier {
   final Map<String, ProductDetails> _products = {};
 
   String? lastGrantedProductId;
+
+  bool _entitlementCheckOpen = false;
+  bool _sawPaidProductThisCheck = false;
+
+  /// Set when Play restore finds no active subscription (prompt renew on home).
+  static const pendingRenewPromptKey = 'pending_subscription_renew_prompt';
 
   SubscriptionTier get currentTier => _invoiceProvider.subscriptionTier;
 
@@ -54,7 +61,33 @@ class SubscriptionService extends ChangeNotifier {
     );
 
     await loadProducts();
-    await restorePurchases(silent: true);
+    await refreshEntitlementsFromStore(silent: true);
+  }
+
+  /// Play Store is the source of truth. After restore, downgrade if no active SKU.
+  Future<void> refreshEntitlementsFromStore({bool silent = false}) async {
+    if (!storeAvailable) return;
+    _entitlementCheckOpen = true;
+    _sawPaidProductThisCheck = false;
+    if (!silent) {
+      purchasePending = true;
+      notifyListeners();
+    }
+    try {
+      await _iap.restorePurchases();
+      await Future<void>.delayed(const Duration(milliseconds: 2800));
+      if (_entitlementCheckOpen && !_sawPaidProductThisCheck) {
+        await _revokeToFreeIfNeeded();
+      }
+    } catch (e) {
+      lastError = e.toString();
+    } finally {
+      _entitlementCheckOpen = false;
+      if (!silent) {
+        purchasePending = false;
+        notifyListeners();
+      }
+    }
   }
 
   Future<void> disposeService() async {
@@ -119,28 +152,14 @@ class SubscriptionService extends ChangeNotifier {
     if (!storeAvailable) {
       return silent ? '' : 'Store unavailable';
     }
-    if (!silent) {
-      purchasePending = true;
-      notifyListeners();
-    }
-    try {
-      await _iap.restorePurchases();
-      if (!silent) {
-        await Future<void>.delayed(const Duration(milliseconds: 1500));
-      }
-      return currentTier != SubscriptionTier.free ? 'Subscription restored' : 'No active subscription found';
-    } catch (e) {
-      lastError = e.toString();
-      return 'Restore failed';
-    } finally {
-      if (!silent) {
-        purchasePending = false;
-        notifyListeners();
-      }
-    }
+    await refreshEntitlementsFromStore(silent: silent);
+    if (lastError != null) return 'Restore failed';
+    return currentTier != SubscriptionTier.free ? 'Subscription restored' : 'No active subscription found';
   }
 
   void _onPurchaseUpdates(List<PurchaseDetails> purchases) {
+    SubscriptionTier bestFromBatch = SubscriptionTier.free;
+
     for (final purchase in purchases) {
       switch (purchase.status) {
         case PurchaseStatus.pending:
@@ -156,6 +175,12 @@ class SubscriptionService extends ChangeNotifier {
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
           if (SubscriptionProducts.allPaidProductIds.contains(purchase.productID)) {
+            _sawPaidProductThisCheck = true;
+            _entitlementCheckOpen = false;
+            final tier = SubscriptionProducts.tierForProductId(purchase.productID);
+            if (tier != null && tier.index > bestFromBatch.index) {
+              bestFromBatch = tier;
+            }
             _grantPurchase(purchase);
           }
           purchasePending = false;
@@ -167,7 +192,28 @@ class SubscriptionService extends ChangeNotifier {
         _iap.completePurchase(purchase);
       }
     }
+
+    if (bestFromBatch != SubscriptionTier.free) {
+      _invoiceProvider.setSubscriptionTier(bestFromBatch);
+    }
     notifyListeners();
+  }
+
+  Future<void> _revokeToFreeIfNeeded() async {
+    if (_invoiceProvider.subscriptionTier == SubscriptionTier.free) return;
+    _invoiceProvider.setSubscriptionTier(SubscriptionTier.free);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await UserFirestoreService.instance.recordSubscription(
+        uid: uid,
+        tier: SubscriptionTier.free,
+        productId: 'none',
+      );
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(pendingRenewPromptKey, true);
+    } catch (_) {}
   }
 
   void _grantPurchase(PurchaseDetails purchase) {

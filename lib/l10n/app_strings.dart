@@ -217,6 +217,14 @@ class AppStrings {
   String get rateUs => t('rateUs');
   String get rateUsTitle => t('rateUsTitle');
   String get rateUsBody => t('rateUsBody');
+  String get rateUsCombinedSubtitle => t('rateUsCombinedSubtitle');
+  String get feedbackOptionalLabel => t('feedbackOptionalLabel');
+  String get submitRating => t('submitRating');
+  String get notNow => t('notNow');
+  String lastUpdated(String date) => t('lastUpdated', {'date': date});
+  String get subscriptionExpiredTitle => t('subscriptionExpiredTitle');
+  String get subscriptionExpiredBody => t('subscriptionExpiredBody');
+  String get playStoreSubscriptionHint => t('playStoreSubscriptionHint');
   String get feedback => t('feedback');
   String get feedbackHint => t('feedbackHint');
   String get thanksFeedback => t('thanksFeedback');

@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:668634441558:android:5da2d3bb103dd86b59d8f7",
+        "mobilesdk_app_id": "1:668634441558:android:6f461dc7239f507959d8f7",
         "android_client_info": {
           "package_name": "com.invoice.maker.estimate.billing.ocr.appomatrix"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "668634441558-45nkk47ik4of5g5rb8t9g33n4aq0e248.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAW_ElKsqwbYmWMwsadCB6-Ov5JdmgP-7c"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "668634441558-45nkk47ik4of5g5rb8t9g33n4aq0e248.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "668634441558-s9qr16t3lrcl7870ooec8c07tolmmsad.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.aiInvoiceMakerReceiptApp"
+              }
+            }
+          ]
         }
       }
     }

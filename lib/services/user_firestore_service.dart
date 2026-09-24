@@ -124,6 +124,17 @@ class UserFirestoreService {
     );
   }
 
+  Future<void> saveFcmToken({required String uid, required String token}) async {
+    final ref = FirebaseFirestore.instance.collection(_users).doc(uid);
+    await ref.set(
+      {
+        'fcmToken': token,
+        'fcmUpdatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   Future<void> recordDailyInvoiceUsage({
     required String uid,
     required String dayKey,

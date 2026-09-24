@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../core/theme/blue_theme.dart';
 import '../core/utils/currency_format.dart';
 import '../l10n/app_strings.dart';
 import '../models/invoice_item.dart';
@@ -14,10 +16,13 @@ Future<InvoiceItem?> showItemFormSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (ctx) => ItemFormSheet(
-      item: item,
-      currencyCode: currencyCode,
-      onCurrencyChanged: onCurrencyChanged,
+    builder: (ctx) => Theme(
+      data: buildBlueTheme(Theme.of(ctx)),
+      child: ItemFormSheet(
+        item: item,
+        currencyCode: currencyCode,
+        onCurrencyChanged: onCurrencyChanged,
+      ),
     ),
   );
 }
@@ -111,7 +116,14 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
             children: [
               Text(
                 isEdit ? strings.editItem : strings.newItem,
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.35,
+                  color: theme.brightness == Brightness.dark
+                      ? theme.colorScheme.onSurface
+                      : BlueColors.navy,
+                ),
               ),
               if (_showCurrency) ...[
                 const SizedBox(height: 14),
@@ -206,9 +218,10 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
                 },
               ),
               const SizedBox(height: 22),
-              ElevatedButton(
+              BlueGradientButton(
+                label: strings.save,
+                icon: Icons.check_rounded,
                 onPressed: _save,
-                child: Text(strings.save),
               ),
             ],
           ),

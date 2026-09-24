@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -10,18 +11,18 @@ import 'firebase_options.dart';
 import 'providers/invoice_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/auth_service.dart';
+import 'services/push_notification_service.dart';
 import 'services/subscription_service.dart';
 import 'services/user_profile_sync.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   if (AdConfig.isSupported) {
     await MobileAds.instance.initialize();
-    await Future.wait([
-      AdService.instance.initialize(),
-      AdRemoteConfig.instance.load(),
-    ]);
+    await AdRemoteConfig.instance.load();
+    await AdService.instance.initialize();
   }
   final invoiceProvider = InvoiceProvider();
   invoiceProvider.onCloudSyncRequested = () => UserProfileSync.pushFromProvider(invoiceProvider);
@@ -37,6 +38,7 @@ Future<void> main() async {
   ]);
   await subscriptionService.initialize();
   await authService.initialize();
+  await PushNotificationService.instance.initialize();
   runApp(InvoiceApp(
     invoiceProvider: invoiceProvider,
     themeProvider: themeProvider,

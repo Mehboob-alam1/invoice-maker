@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'core/constants/app_config.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/app_languages.dart';
 import 'providers/invoice_provider.dart';
@@ -38,7 +39,7 @@ class InvoiceApp extends StatelessWidget {
       child: Consumer2<ThemeProvider, InvoiceProvider>(
         builder: (context, theme, invoices, _) {
           return MaterialApp(
-            title: 'Invoice Maker',
+            title: AppConfig.appDisplayName,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,

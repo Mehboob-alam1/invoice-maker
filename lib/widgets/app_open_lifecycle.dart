@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../ads/ad_remote_config.dart';
 import '../ads/ad_service.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
+import '../services/subscription_service.dart';
 
 /// Shows app-open ads when returning to foreground (tier-aware).
 class AppOpenLifecycle extends StatefulWidget {
@@ -34,7 +38,11 @@ class _AppOpenLifecycleState extends State<AppOpenLifecycle> with WidgetsBinding
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _coldStartHandled) {
+      unawaited(AdRemoteConfig.instance.refresh());
       AdService.instance.showAppOpenIfAvailable(tier: _tier);
+      if (mounted) {
+        context.read<SubscriptionService>().refreshEntitlementsFromStore(silent: true);
+      }
     }
   }
 
