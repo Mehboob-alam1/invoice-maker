@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:668634441558:android:5da2d3bb103dd86b59d8f7",
         "android_client_info": {
-          "package_name": "com.example.ai_invoice_maker_receipt_app"
+          "package_name": "com.invoice.maker.estimate.billing.ocr.appomatrix"
         }
       },
       "oauth_client": [],

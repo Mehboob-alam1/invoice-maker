@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '668634441558',
     projectId: 'aiinvoicemaker-3a0af',
     storageBucket: 'aiinvoicemaker-3a0af.firebasestorage.app',
-    iosBundleId: 'com.example.aiInvoiceMakerReceiptApp',
+    iosBundleId: 'com.invoice.maker.estimate.billing.ocr.appomatrix',
   );
 }

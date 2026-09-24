@@ -1,4 +1,4 @@
-package com.example.ai_invoice_maker_receipt_app
+package com.invoice.maker.estimate.billing.ocr.appomatrix
 
 import io.flutter.embedding.android.FlutterActivity
 
