@@ -79,7 +79,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
     final clientName =
     _clientController.text.trim().isEmpty ? strings.newClientFallback : _clientController.text.trim();
     final client = provider.findOrCreateClient(name: clientName);
-    final invoice = provider.createInvoice(
+    final invoice = await provider.createInvoice(
       client: client,
       items: _itemsFromDescription(_descriptionController.text, strings.serviceThisMonth),
     );

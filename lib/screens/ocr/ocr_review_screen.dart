@@ -200,9 +200,9 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
       address: _emptyToNull(_addressController.text),
       taxId: _emptyToNull(_taxIdController.text),
     );
-    final invoice = provider.createInvoice(
+    final invoice = await provider.createInvoice(
       client: client,
-      items: _items,
+      items: List<InvoiceItem>.from(_items),
       currency: _currency,
       number: _emptyToNull(_invoiceNumberController.text),
       date: _issueDate,

@@ -66,7 +66,7 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     _invoiceNumber = TextEditingController();
     _editExpanded = widget.justCreated;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadFromProvider();
+      _syncDraftFromProvider();
       if (widget.justCreated) _schedulePostCreateExtras();
     });
   }
@@ -79,8 +79,15 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     await showInterstitialWithLoadingIfEligible(context);
   }
 
-  void _loadFromProvider() {
-    final invoice = context.read<InvoiceProvider>().invoiceById(widget.invoiceId);
+  Invoice? _invoiceFromProvider() {
+    return context.read<InvoiceProvider>().invoiceById(widget.invoiceId);
+  }
+
+  Invoice? _workingInvoice() => _draft ?? _invoiceFromProvider();
+
+  void _syncDraftFromProvider() {
+    if (_draft != null) return;
+    final invoice = _invoiceFromProvider();
     if (invoice == null || !mounted) return;
     setState(() {
       _draft = invoice;
@@ -90,6 +97,15 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
       _taxRate.text = invoice.taxRate > 0 ? invoice.taxRate.toString() : '';
       _invoiceNumber.text = invoice.number;
     });
+  }
+
+  void _commitDraft() {
+    final base = _workingInvoice();
+    if (base == null) return;
+    final updated = _buildDraftInvoice(base);
+    context.read<InvoiceProvider>().updateInvoice(updated);
+    if (!mounted) return;
+    setState(() => _draft = updated);
   }
 
   @override
@@ -120,14 +136,15 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
   }
 
   Future<bool> _save({bool quiet = false}) async {
-    if (_draft == null) return false;
-    final template = _draft!.template;
+    final base = _workingInvoice();
+    if (base == null) return false;
+    final template = base.template;
     final tier = context.read<InvoiceProvider>().subscriptionTier;
     if (!InvoiceTemplateInfo.canUseTemplate(template, tier)) {
       final ok = await confirmProTemplateUse(context, template);
       if (!ok || !mounted) return false;
     }
-    final updated = _buildDraftInvoice();
+    final updated = _buildDraftInvoice(base);
     context.read<InvoiceProvider>().updateInvoice(updated);
     setState(() => _draft = updated);
     if (!quiet && mounted) {
@@ -172,10 +189,13 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
   }
 
   Future<void> _exportPdf({required bool share}) async {
-    if (_draft == null) return;
+    _syncDraftFromProvider();
+    final base = _workingInvoice();
+    if (base == null) return;
+    final snapshot = _buildDraftInvoice(base);
     await runMajorActionAsync(
       context,
-          () => InvoicePdfExport.export(context, _buildDraftInvoice(), share: share),
+      () => InvoicePdfExport.export(context, snapshot, share: share),
     );
   }
 
@@ -193,36 +213,45 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     );
     context.read<InvoiceProvider>().updateClient(updatedClient);
     setState(() => _draft = _draft!.copyWith(client: updatedClient));
+    _commitDraft();
   }
 
   Future<void> _editItem(int index) async {
-    if (_draft == null) return;
+    _syncDraftFromProvider();
+    final draft = _draft;
+    if (draft == null) return;
     final item = await showItemFormSheet(
       context,
-      item: _draft!.items[index],
-      currencyCode: _draft!.currency,
+      item: draft.items[index],
+      currencyCode: draft.currency,
       onCurrencyChanged: (c) => setState(() => _draft = _draft!.copyWith(currency: c)),
     );
-    if (item == null || !mounted) return;
+    if (item == null || !mounted || _draft == null) return;
     final items = List<InvoiceItem>.of(_draft!.items);
     items[index] = item;
     setState(() => _draft = _draft!.copyWith(items: items));
+    _commitDraft();
   }
 
   Future<void> _addItem() async {
+    _syncDraftFromProvider();
+    final draft = _draft;
+    if (draft == null) return;
     final item = await showItemFormSheet(
       context,
-      currencyCode: _draft!.currency,
+      currencyCode: draft.currency,
       onCurrencyChanged: (c) => setState(() => _draft = _draft!.copyWith(currency: c)),
     );
     if (item == null || !mounted || _draft == null) return;
     setState(() => _draft = _draft!.copyWith(items: [..._draft!.items, item]));
+    _commitDraft();
   }
 
   void _removeItem(int index) {
     if (_draft == null || _draft!.items.length <= 1) return;
     final items = List<InvoiceItem>.of(_draft!.items)..removeAt(index);
     setState(() => _draft = _draft!.copyWith(items: items));
+    _commitDraft();
   }
 
   Future<void> _pickDueDate() async {
@@ -235,6 +264,7 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     );
     if (picked != null && mounted) {
       setState(() => _draft = _draft!.copyWith(dueDate: picked));
+      _commitDraft();
     }
   }
 
@@ -279,9 +309,9 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     final strings = context.l10n;
     final synced = provider.invoiceById(widget.invoiceId);
     if (_draft == null && synced != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadFromProvider());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncDraftFromProvider());
     }
-    final draft = _draft ?? synced;
+    final draft = _workingInvoice();
     final themed = _themed(context);
 
     if (draft == null) {
@@ -645,7 +675,10 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
             if (canCustomize)
               TemplatePicker(
                 selected: draft.template,
-                onChanged: (t) => setState(() => _draft = _draft!.copyWith(templateId: t.name)),
+                onChanged: (t) {
+                  setState(() => _draft = _draft!.copyWith(templateId: t.name));
+                  _commitDraft();
+                },
                 buildPreviewInvoice: () => _buildDraftInvoice(),
               )
             else

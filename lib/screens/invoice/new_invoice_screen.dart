@@ -175,15 +175,14 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
     if (!mounted || result == null) return;
     final provider = context.read<InvoiceProvider>();
     if (existing == null) {
-      setState(() {
-        _client = provider.addClient(
-          name: result.name,
-          phone: result.phone,
-          email: result.email,
-          address: result.address,
-          taxId: result.taxId,
-        );
-      });
+      final created = provider.addClient(
+        name: result.name,
+        phone: result.phone,
+        email: result.email,
+        address: result.address,
+        taxId: result.taxId,
+      );
+      setState(() => _client = created);
     } else {
       final updated = existing.copyWith(
         name: result.name,
@@ -322,7 +321,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
       onCurrencyChanged: (c) => setState(() => _currency = c),
     );
     if (!mounted || result == null) return;
-    setState(() => _items.add(result));
+    setState(() => _items.add(result.copyWith()));
   }
 
   Future<void> _editItem(int index) async {
@@ -381,9 +380,9 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
     }
     setState(() => _saving = true);
     try {
-      final invoice = context.read<InvoiceProvider>().createInvoice(
+      final invoice = await context.read<InvoiceProvider>().createInvoice(
         client: _client!,
-        items: _items,
+        items: List<InvoiceItem>.from(_items),
         currency: _currency,
         dueDate: _dueDate,
         taxRate: _taxRate,

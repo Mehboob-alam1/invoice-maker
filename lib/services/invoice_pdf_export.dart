@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../digital_invoice/digital_invoice_mapper.dart';
+import '../digital_invoice/digital_invoice_model.dart';
 import '../digital_invoice/invoice_gradient_theme.dart';
 import '../digital_invoice/invoice_pdf_service.dart';
 import '../models/invoice.dart';
@@ -52,16 +53,38 @@ class InvoicePdfExport {
           await InvoicePdfService.printOrangeReceiptPdf(digital);
         }
         return;
-      default:
-        break;
+      case InvoiceTemplateId.classic:
+        await _exportLayout(digital, share: share, layout: InvoicePdfLayout.classic, theme: InvoiceThemes.classic);
+        return;
+      case InvoiceTemplateId.modern:
+        await _exportLayout(digital, share: share, layout: InvoicePdfLayout.modern, theme: InvoiceThemes.classic);
+        return;
+      case InvoiceTemplateId.minimal:
+        await _exportLayout(digital, share: share, layout: InvoicePdfLayout.minimal, theme: InvoiceThemes.classic);
+        return;
+      case InvoiceTemplateId.aurora:
+      case InvoiceTemplateId.sunset:
+      case InvoiceTemplateId.ocean:
+      case InvoiceTemplateId.emerald:
+      case InvoiceTemplateId.royal:
+      case InvoiceTemplateId.rose:
+      case InvoiceTemplateId.midnight:
+        final theme = InvoiceThemes.forTemplate(invoice.template);
+        await _exportLayout(digital, share: share, layout: InvoicePdfLayout.digital, theme: theme);
+        return;
     }
-    final theme = InvoiceTemplateInfo.requiresPro(invoice.template)
-        ? InvoiceThemes.forTemplate(invoice.template)
-        : InvoiceThemes.midnight;
+  }
+
+  static Future<void> _exportLayout(
+    DigitalInvoice digital, {
+    required bool share,
+    required InvoicePdfLayout layout,
+    required InvoiceGradientTheme theme,
+  }) async {
     if (share) {
-      await InvoicePdfService.sharePdf(digital, theme: theme);
+      await InvoicePdfService.sharePdf(digital, theme: theme, layout: layout);
     } else {
-      await InvoicePdfService.printDocument(digital, theme: theme);
+      await InvoicePdfService.printDocument(digital, theme: theme, layout: layout);
     }
   }
 }
