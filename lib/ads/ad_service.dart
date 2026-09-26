@@ -20,6 +20,7 @@ class AdService {
   DateTime? _lastInterstitialShown;
 
   Future<bool>? _interstitialLoadFuture;
+  Future<bool>? _appOpenLoadFuture;
 
   static const _minAppOpenInterval = Duration(minutes: 4);
   static const _minAppOpenIntervalPremium = Duration(minutes: 10);
@@ -30,6 +31,30 @@ class AdService {
     await AdRemoteConfig.instance.load();
     preloadInterstitial();
     preloadAppOpen();
+  }
+
+  bool get appOpenReady => _appOpenAd != null;
+
+  /// Waits for startup ad preloads (interstitial + app open) during splash.
+  Future<void> waitForStartupPreloads({
+    required SubscriptionTier tier,
+    Duration timeout = const Duration(seconds: 14),
+  }) async {
+    if (!AdConfig.isSupported || !AdRemoteConfig.instance.adsEnabled) return;
+
+    final tasks = <Future<void>>[];
+    if (tier.showInterstitialAds) {
+      tasks.add(
+        ensureInterstitialLoaded(timeout: timeout).then((_) {}),
+      );
+    }
+    if (tier.showAppOpenAds) {
+      tasks.add(
+        ensureAppOpenLoaded(timeout: timeout).then((_) {}),
+      );
+    }
+    if (tasks.isEmpty) return;
+    await Future.wait(tasks);
   }
 
   bool get isShowingFullScreenAd => _isShowingFullScreenAd;
@@ -169,9 +194,42 @@ class AdService {
     }
   }
 
-  void preloadAppOpen() {
-    if (!AdConfig.isSupported || _appOpenLoading || _appOpenAd != null) return;
+  Future<bool> ensureAppOpenLoaded({Duration timeout = const Duration(seconds: 14)}) async {
+    if (!AdConfig.isSupported) return false;
+    if (_appOpenAd != null) return true;
+
+    _appOpenLoadFuture ??= _loadAppOpenOnce();
+    try {
+      return await _appOpenLoadFuture!.timeout(
+        timeout,
+        onTimeout: () {
+          debugPrint('App open load timed out');
+          return false;
+        },
+      );
+    } catch (e) {
+      debugPrint('App open load error: $e');
+      return false;
+    } finally {
+      if (_appOpenAd == null) {
+        _appOpenLoadFuture = null;
+      }
+    }
+  }
+
+  Future<bool> _loadAppOpenOnce() async {
+    if (_appOpenAd != null) return true;
+    if (_appOpenLoading) {
+      while (_appOpenLoading) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        if (_appOpenAd != null) return true;
+      }
+      if (_appOpenAd != null) return true;
+    }
+
+    final completer = Completer<bool>();
     _appOpenLoading = true;
+
     AppOpenAd.load(
       adUnitId: AdRemoteConfig.instance.appOpenAdUnitId,
       request: const AdRequest(),
@@ -179,13 +237,25 @@ class AdService {
         onAdLoaded: (ad) {
           _appOpenLoading = false;
           _appOpenAd = ad;
+          if (!completer.isCompleted) completer.complete(true);
         },
         onAdFailedToLoad: (error) {
           _appOpenLoading = false;
           debugPrint('App open load failed: $error');
+          if (!completer.isCompleted) completer.complete(false);
         },
       ),
     );
+
+    return completer.future;
+  }
+
+  void preloadAppOpen() {
+    if (!AdConfig.isSupported || _appOpenAd != null || _appOpenLoadFuture != null) return;
+    _appOpenLoadFuture = _loadAppOpenOnce().then((ok) {
+      if (!ok) _appOpenLoadFuture = null;
+      return ok;
+    });
   }
 
   Future<void> showAppOpenIfAvailable({SubscriptionTier tier = SubscriptionTier.free}) async {
