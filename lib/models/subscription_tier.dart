@@ -25,22 +25,31 @@ enum SubscriptionTier {
 
   bool get canCustomizeTemplates => this == SubscriptionTier.pro;
 
-  /// AI invoice generation (Premium & Pro; Free has no access).
-  bool get canUseAiInvoice => this != SubscriptionTier.free;
+  /// Free plan includes this many AI generations per month (~[tokensPerAiCredit] tokens each).
+  static const freeMonthlyAiCredits = 3;
+
+  /// Approximate token cost counted as one AI credit in UI.
+  static const tokensPerAiCredit = 600;
+
+  /// AI invoice generation (all tiers; Free has a small monthly allowance).
+  bool get canUseAiInvoice => monthlyAiTokenLimit > 0;
 
   /// Estimated LLM tokens included per calendar month (`0` = none).
   int get monthlyAiTokenLimit => switch (this) {
-        SubscriptionTier.free => 0,
+        SubscriptionTier.free => freeMonthlyAiCredits * tokensPerAiCredit,
         SubscriptionTier.premium => 40000,
         SubscriptionTier.pro => 150000,
       };
 
   /// Max estimated tokens for a single AI generation request.
   int get maxAiTokensPerRequest => switch (this) {
-        SubscriptionTier.free => 0,
+        SubscriptionTier.free => tokensPerAiCredit,
         SubscriptionTier.premium => 600,
         SubscriptionTier.pro => 2000,
       };
+
+  /// Whole AI credits included per month (for display on Free).
+  int get monthlyAiCredits => (monthlyAiTokenLimit / tokensPerAiCredit).ceil();
 
   /// Rough character cap for the prompt (≈4 chars per token).
   int get maxAiInputCharacters => maxAiTokensPerRequest * 4;

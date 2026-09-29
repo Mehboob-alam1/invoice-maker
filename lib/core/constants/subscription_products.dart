@@ -28,6 +28,14 @@ class SubscriptionProducts {
     legacyProWeekly,
   };
 
+  /// SKUs queried from Google Play / App Store (active products only).
+  static const Set<String> storeProductIds = {
+    premiumMonthly,
+    premiumYearly,
+    proMonthly,
+    proYearly,
+  };
+
   static const Set<String> allPaidProductIds = {
     ...premiumProductIds,
     ...proProductIds,

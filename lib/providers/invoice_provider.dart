@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/client.dart';
 import '../models/invoice.dart';
 import '../models/invoice_item.dart';
+import '../core/remote_config/invoice_limits_remote_config.dart';
 import '../models/subscription_tier.dart';
 
 class InvoiceProvider extends ChangeNotifier {
@@ -229,7 +230,11 @@ class InvoiceProvider extends ChangeNotifier {
     }
   }
 
-  int get dailyInvoiceLimit => subscriptionTier.dailyInvoiceLimit;
+  int get dailyInvoiceLimit =>
+      InvoiceLimitsRemoteConfig.instance.limitForTier(subscriptionTier);
+
+  /// Call after Firebase Remote Config refresh so quota UI picks up new limits.
+  void applyRemoteInvoiceLimits() => notifyListeners();
 
   int get invoicesCreatedToday {
     _normalizeQuotaDay();
@@ -297,8 +302,25 @@ class InvoiceProvider extends ChangeNotifier {
     return inputTokens + 250;
   }
 
+  /// User can open Create with AI (has monthly allowance and tokens left).
+  bool get canOpenCreateWithAi {
+    if (monthlyAiTokenLimit <= 0) return false;
+    return aiTokensRemainingThisMonth > 0;
+  }
+
+  /// AI credits left this month (Free-friendly; ~600 tokens per credit).
+  int get aiCreditsRemaining {
+    final perCredit = SubscriptionTier.tokensPerAiCredit;
+    return (aiTokensRemainingThisMonth / perCredit).ceil().clamp(
+          0,
+          subscriptionTier.monthlyAiCredits,
+        );
+  }
+
+  int get monthlyAiCredits => subscriptionTier.monthlyAiCredits;
+
   bool canAffordAiGeneration(int estimatedTokens) {
-    if (!subscriptionTier.canUseAiInvoice) return false;
+    if (monthlyAiTokenLimit <= 0) return false;
     if (estimatedTokens > maxAiTokensPerRequest) return false;
     _normalizeAiQuotaMonth();
     return _aiTokensUsedThisMonth + estimatedTokens <= monthlyAiTokenLimit;
@@ -405,7 +427,7 @@ class InvoiceProvider extends ChangeNotifier {
     _save();
   }
 
-  Invoice createInvoice({
+  Future<Invoice> createInvoice({
     required Client client,
     required List<InvoiceItem> items,
     String currency = 'USD',
@@ -417,14 +439,31 @@ class InvoiceProvider extends ChangeNotifier {
     String? poNumber,
     String? notes,
     String templateId = 'classic',
-  }) {
+  }) async {
     final invoice = Invoice(
       id: _newId(),
       number: number?.trim().isNotEmpty == true
           ? number!.trim()
           : '#INV.${(invoices.length + 1).toString().padLeft(3, '0')}',
-      client: client,
-      items: List.of(items),
+      client: Client(
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        address: client.address,
+        taxId: client.taxId,
+      ),
+      items: items
+          .map(
+            (e) => InvoiceItem(
+              id: e.id,
+              description: e.description,
+              notes: e.notes,
+              unitCost: e.unitCost,
+              quantity: e.quantity,
+            ),
+          )
+          .toList(),
       date: date ?? DateTime.now(),
       dueDate: dueDate,
       currency: currency,
@@ -437,7 +476,7 @@ class InvoiceProvider extends ChangeNotifier {
     invoices.insert(0, invoice);
     _recordInvoiceCreatedForQuota();
     notifyListeners();
-    _save();
+    await _save();
     return invoice;
   }
 

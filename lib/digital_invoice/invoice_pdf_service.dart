@@ -6,6 +6,9 @@ import 'package:printing/printing.dart';
 import 'digital_invoice_model.dart';
 import 'invoice_gradient_theme.dart';
 
+/// Which on-screen invoice layout the exported PDF should follow.
+enum InvoicePdfLayout { digital, classic, modern, minimal }
+
 class InvoicePdfService {
   InvoicePdfService._();
 
@@ -65,15 +68,59 @@ class InvoicePdfService {
   static String _pdfFilename(DigitalInvoice invoice) =>
       'Invoice-${invoice.invoiceNumber.replaceAll('#', '').replaceAll('/', '-')}';
 
-  static Future<void> printDocument(DigitalInvoice invoice, {InvoiceGradientTheme? theme}) async {
-    final doc = await _build(invoice, theme: theme ?? InvoiceThemes.midnight);
+  static Future<void> printDocument(
+    DigitalInvoice invoice, {
+    InvoiceGradientTheme? theme,
+    InvoicePdfLayout layout = InvoicePdfLayout.digital,
+  }) async {
+    final doc = await _documentFor(invoice, theme: theme ?? InvoiceThemes.midnight, layout: layout);
     await Printing.layoutPdf(onLayout: (format) async => doc.save());
   }
 
-  static Future<void> sharePdf(DigitalInvoice invoice, {InvoiceGradientTheme? theme}) async {
-    final doc = await _build(invoice, theme: theme ?? InvoiceThemes.midnight);
+  static Future<void> sharePdf(
+    DigitalInvoice invoice, {
+    InvoiceGradientTheme? theme,
+    InvoicePdfLayout layout = InvoicePdfLayout.digital,
+  }) async {
+    final doc = await _documentFor(invoice, theme: theme ?? InvoiceThemes.midnight, layout: layout);
     await Printing.sharePdf(bytes: await doc.save(), filename: _pdfFilename(invoice));
   }
+
+  static Future<pw.Document> _documentFor(
+    DigitalInvoice invoice, {
+    required InvoiceGradientTheme theme,
+    required InvoicePdfLayout layout,
+  }) {
+    switch (layout) {
+      case InvoicePdfLayout.classic:
+        return _buildClassic(invoice, theme: theme);
+      case InvoicePdfLayout.modern:
+        return _buildModern(invoice, theme: theme);
+      case InvoicePdfLayout.minimal:
+        return _buildMinimal(invoice, theme: theme);
+      case InvoicePdfLayout.digital:
+        return _build(invoice, theme: theme);
+    }
+  }
+
+  static PdfColor _accentPdf(InvoiceGradientTheme theme) {
+    final c = theme.accent;
+    return PdfColor(c.r, c.g, c.b);
+  }
+
+  static PdfColor _lightAccent(PdfColor accent) => PdfColor(
+        accent.red * 0.08 + 0.92,
+        accent.green * 0.08 + 0.92,
+        accent.blue * 0.08 + 0.92,
+      );
+
+  static NumberFormat _moneyFormat(DigitalInvoice invoice) => NumberFormat.currency(
+        locale: invoice.locale,
+        symbol: invoice.currencySymbol,
+        decimalDigits: 2,
+      );
+
+  static DateFormat _shortDateFormat(DigitalInvoice invoice) => DateFormat('dd MMM yyyy', invoice.locale);
 
   static Future<pw.Document> _build(DigitalInvoice invoice, {required InvoiceGradientTheme theme}) async {
     final doc = pw.Document();
@@ -202,6 +249,306 @@ class InvoicePdfService {
       ),
     );
     return doc;
+  }
+
+  static Future<pw.Document> _buildClassic(DigitalInvoice invoice, {required InvoiceGradientTheme theme}) async {
+    final doc = pw.Document();
+    final accent = _accentPdf(theme);
+    final headerFill = _lightAccent(accent);
+    final money = _moneyFormat(invoice);
+    final dateFmt = _shortDateFormat(invoice);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (context) => [
+          _appHeaderRow(invoice, accent: accent, onDark: false, dateFmt: dateFmt),
+          pw.SizedBox(height: 16),
+          pw.Divider(color: PdfColors.grey400),
+          pw.SizedBox(height: 12),
+          _appPartyColumns(invoice, accent: accent),
+          pw.SizedBox(height: 18),
+          _appItemsTable(invoice, money: money, headerFill: headerFill, headerText: accent),
+          pw.SizedBox(height: 16),
+          _appTotalsBlock(invoice, money: money),
+          ..._appFooterSections(invoice, dateFmt: dateFmt),
+        ],
+      ),
+    );
+    return doc;
+  }
+
+  static Future<pw.Document> _buildModern(DigitalInvoice invoice, {required InvoiceGradientTheme theme}) async {
+    final doc = pw.Document();
+    final accent = _accentPdf(theme);
+    final headerFill = _lightAccent(accent);
+    final money = _moneyFormat(invoice);
+    final dateFmt = _shortDateFormat(invoice);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: pw.EdgeInsets.zero,
+        build: (context) => [
+          pw.Container(
+            color: accent,
+            padding: const pw.EdgeInsets.fromLTRB(32, 28, 32, 24),
+            child: _appHeaderRow(invoice, accent: PdfColors.white, onDark: true, dateFmt: dateFmt),
+          ),
+          pw.Padding(
+            padding: const pw.EdgeInsets.fromLTRB(32, 20, 32, 32),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                _appPartyColumns(invoice, accent: accent),
+                pw.SizedBox(height: 18),
+                _appItemsTable(invoice, money: money, headerFill: headerFill, headerText: accent),
+                pw.SizedBox(height: 16),
+                _appTotalsBlock(invoice, money: money),
+                ..._appFooterSections(invoice, dateFmt: dateFmt),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return doc;
+  }
+
+  static Future<pw.Document> _buildMinimal(DigitalInvoice invoice, {required InvoiceGradientTheme theme}) async {
+    final doc = pw.Document();
+    final accent = _accentPdf(theme);
+    final money = _moneyFormat(invoice);
+    final dateFmt = _shortDateFormat(invoice);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (context) => [
+          pw.Text(
+            'INVOICE',
+            style: pw.TextStyle(fontSize: 10, letterSpacing: 2, color: PdfColors.grey700),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(invoice.invoiceNumber, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.normal)),
+          pw.SizedBox(height: 24),
+          _appPartyColumns(invoice, accent: accent, minimal: true),
+          pw.SizedBox(height: 28),
+          for (final item in invoice.items)
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 14),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(item.description, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                        pw.Text(
+                          '${item.quantity % 1 == 0 ? item.quantity.toStringAsFixed(0) : item.quantity} × ${money.format(item.unitPrice)}',
+                          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                        ),
+                      ],
+                    ),
+                  ),
+                  pw.Text(money.format(item.netAmount), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+                ],
+              ),
+            ),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          _appTotalsBlock(invoice, money: money, fullWidth: true),
+          ..._appFooterSections(invoice, dateFmt: dateFmt, minimal: true),
+        ],
+      ),
+    );
+    return doc;
+  }
+
+  static pw.Widget _appHeaderRow(
+    DigitalInvoice invoice, {
+    required PdfColor accent,
+    required bool onDark,
+    required DateFormat dateFmt,
+  }) {
+    final subStyle = pw.TextStyle(fontSize: 9, color: onDark ? PdfColors.grey300 : PdfColors.grey700);
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(invoice.seller.name, style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: onDark ? PdfColors.white : null)),
+              if (invoice.seller.taxId.isNotEmpty) pw.Text('Tax ID: ${invoice.seller.taxId}', style: subStyle),
+              if (invoice.seller.email.isNotEmpty) pw.Text(invoice.seller.email, style: subStyle),
+              if (invoice.seller.phone.isNotEmpty) pw.Text(invoice.seller.phone, style: subStyle),
+            ],
+          ),
+        ),
+        pw.SizedBox(width: 12),
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: [
+            pw.Text('Invoice', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: accent)),
+            pw.Text(invoice.invoiceNumber, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            if (invoice.purchaseOrderNumber.isNotEmpty)
+              pw.Text('PO: ${invoice.purchaseOrderNumber}', style: subStyle, textAlign: pw.TextAlign.right),
+            pw.Text('Issued: ${dateFmt.format(invoice.issueDate)}', style: subStyle, textAlign: pw.TextAlign.right),
+            if (invoice.dueDate != invoice.issueDate)
+              pw.Text('Due: ${dateFmt.format(invoice.dueDate)}', style: subStyle, textAlign: pw.TextAlign.right),
+          ],
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _appPartyColumns(DigitalInvoice invoice, {required PdfColor accent, bool minimal = false}) {
+    pw.Widget party(String title, DigitalParty p) {
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title.toUpperCase(),
+            style: pw.TextStyle(
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+              letterSpacing: minimal ? 1.2 : 0.4,
+              color: accent,
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(p.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+          if (p.fullAddress.isNotEmpty) pw.Text(p.fullAddress, style: const pw.TextStyle(fontSize: 9)),
+          if (p.email.isNotEmpty) pw.Text(p.email, style: const pw.TextStyle(fontSize: 9)),
+          if (p.phone.isNotEmpty) pw.Text(p.phone, style: const pw.TextStyle(fontSize: 9)),
+          if (p.taxId.isNotEmpty) pw.Text('${p.taxIdLabel}: ${p.taxId}', style: const pw.TextStyle(fontSize: 9)),
+        ],
+      );
+    }
+
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Expanded(child: party('Bill from', invoice.seller)),
+        pw.SizedBox(width: 16),
+        pw.Expanded(child: party('Bill to', invoice.buyer)),
+      ],
+    );
+  }
+
+  static pw.Widget _appItemsTable(
+    DigitalInvoice invoice, {
+    required NumberFormat money,
+    required PdfColor headerFill,
+    required PdfColor headerText,
+  }) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(3),
+        1: pw.FlexColumnWidth(1),
+        2: pw.FlexColumnWidth(1.2),
+        3: pw.FlexColumnWidth(1.2),
+      },
+      children: [
+        pw.TableRow(
+          decoration: pw.BoxDecoration(color: headerFill),
+          children: [
+            _appTh('Description', color: headerText),
+            _appTh('Qty', color: headerText, align: pw.TextAlign.center),
+            _appTh('Unit price', color: headerText, align: pw.TextAlign.right),
+            _appTh('Line total', color: headerText, align: pw.TextAlign.right),
+          ],
+        ),
+        for (final item in invoice.items)
+          pw.TableRow(
+            children: [
+              _td(item.description),
+              _td(
+                item.quantity % 1 == 0 ? item.quantity.toStringAsFixed(0) : '${item.quantity}',
+                align: pw.TextAlign.center,
+              ),
+              _td(money.format(item.unitPrice), align: pw.TextAlign.right),
+              _td(money.format(item.netAmount), align: pw.TextAlign.right),
+            ],
+          ),
+      ],
+    );
+  }
+
+  static pw.Widget _appTh(String text, {required PdfColor color, pw.TextAlign align = pw.TextAlign.left}) =>
+      pw.Padding(
+        padding: const pw.EdgeInsets.all(6),
+        child: pw.Text(
+          text,
+          textAlign: align,
+          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: color),
+        ),
+      );
+
+  static pw.Widget _appTotalsBlock(DigitalInvoice invoice, {required NumberFormat money, bool fullWidth = false}) {
+    final taxLabel = invoice.invoiceTaxRatePercent > 0
+        ? 'Tax (${invoice.invoiceTaxRatePercent % 1 == 0 ? invoice.invoiceTaxRatePercent.toStringAsFixed(0) : invoice.invoiceTaxRatePercent.toStringAsFixed(1)}%)'
+        : 'Tax';
+    final rows = <pw.Widget>[
+      _appTotalRow('Subtotal', money.format(invoice.subtotal)),
+      if (invoice.totalTax > 0.005) _appTotalRow(taxLabel, money.format(invoice.totalTax)),
+      pw.SizedBox(height: 4),
+      _appTotalRow('Grand total', money.format(invoice.grandTotal), bold: true),
+    ];
+    final block = pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: rows);
+    if (fullWidth) return block;
+    return pw.Align(
+      alignment: pw.Alignment.centerRight,
+      child: pw.SizedBox(width: 220, child: block),
+    );
+  }
+
+  static pw.Widget _appTotalRow(String label, String value, {bool bold = false}) => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(vertical: 3),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(label, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : null)),
+            pw.Text(value, style: pw.TextStyle(fontSize: 9, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal)),
+          ],
+        ),
+      );
+
+  static List<pw.Widget> _appFooterSections(
+    DigitalInvoice invoice, {
+    required DateFormat dateFmt,
+    bool minimal = false,
+  }) {
+    final sections = <pw.Widget>[];
+    if (!minimal && (invoice.notes.isNotEmpty || invoice.termsAndConditions.isNotEmpty)) {
+      sections.add(pw.SizedBox(height: 16));
+      if (invoice.termsAndConditions.isNotEmpty) {
+        sections.add(pw.Text('Payment terms: ${invoice.termsAndConditions}', style: const pw.TextStyle(fontSize: 9)));
+      }
+      if (invoice.notes.isNotEmpty) {
+        sections.add(pw.SizedBox(height: 6));
+        sections.add(pw.Text('Notes: ${invoice.notes}', style: const pw.TextStyle(fontSize: 9)));
+      }
+    } else if (minimal && invoice.termsAndConditions.isNotEmpty) {
+      sections.add(pw.SizedBox(height: 20));
+      sections.add(pw.Text('Payment terms: ${invoice.termsAndConditions}', style: const pw.TextStyle(fontSize: 9)));
+    }
+    if (!minimal) {
+      sections.add(pw.SizedBox(height: 12));
+      sections.add(
+        pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: pw.Text(dateFmt.format(invoice.issueDate), style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+        ),
+      );
+    }
+    return sections;
   }
 
   static Future<pw.Document> _buildRedModern(DigitalInvoice invoice) async {

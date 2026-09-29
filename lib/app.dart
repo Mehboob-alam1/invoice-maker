@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'core/constants/app_config.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/app_languages.dart';
 import 'providers/invoice_provider.dart';
 import 'providers/theme_provider.dart';
-import 'screens/splash/splash_screen.dart';
 import 'services/auth_service.dart';
 import 'services/subscription_service.dart';
 import 'navigation/app_route_observer.dart';
@@ -17,6 +17,7 @@ class InvoiceApp extends StatelessWidget {
   final ThemeProvider themeProvider;
   final SubscriptionService subscriptionService;
   final AuthService authService;
+  final Widget initialScreen;
 
   const InvoiceApp({
     super.key,
@@ -24,6 +25,7 @@ class InvoiceApp extends StatelessWidget {
     required this.themeProvider,
     required this.subscriptionService,
     required this.authService,
+    required this.initialScreen,
   });
 
   @override
@@ -38,7 +40,7 @@ class InvoiceApp extends StatelessWidget {
       child: Consumer2<ThemeProvider, InvoiceProvider>(
         builder: (context, theme, invoices, _) {
           return MaterialApp(
-            title: 'Invoice Maker',
+            title: AppConfig.appDisplayName,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
@@ -52,7 +54,7 @@ class InvoiceApp extends StatelessWidget {
             ],
             navigatorObservers: [appRouteObserver],
             builder: (context, child) => AppOpenLifecycle(child: child ?? const SizedBox.shrink()),
-            home: const SplashScreen(),
+            home: initialScreen,
           );
         },
       ),

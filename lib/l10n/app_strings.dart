@@ -214,9 +214,22 @@ class AppStrings {
   String get catalogItems => t('catalogItems');
   String get darkMode => t('darkMode');
   String get language => t('language');
+  String get notifications => t('notifications');
+  String get notificationsOn => t('notificationsOn');
+  String get notificationsOff => t('notificationsOff');
+  String get notificationsEnabledSnack => t('notificationsEnabledSnack');
+  String get notificationsOpenSettingsSnack => t('notificationsOpenSettingsSnack');
   String get rateUs => t('rateUs');
   String get rateUsTitle => t('rateUsTitle');
   String get rateUsBody => t('rateUsBody');
+  String get rateUsCombinedSubtitle => t('rateUsCombinedSubtitle');
+  String get feedbackOptionalLabel => t('feedbackOptionalLabel');
+  String get submitRating => t('submitRating');
+  String get notNow => t('notNow');
+  String lastUpdated(String date) => t('lastUpdated', {'date': date});
+  String get subscriptionExpiredTitle => t('subscriptionExpiredTitle');
+  String get subscriptionExpiredBody => t('subscriptionExpiredBody');
+  String get playStoreSubscriptionHint => t('playStoreSubscriptionHint');
   String get feedback => t('feedback');
   String get feedbackHint => t('feedbackHint');
   String get thanksFeedback => t('thanksFeedback');
@@ -331,7 +344,12 @@ class AppStrings {
         SubscriptionTier.free => tierFreePrice,
       };
 
-  List<String> get tierFreeFeatures => [t('tierFreeFeature1'), t('tierFreeFeature2'), t('tierFreeFeature3')];
+  List<String> get tierFreeFeatures => [
+        t('tierFreeFeature1'),
+        t('tierFreeFeature2'),
+        t('tierFreeFeature3'),
+        t('tierFreeFeature4'),
+      ];
 
   List<String> get tierPremiumFeatures => [
         t('tierPremiumFeature1'),
@@ -362,6 +380,11 @@ class AppStrings {
       });
   String aiTokensRemainingHint(int remaining, int limit) =>
       t('aiTokensRemainingHint', {'remaining': '$remaining', 'limit': '$limit'});
+  String aiFreeCreditsRemainingHint(int remaining, int limit) =>
+      t('aiFreeCreditsRemainingHint', {'remaining': '$remaining', 'limit': '$limit'});
+  String aiFreeCreditsUsedBody(int limit) =>
+      t('aiFreeCreditsUsedBody', {'limit': '$limit'});
+  String get aiNoCreditsBadge => t('aiNoCreditsBadge');
   String get noClientsYet => t('noClientsYet');
   String get noItemsYet => t('noItemsYet');
   String get businessEmail => t('businessEmail');

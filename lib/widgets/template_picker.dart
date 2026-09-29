@@ -51,39 +51,36 @@ class TemplatePicker extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxW.clamp(240, 320)),
-            child: Card(
-              clipBehavior: Clip.antiAlias,
-              margin: EdgeInsets.zero,
-              child: InkWell(
-                onTap: () => _openSheet(context),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Row(
-                    children: [
-                      _TemplatePreviewThumb(info: info, size: 44),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              strings.t(info.labelKey),
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              strings.browseAllTemplates,
-                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+            child: InkWell(
+              onTap: () => _openSheet(context),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: [
+                    _TemplatePreviewThumb(info: info, size: 44),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            strings.t(info.labelKey),
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            strings.browseAllTemplates,
+                            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      Icon(Icons.unfold_more_rounded, size: 22, color: theme.colorScheme.primary),
-                    ],
-                  ),
+                    ),
+                    Icon(Icons.unfold_more_rounded, size: 22, color: theme.colorScheme.primary),
+                  ],
                 ),
               ),
             ),
@@ -228,15 +225,17 @@ class _TemplateGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.l10n;
     final theme = Theme.of(context);
-    final borderColor = selected ? theme.colorScheme.primary : theme.dividerColor;
+    final borderColor = selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.primary.withValues(alpha: 0.12);
 
     return Material(
-      color: selected ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35) : theme.cardColor,
-      borderRadius: BorderRadius.circular(16),
+      color: selected ? theme.colorScheme.primary.withValues(alpha: 0.06) : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: selected ? 2 : 1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: selected ? 1.5 : 1),
         ),
         padding: const EdgeInsets.all(10),
         child: Column(

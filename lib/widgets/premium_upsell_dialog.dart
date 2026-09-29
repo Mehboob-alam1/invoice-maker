@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../core/constants/app_colors.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/blue_theme.dart';
 import '../l10n/app_strings.dart';
 import '../navigation/app_page_route.dart';
 import '../screens/subscription/subscription_plans_screen.dart';
@@ -14,7 +15,10 @@ Future<void> showPremiumUpsellDialog(BuildContext context) {
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 380),
     pageBuilder: (ctx, animation, secondaryAnimation) {
-      return const _PremiumUpsellDialogBody();
+      return Theme(
+        data: buildBlueTheme(Theme.of(ctx)),
+        child: const _PremiumUpsellDialogBody(),
+      );
     },
     transitionBuilder: (ctx, animation, secondaryAnimation, child) {
       final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
@@ -38,6 +42,8 @@ class _PremiumUpsellDialogBody extends StatelessWidget {
     final strings = context.l10n;
     final muted = theme.extension<AppSemanticColors>()?.textMuted;
     final size = MediaQuery.sizeOf(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final titleColor = isDark ? theme.colorScheme.onSurface : BlueColors.navy;
 
     return Center(
       child: Padding(
@@ -47,15 +53,8 @@ class _PremiumUpsellDialogBody extends StatelessWidget {
           child: Container(
             constraints: BoxConstraints(maxWidth: 400, maxHeight: size.height * 0.82),
             decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.25),
-                  blurRadius: 32,
-                  offset: const Offset(0, 16),
-                ),
-              ],
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(28),
@@ -67,7 +66,7 @@ class _PremiumUpsellDialogBody extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: AppColors.unlockGradient,
+                        colors: [BlueColors.bright, BlueColors.light, BlueColors.sky],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -78,7 +77,7 @@ class _PremiumUpsellDialogBody extends StatelessWidget {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 40),
                         ),
@@ -86,9 +85,11 @@ class _PremiumUpsellDialogBody extends StatelessWidget {
                         Text(
                           strings.premiumUpsellTitle,
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.titleLarge?.copyWith(
+                          style: GoogleFonts.spaceGrotesk(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
+                            fontSize: 22,
+                            letterSpacing: -0.35,
                             height: 1.2,
                           ),
                         ),
@@ -128,20 +129,20 @@ class _PremiumUpsellDialogBody extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        FilledButton(
+                        BlueGradientButton(
+                          label: strings.premiumUpsellCta,
+                          icon: Icons.arrow_forward_rounded,
                           onPressed: () {
                             Navigator.pop(context);
                             Navigator.of(context).push(appPageRoute(const SubscriptionPlansScreen()));
                           },
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: Text(strings.premiumUpsellCta),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text(strings.premiumUpsellDismiss),
+                          child: Text(
+                            strings.premiumUpsellDismiss,
+                            style: TextStyle(color: titleColor, fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ],
                     ),
@@ -170,13 +171,17 @@ class _UpsellFeatureRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              gradient: const LinearGradient(
+                colors: [BlueColors.bright, BlueColors.sky],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(

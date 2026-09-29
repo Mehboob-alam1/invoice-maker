@@ -228,20 +228,37 @@ class AppTexts {
   static const catalogItems = 'Items';
   static const darkMode = 'Dark Mode';
   static const language = 'Language';
-  static const rateUs = 'Rate Us';
-  static const rateUsTitle = 'Rate Invoice Maker';
+  static const notifications = 'Notifications';
+  static const notificationsOn = 'On';
+  static const notificationsOff = 'Off — tap to enable';
+  static const notificationsEnabledSnack = 'Notifications are enabled.';
+  static const notificationsOpenSettingsSnack =
+      'Open Settings to allow notifications for Invoice GO.';
+  static const rateUs = 'Rate & Feedback';
+  static const rateUsTitle = 'Enjoying Invoice GO?';
   static const rateUsBody = 'Thanks for using the app. If this were in a store, this would open the listing.';
+  static const rateUsCombinedSubtitle =
+      'Tap a star rating. Love it? We\'ll open Google Play. Otherwise tell us how to improve.';
+  static const feedbackOptionalLabel = 'Comments (optional)';
+  static const submitRating = 'Submit';
   static const feedback = 'Feedback';
   static const feedbackHint = 'Tell us what to improve';
-  static const thanksFeedback = 'Thanks — your feedback was saved on this device.';
+  static const thanksFeedback = 'Thanks — we received your rating and feedback.';
+  static const notNow = 'Not now';
+  static const lastUpdated = 'Last updated: {date}';
+  static const subscriptionExpiredTitle = 'Subscription ended';
+  static const subscriptionExpiredBody =
+      'Your Premium or Pro plan is no longer active on Google Play. Renew to restore unlimited invoices, AI, and ad-free use.';
+  static const playStoreSubscriptionHint =
+      'Product IDs must match Google Play → Monetize → Subscriptions. Prices load live from the store.';
   static const privacyPolicy = 'Privacy Policy';
   static const privacyBody =
-      'Invoices, clients, and scans stay on this device. Camera and gallery access is used only when you scan a document. Nothing is uploaded unless you share it yourself.';
+      'Open Settings → Privacy Policy for the full text on permissions, sign-in, ads, subscriptions, and AI features.';
   static const restorePurchases = 'Restore Purchases';
   static const proAlreadyActive = 'Pro access is already active.';
   static const noPurchaseFound = 'No previous purchase found.';
   static const shareApp = 'Share App';
-  static const shareAppText = 'Invoice Maker — create and scan invoices on your phone.';
+  static const shareAppText = 'Invoice GO — create and scan invoices on your phone.';
   static const communityGuidelines = 'Community Guidelines';
   static const communityBody =
       'Use the app to create genuine invoices. Do not scan or store other people’s documents without permission.';
@@ -321,6 +338,7 @@ class AppTexts {
   static const tierFreeFeature1 = '3 invoices per day';
   static const tierFreeFeature2 = 'Ads on all screens';
   static const tierFreeFeature3 = '3 free invoice templates';
+  static const tierFreeFeature4 = 'Create with AI — 3 credits / month';
   static const tierPremiumFeature1 = '10 invoices per day';
   static const tierPremiumFeature2 = 'Fewer ads (no interstitials, less app-open)';
   static const tierPremiumFeature3 = 'All Pro gradient templates';
@@ -332,8 +350,13 @@ class AppTexts {
   static const tierProFeature5 = 'Priority customer support';
   static const aiPaidRequiredTitle = 'AI invoices — Premium or Pro';
   static const aiPaidRequiredBody =
-      'Create with AI is included on Premium (40k tokens/month) and Pro (150k tokens/month). Upgrade to start generating.';
-  static const aiPremiumPlanBadge = 'Premium & Pro';
+      'Create with AI is included on Premium (40k tokens/month) and Pro (150k tokens/month). Upgrade for more AI allowance.';
+  static const aiPremiumPlanBadge = 'Upgrade for more AI';
+  static const aiNoCreditsBadge = 'No free AI credits left this month';
+  static const aiFreeCreditsRemainingHint =
+      '{remaining} of {limit} free AI credits left this month';
+  static const aiFreeCreditsUsedBody =
+      'You used all {limit} free AI credits this month. Upgrade to Premium or Pro for more, or wait until next month.';
   static const aiTokensRemainingHint = '{remaining} of {limit} AI tokens left this month';
   static const aiInputTooLongTitle = 'Description too long';
   static const aiInputTooLongBody =
@@ -369,7 +392,7 @@ class AppTexts {
   static const adLabel = 'Ad';
   static const loadingAd = 'Loading ad…';
   static const growBusiness = 'Grow your business faster';
-  static const sponsored = 'Sponsored · Invoice Maker';
+  static const sponsored = 'Sponsored · Invoice GO';
   static const open = 'Open';
 
   static const onboardingTitle1 = 'Create Accurate Invoices\nIn Just a Few Clicks';
@@ -591,12 +614,25 @@ class AppTexts {
     'catalogItems': catalogItems,
     'darkMode': darkMode,
     'language': language,
+    'notifications': notifications,
+    'notificationsOn': notificationsOn,
+    'notificationsOff': notificationsOff,
+    'notificationsEnabledSnack': notificationsEnabledSnack,
+    'notificationsOpenSettingsSnack': notificationsOpenSettingsSnack,
     'rateUs': rateUs,
     'rateUsTitle': rateUsTitle,
     'rateUsBody': rateUsBody,
+    'rateUsCombinedSubtitle': rateUsCombinedSubtitle,
+    'feedbackOptionalLabel': feedbackOptionalLabel,
+    'submitRating': submitRating,
     'feedback': feedback,
     'feedbackHint': feedbackHint,
     'thanksFeedback': thanksFeedback,
+    'notNow': notNow,
+    'lastUpdated': lastUpdated,
+    'subscriptionExpiredTitle': subscriptionExpiredTitle,
+    'subscriptionExpiredBody': subscriptionExpiredBody,
+    'playStoreSubscriptionHint': playStoreSubscriptionHint,
     'privacyPolicy': privacyPolicy,
     'privacyBody': privacyBody,
     'restorePurchases': restorePurchases,
@@ -672,6 +708,7 @@ class AppTexts {
     'tierFreeFeature1': tierFreeFeature1,
     'tierFreeFeature2': tierFreeFeature2,
     'tierFreeFeature3': tierFreeFeature3,
+    'tierFreeFeature4': tierFreeFeature4,
     'tierPremiumFeature1': tierPremiumFeature1,
     'tierPremiumFeature2': tierPremiumFeature2,
     'tierPremiumFeature3': tierPremiumFeature3,
@@ -684,6 +721,9 @@ class AppTexts {
     'aiPaidRequiredTitle': aiPaidRequiredTitle,
     'aiPaidRequiredBody': aiPaidRequiredBody,
     'aiPremiumPlanBadge': aiPremiumPlanBadge,
+    'aiNoCreditsBadge': aiNoCreditsBadge,
+    'aiFreeCreditsRemainingHint': aiFreeCreditsRemainingHint,
+    'aiFreeCreditsUsedBody': aiFreeCreditsUsedBody,
     'aiTokensRemainingHint': aiTokensRemainingHint,
     'aiInputTooLongTitle': aiInputTooLongTitle,
     'aiInputTooLongBody': aiInputTooLongBody,

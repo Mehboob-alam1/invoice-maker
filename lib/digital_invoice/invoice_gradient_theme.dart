@@ -65,6 +65,13 @@ class InvoiceThemes {
     accent: Color(0xFF4338CA),
   );
 
+  /// Matches free Classic / Modern / Minimal preview (app primary blue).
+  static const classic = InvoiceGradientTheme(
+    name: 'Classic',
+    gradientColors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
+    accent: Color(0xFF2563EB),
+  );
+
   static const all = [aurora, sunset, ocean, emerald, royal, rose, midnight];
 
   static InvoiceGradientTheme forTemplate(InvoiceTemplateId id) {

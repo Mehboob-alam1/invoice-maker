@@ -60,8 +60,11 @@ class AuthService extends ChangeNotifier {
           languageCode: account.languageCode,
         );
       }
+    }
+    await _subscriptionService.refreshEntitlementsFromStore(silent: true);
+    if (_invoiceProvider.subscriptionTier == SubscriptionTier.free && account != null) {
       final remoteTier = account.subscription.tier;
-      if (remoteTier.index > _invoiceProvider.subscriptionTier.index) {
+      if (remoteTier != SubscriptionTier.free && !_subscriptionService.storeAvailable) {
         _invoiceProvider.setSubscriptionTier(remoteTier);
       }
     }
@@ -69,7 +72,6 @@ class AuthService extends ChangeNotifier {
     if (_invoiceProvider.subscriptionTier != SubscriptionTier.free) {
       await _subscriptionService.syncTierToFirestoreIfNeeded();
     }
-    await _subscriptionService.restorePurchases(silent: true);
     notifyListeners();
   }
 

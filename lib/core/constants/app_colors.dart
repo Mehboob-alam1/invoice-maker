@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 
-/// Central color palette for the app.
-/// Theme: "Aurora" — a deep indigo/violet paired with a warm coral accent.
+/// Central color palette for the app (aligned with blue Material seed).
 class AppColors {
   AppColors._();
 
   // Brand
-  static const Color primary = Color(0xFF5B5BF6); // indigo/violet
-  static const Color primaryDark = Color(0xFF8C8CFF);
-  static const Color secondary = Color(0xFFFF7A59); // warm coral accent
+  static const Color primary = Color(0xFF2563EB);
+  static const Color primaryDark = Color(0xFF3B82F6);
+  static const Color secondary = Color(0xFF38BDF8);
   static const Color tertiary = Color(0xFF20C997); // success / paid green
 
   // Status
@@ -43,8 +42,8 @@ class AppColors {
     Color(0xFF0F0F16),
   ];
   static const List<Color> unlockGradient = [
-    Color(0xFFFF9A5A),
-    Color(0xFF5B5BF6),
-    Color(0xFF20C997),
+    Color(0xFF1D4ED8),
+    Color(0xFF3B82F6),
+    Color(0xFF38BDF8),
   ];
 }
