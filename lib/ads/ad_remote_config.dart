@@ -4,6 +4,8 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/remote_config/invoice_limits_remote_config.dart';
+import '../models/subscription_tier.dart';
 import 'ad_config.dart';
 
 /// AdMob unit IDs + global toggles from Firebase Remote Config (with HTTP + local fallbacks).
@@ -82,6 +84,8 @@ class AdRemoteConfig {
         'ad_interstitial_ios': AdConfig.defaultIosInterstitial,
         'ad_app_open_android': AdConfig.defaultAndroidAppOpen,
         'ad_app_open_ios': AdConfig.defaultIosAppOpen,
+        InvoiceLimitsRemoteConfig.remoteKeyFree: SubscriptionTier.free.dailyInvoiceLimit,
+        InvoiceLimitsRemoteConfig.remoteKeyPremium: SubscriptionTier.premium.dailyInvoiceLimit,
       });
       await remoteConfig.fetchAndActivate();
       _applyRemoteConfigValues(remoteConfig);
@@ -105,6 +109,23 @@ class AdRemoteConfig {
     pickString('ad_interstitial_ios', (v) => _iosInterstitial = v);
     pickString('ad_app_open_android', (v) => _androidAppOpen = v);
     pickString('ad_app_open_ios', (v) => _iosAppOpen = v);
+
+    InvoiceLimitsRemoteConfig.instance.applyFrom(remoteConfig);
+
+    if (!kDebugMode) {
+      for (final id in [
+        _androidNative,
+        _androidInterstitial,
+        _androidAppOpen,
+      ]) {
+        if (AdConfig.isTestAdUnit(id)) {
+          debugPrint(
+            'AdRemoteConfig: WARNING — release build is using Google TEST ad unit $id. '
+            'Set production IDs in Firebase Remote Config.',
+          );
+        }
+      }
+    }
   }
 
   Future<void> _loadFromHttpUrlIfConfigured() async {
@@ -147,5 +168,7 @@ class AdRemoteConfig {
     pick('ios_interstitial', (v) => _iosInterstitial = v);
     pick('android_app_open', (v) => _androidAppOpen = v);
     pick('ios_app_open', (v) => _iosAppOpen = v);
+
+    InvoiceLimitsRemoteConfig.instance.applyFromMap(map);
   }
 }

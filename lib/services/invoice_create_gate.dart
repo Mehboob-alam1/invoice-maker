@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_strings.dart';
 import '../navigation/app_page_route.dart';
+import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
 import '../screens/subscription/subscription_plans_screen.dart';
 import 'premium_upsell_service.dart';
@@ -32,17 +33,22 @@ Future<bool> ensureInvoiceQuotaOrPrompt(BuildContext context) async {
   return false;
 }
 
-/// Returns `true` if the user's plan includes Create with AI (Premium or Pro).
+/// Returns `true` if the user can open Create with AI (free credits or paid allowance left).
 Future<bool> ensurePaidAiAccessOrPrompt(BuildContext context) async {
   final provider = context.read<InvoiceProvider>();
-  if (provider.subscriptionTier.canUseAiInvoice) return true;
+  if (provider.canOpenCreateWithAi) return true;
 
   final strings = AppStrings.read(context);
+  final isFree = provider.subscriptionTier == SubscriptionTier.free;
   final upgrade = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(strings.aiPaidRequiredTitle),
-      content: Text(strings.aiPaidRequiredBody),
+      title: Text(isFree ? strings.aiMonthlyLimitTitle : strings.aiPaidRequiredTitle),
+      content: Text(
+        isFree
+            ? strings.aiFreeCreditsUsedBody(provider.monthlyAiCredits)
+            : strings.aiPaidRequiredBody,
+      ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
         FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(strings.viewPlans)),

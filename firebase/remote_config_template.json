@@ -56,6 +56,20 @@
       },
       "description": "AdMob app open unit ID (iOS).",
       "valueType": "STRING"
+    },
+    "free_daily_invoice_limit": {
+      "defaultValue": {
+        "value": "3"
+      },
+      "description": "Max invoices Free users can create per calendar day (-1 = unlimited).",
+      "valueType": "NUMBER"
+    },
+    "premium_daily_invoice_limit": {
+      "defaultValue": {
+        "value": "10"
+      },
+      "description": "Max invoices Premium users can create per calendar day (-1 = unlimited). Pro is always unlimited in app.",
+      "valueType": "NUMBER"
     }
   }
 }

@@ -228,6 +228,12 @@ class AppTexts {
   static const catalogItems = 'Items';
   static const darkMode = 'Dark Mode';
   static const language = 'Language';
+  static const notifications = 'Notifications';
+  static const notificationsOn = 'On';
+  static const notificationsOff = 'Off — tap to enable';
+  static const notificationsEnabledSnack = 'Notifications are enabled.';
+  static const notificationsOpenSettingsSnack =
+      'Open Settings to allow notifications for Invoice GO.';
   static const rateUs = 'Rate & Feedback';
   static const rateUsTitle = 'Enjoying Invoice GO?';
   static const rateUsBody = 'Thanks for using the app. If this were in a store, this would open the listing.';
@@ -247,7 +253,7 @@ class AppTexts {
       'Product IDs must match Google Play → Monetize → Subscriptions. Prices load live from the store.';
   static const privacyPolicy = 'Privacy Policy';
   static const privacyBody =
-      'Invoices, clients, and scans stay on this device. Camera and gallery access is used only when you scan a document. Nothing is uploaded unless you share it yourself.';
+      'Open Settings → Privacy Policy for the full text on permissions, sign-in, ads, subscriptions, and AI features.';
   static const restorePurchases = 'Restore Purchases';
   static const proAlreadyActive = 'Pro access is already active.';
   static const noPurchaseFound = 'No previous purchase found.';
@@ -332,6 +338,7 @@ class AppTexts {
   static const tierFreeFeature1 = '3 invoices per day';
   static const tierFreeFeature2 = 'Ads on all screens';
   static const tierFreeFeature3 = '3 free invoice templates';
+  static const tierFreeFeature4 = 'Create with AI — 3 credits / month';
   static const tierPremiumFeature1 = '10 invoices per day';
   static const tierPremiumFeature2 = 'Fewer ads (no interstitials, less app-open)';
   static const tierPremiumFeature3 = 'All Pro gradient templates';
@@ -343,8 +350,13 @@ class AppTexts {
   static const tierProFeature5 = 'Priority customer support';
   static const aiPaidRequiredTitle = 'AI invoices — Premium or Pro';
   static const aiPaidRequiredBody =
-      'Create with AI is included on Premium (40k tokens/month) and Pro (150k tokens/month). Upgrade to start generating.';
-  static const aiPremiumPlanBadge = 'Premium & Pro';
+      'Create with AI is included on Premium (40k tokens/month) and Pro (150k tokens/month). Upgrade for more AI allowance.';
+  static const aiPremiumPlanBadge = 'Upgrade for more AI';
+  static const aiNoCreditsBadge = 'No free AI credits left this month';
+  static const aiFreeCreditsRemainingHint =
+      '{remaining} of {limit} free AI credits left this month';
+  static const aiFreeCreditsUsedBody =
+      'You used all {limit} free AI credits this month. Upgrade to Premium or Pro for more, or wait until next month.';
   static const aiTokensRemainingHint = '{remaining} of {limit} AI tokens left this month';
   static const aiInputTooLongTitle = 'Description too long';
   static const aiInputTooLongBody =
@@ -602,6 +614,11 @@ class AppTexts {
     'catalogItems': catalogItems,
     'darkMode': darkMode,
     'language': language,
+    'notifications': notifications,
+    'notificationsOn': notificationsOn,
+    'notificationsOff': notificationsOff,
+    'notificationsEnabledSnack': notificationsEnabledSnack,
+    'notificationsOpenSettingsSnack': notificationsOpenSettingsSnack,
     'rateUs': rateUs,
     'rateUsTitle': rateUsTitle,
     'rateUsBody': rateUsBody,
@@ -691,6 +708,7 @@ class AppTexts {
     'tierFreeFeature1': tierFreeFeature1,
     'tierFreeFeature2': tierFreeFeature2,
     'tierFreeFeature3': tierFreeFeature3,
+    'tierFreeFeature4': tierFreeFeature4,
     'tierPremiumFeature1': tierPremiumFeature1,
     'tierPremiumFeature2': tierPremiumFeature2,
     'tierPremiumFeature3': tierPremiumFeature3,
@@ -703,6 +721,9 @@ class AppTexts {
     'aiPaidRequiredTitle': aiPaidRequiredTitle,
     'aiPaidRequiredBody': aiPaidRequiredBody,
     'aiPremiumPlanBadge': aiPremiumPlanBadge,
+    'aiNoCreditsBadge': aiNoCreditsBadge,
+    'aiFreeCreditsRemainingHint': aiFreeCreditsRemainingHint,
+    'aiFreeCreditsUsedBody': aiFreeCreditsUsedBody,
     'aiTokensRemainingHint': aiTokensRemainingHint,
     'aiInputTooLongTitle': aiInputTooLongTitle,
     'aiInputTooLongBody': aiInputTooLongBody,

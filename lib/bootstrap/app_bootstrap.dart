@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -85,10 +86,26 @@ Future<AppBootstrapResult> runAppBootstrap({
   await subscriptionService.initialize();
   await authService.initialize();
 
+  status('Loading configuration…');
+  await AdRemoteConfig.instance.load();
+
   if (AdConfig.isSupported) {
     status('Preparing ads…');
     await MobileAds.instance.initialize();
-    await AdRemoteConfig.instance.load();
+    if (kDebugMode) {
+      await MobileAds.instance.updateRequestConfiguration(
+        RequestConfiguration(
+          testDeviceIds: const <String>[],
+          tagForChildDirectedTreatment: TagForChildDirectedTreatment.unspecified,
+        ),
+      );
+    }
+    if (!kDebugMode && AdConfig.releaseShouldUseRemoteConfigUnits) {
+      debugPrint(
+        'AdConfig: Release build using Firebase Remote Config ad unit IDs. '
+        'Publish production units in Remote Config or production_ad_units.dart.',
+      );
+    }
     await AdService.instance.initialize();
     await AdService.instance.waitForStartupPreloads(
       tier: invoiceProvider.subscriptionTier,
@@ -97,7 +114,7 @@ Future<AppBootstrapResult> runAppBootstrap({
   }
 
   status('Almost ready…');
-  await PushNotificationService.instance.initialize();
+  await PushNotificationService.instance.prepare();
 
   final elapsed = DateTime.now().difference(started);
   if (elapsed < minSplashDuration) {

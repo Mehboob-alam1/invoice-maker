@@ -17,6 +17,7 @@ import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../navigation/app_route_observer.dart';
 import '../../services/premium_upsell_service.dart';
+import '../../services/push_notification_service.dart';
 import '../../services/subscription_renewal_prompt.dart';
 import '../../widgets/ui/app_page_shell.dart';
 import '../../widgets/ui/empty_state_view.dart';
@@ -40,6 +41,10 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (!mounted) return;
+      await PushNotificationService.instance.requestPermissionIfNeeded();
+      if (!mounted) return;
       await SubscriptionRenewalPrompt.maybeShow(context);
       if (!mounted) return;
       PremiumUpsellService.maybeShow(context);

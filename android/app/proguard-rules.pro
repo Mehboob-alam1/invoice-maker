@@ -9,3 +9,7 @@
 -dontwarn com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
+
+# Google Mobile Ads & Play Billing (release / R8)
+-keep class com.google.android.gms.ads.** { *; }
+-keep class com.android.vending.billing.** { *; }

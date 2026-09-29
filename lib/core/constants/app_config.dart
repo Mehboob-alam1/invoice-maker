@@ -12,6 +12,9 @@ class AppConfig {
 
   static const supportEmail = 'support@appomatrix.com';
 
-  static const privacyLastUpdated = 'September 24, 2025';
+  static const privacyLastUpdated = 'September 28, 2026';
   static const guidelinesLastUpdated = 'September 24, 2025';
+
+  /// Data controller / publisher (Play Console & privacy policy).
+  static const legalEntityName = 'Appomatrix';
 }

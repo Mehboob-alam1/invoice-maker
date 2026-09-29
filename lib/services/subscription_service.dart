@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants/subscription_products.dart';
@@ -28,8 +30,8 @@ class SubscriptionService extends ChangeNotifier {
 
   String? lastGrantedProductId;
 
-  bool _entitlementCheckOpen = false;
   bool _sawPaidProductThisCheck = false;
+  Completer<void>? _restoreBatchDone;
 
   /// Set when Play restore finds no active subscription (prompt renew on home).
   static const pendingRenewPromptKey = 'pending_subscription_renew_prompt';
@@ -56,6 +58,7 @@ class SubscriptionService extends ChangeNotifier {
       onError: (Object e) {
         lastError = e.toString();
         purchasePending = false;
+        _completeRestoreBatch();
         notifyListeners();
       },
     );
@@ -67,26 +70,39 @@ class SubscriptionService extends ChangeNotifier {
   /// Play Store is the source of truth. After restore, downgrade if no active SKU.
   Future<void> refreshEntitlementsFromStore({bool silent = false}) async {
     if (!storeAvailable) return;
-    _entitlementCheckOpen = true;
     _sawPaidProductThisCheck = false;
+    _restoreBatchDone = Completer<void>();
     if (!silent) {
       purchasePending = true;
       notifyListeners();
     }
     try {
       await _iap.restorePurchases();
-      await Future<void>.delayed(const Duration(milliseconds: 2800));
-      if (_entitlementCheckOpen && !_sawPaidProductThisCheck) {
+      await _restoreBatchDone!.future.timeout(
+        const Duration(seconds: 8),
+        onTimeout: () {
+          debugPrint('SubscriptionService: restore batch timed out');
+        },
+      );
+      if (!_sawPaidProductThisCheck) {
         await _revokeToFreeIfNeeded();
       }
     } catch (e) {
       lastError = e.toString();
+      debugPrint('SubscriptionService.refreshEntitlementsFromStore: $e');
     } finally {
-      _entitlementCheckOpen = false;
+      _restoreBatchDone = null;
       if (!silent) {
         purchasePending = false;
         notifyListeners();
       }
+    }
+  }
+
+  void _completeRestoreBatch() {
+    final done = _restoreBatchDone;
+    if (done != null && !done.isCompleted) {
+      done.complete();
     }
   }
 
@@ -102,7 +118,7 @@ class SubscriptionService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _iap.queryProductDetails(SubscriptionProducts.allPaidProductIds);
+      final response = await _iap.queryProductDetails(SubscriptionProducts.storeProductIds);
       if (response.error != null) {
         lastError = response.error!.message;
       }
@@ -111,7 +127,10 @@ class SubscriptionService extends ChangeNotifier {
         _products[p.id] = p;
       }
       if (response.notFoundIDs.isNotEmpty) {
-        debugPrint('Subscription IDs not in store yet: ${response.notFoundIDs}');
+        debugPrint(
+          'Subscription IDs not in Play Console yet: ${response.notFoundIDs}. '
+          'Create auto-renewing subscriptions with these exact product IDs.',
+        );
       }
     } finally {
       loadingProducts = false;
@@ -129,7 +148,7 @@ class SubscriptionService extends ChangeNotifier {
     if (tier == SubscriptionTier.free) return false;
     final product = productFor(tier, yearly: yearly);
     if (!storeAvailable || product == null) {
-      lastError = 'Store or product unavailable';
+      lastError = 'Store or product unavailable. Check Play Console product IDs.';
       notifyListeners();
       return false;
     }
@@ -137,7 +156,10 @@ class SubscriptionService extends ChangeNotifier {
     lastError = null;
     notifyListeners();
 
-    final param = PurchaseParam(productDetails: product);
+    final PurchaseParam param = Platform.isAndroid
+        ? GooglePlayPurchaseParam(productDetails: product)
+        : PurchaseParam(productDetails: product);
+
     try {
       return await _iap.buyNonConsumable(purchaseParam: param);
     } catch (e) {
@@ -176,7 +198,6 @@ class SubscriptionService extends ChangeNotifier {
         case PurchaseStatus.restored:
           if (SubscriptionProducts.allPaidProductIds.contains(purchase.productID)) {
             _sawPaidProductThisCheck = true;
-            _entitlementCheckOpen = false;
             final tier = SubscriptionProducts.tierForProductId(purchase.productID);
             if (tier != null && tier.index > bestFromBatch.index) {
               bestFromBatch = tier;
@@ -196,6 +217,7 @@ class SubscriptionService extends ChangeNotifier {
     if (bestFromBatch != SubscriptionTier.free) {
       _invoiceProvider.setSubscriptionTier(bestFromBatch);
     }
+    _completeRestoreBatch();
     notifyListeners();
   }
 

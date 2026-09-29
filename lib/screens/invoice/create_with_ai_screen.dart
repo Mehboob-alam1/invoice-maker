@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice_item.dart';
+import '../../models/subscription_tier.dart';
 import '../../providers/invoice_provider.dart';
 import '../../ads/ad_action.dart';
 import '../../services/invoice_create_gate.dart';
@@ -127,10 +128,16 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
                                 children: [
                                   _AiHeroCard(
                                     intro: strings.aiIntro,
-                                    tokens: strings.aiTokensRemainingHint(
-                                      provider.aiTokensRemainingThisMonth,
-                                      provider.monthlyAiTokenLimit,
-                                    ),
+                                    tokens: provider.subscriptionTier ==
+                                            SubscriptionTier.free
+                                        ? strings.aiFreeCreditsRemainingHint(
+                                            provider.aiCreditsRemaining,
+                                            provider.monthlyAiCredits,
+                                          )
+                                        : strings.aiTokensRemainingHint(
+                                            provider.aiTokensRemainingThisMonth,
+                                            provider.monthlyAiTokenLimit,
+                                          ),
                                   ),
                                   const SizedBox(height: 20),
                                   Container(

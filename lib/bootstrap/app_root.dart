@@ -55,12 +55,16 @@ class _AppRootState extends State<AppRoot> {
         final themeMode = result?.themeProvider.themeMode ?? ThemeMode.light;
         final locale = Locale(result?.invoiceProvider.languageCode ?? 'en');
 
+        final splashTheme = AppTheme.light.copyWith(
+          scaffoldBackgroundColor: SplashLaunchView.backgroundColor,
+        );
+
         return MaterialApp(
           title: AppConfig.appDisplayName,
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
+          theme: ready ? AppTheme.light : splashTheme,
           darkTheme: AppTheme.dark,
-          themeMode: themeMode,
+          themeMode: ready ? themeMode : ThemeMode.light,
           locale: locale,
           supportedLocales: AppLanguages.supportedLocales,
           localizationsDelegates: const [
@@ -71,7 +75,12 @@ class _AppRootState extends State<AppRoot> {
           navigatorObservers: ready ? [appRouteObserver] : const [],
           builder: (context, child) {
             final body = child ?? const SizedBox.shrink();
-            if (!ready) return body;
+            if (!ready) {
+              return ColoredBox(
+                color: SplashLaunchView.backgroundColor,
+                child: body,
+              );
+            }
             return MultiProvider(
               providers: [
                 ChangeNotifierProvider.value(value: result.themeProvider),

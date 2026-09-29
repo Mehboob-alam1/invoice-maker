@@ -38,7 +38,12 @@ class _AppOpenLifecycleState extends State<AppOpenLifecycle> with WidgetsBinding
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && _coldStartHandled) {
-      unawaited(AdRemoteConfig.instance.refresh());
+      unawaited(() async {
+        await AdRemoteConfig.instance.refresh();
+        if (mounted) {
+          context.read<InvoiceProvider>().applyRemoteInvoiceLimits();
+        }
+      }());
       AdService.instance.showAppOpenIfAvailable(tier: _tier);
       if (mounted) {
         context.read<SubscriptionService>().refreshEntitlementsFromStore(silent: true);

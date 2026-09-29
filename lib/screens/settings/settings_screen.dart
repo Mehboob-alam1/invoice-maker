@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -11,6 +13,7 @@ import '../clients/clients_screen.dart';
 import '../items/items_screen.dart';
 import '../onboarding/language_screen.dart';
 import '../subscription/subscription_plans_screen.dart';
+import '../../services/push_notification_service.dart';
 import '../../services/subscription_service.dart';
 import '../../ads/ad_action.dart';
 import '../../navigation/app_page_route.dart';
@@ -69,7 +72,29 @@ class SettingsScreen extends StatelessWidget {
       ),
     ]);
 
-    final generalSection = _SettingsSection(items: [
+    final generalItems = <_SettingsItem>[
+      if (Platform.isAndroid || Platform.isIOS)
+        _SettingsItem(
+          icon: Icons.notifications_outlined,
+          label: strings.notifications,
+          onTap: () async {
+            final before =
+                await PushNotificationService.instance.notificationsAreEnabled();
+            await PushNotificationService.instance.requestPermissionFromSettings();
+            if (!context.mounted) return;
+            final after =
+                await PushNotificationService.instance.notificationsAreEnabled();
+            if (after) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.notificationsEnabledSnack)),
+              );
+            } else if (!before) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(strings.notificationsOpenSettingsSnack)),
+              );
+            }
+          },
+        ),
       _SettingsItem(
         icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
         label: strings.darkMode,
@@ -127,7 +152,9 @@ class SettingsScreen extends StatelessWidget {
           appPageRoute(const LegalDocumentScreen(kind: LegalDocumentKind.community)),
         ),
       ),
-    ]);
+    ];
+
+    final generalSection = _SettingsSection(items: generalItems);
 
     return Scaffold(
       appBar: AppBar(

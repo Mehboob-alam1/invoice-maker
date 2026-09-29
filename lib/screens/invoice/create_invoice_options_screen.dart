@@ -5,6 +5,7 @@ import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
+import '../../models/subscription_tier.dart';
 import '../../providers/invoice_provider.dart';
 import '../../services/invoice_create_gate.dart';
 import '../../widgets/blue_screen.dart';
@@ -29,7 +30,8 @@ class CreateInvoiceOptionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.l10n;
     final invoiceProvider = context.watch<InvoiceProvider>();
-    final aiUnlocked = invoiceProvider.subscriptionTier.canUseAiInvoice;
+    final aiUnlocked = invoiceProvider.canOpenCreateWithAi;
+    final showFreeCredits = invoiceProvider.subscriptionTier == SubscriptionTier.free;
 
     return Theme(
       data: buildBlueTheme(Theme.of(context)),
@@ -65,11 +67,18 @@ class CreateInvoiceOptionsScreen extends StatelessWidget {
               colors: const [_kIndigo, BlueColors.light],
               title: strings.createWithAi,
               subtitle: aiUnlocked
-                  ? strings.aiTokensRemainingHint(
-                invoiceProvider.aiTokensRemainingThisMonth,
-                invoiceProvider.monthlyAiTokenLimit,
-              )
-                  : strings.aiPremiumPlanBadge,
+                  ? (showFreeCredits
+                      ? strings.aiFreeCreditsRemainingHint(
+                          invoiceProvider.aiCreditsRemaining,
+                          invoiceProvider.monthlyAiCredits,
+                        )
+                      : strings.aiTokensRemainingHint(
+                          invoiceProvider.aiTokensRemainingThisMonth,
+                          invoiceProvider.monthlyAiTokenLimit,
+                        ))
+                  : (showFreeCredits
+                      ? strings.aiNoCreditsBadge
+                      : strings.aiPremiumPlanBadge),
               proLocked: !aiUnlocked,
               onTap: () async {
                 if (!await ensurePaidAiAccessOrPrompt(context)) return;

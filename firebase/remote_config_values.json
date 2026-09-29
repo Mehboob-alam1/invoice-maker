@@ -6,5 +6,7 @@
   "ad_interstitial_android": "ca-app-pub-3940256099942544/1033173712",
   "ad_interstitial_ios": "ca-app-pub-3940256099942544/4411468910",
   "ad_app_open_android": "ca-app-pub-3940256099942544/9257395921",
-  "ad_app_open_ios": "ca-app-pub-3940256099942544/5575463023"
+  "ad_app_open_ios": "ca-app-pub-3940256099942544/5575463023",
+  "free_daily_invoice_limit": 3,
+  "premium_daily_invoice_limit": 10
 }
