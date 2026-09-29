@@ -18,6 +18,10 @@ import '../../services/subscription_service.dart';
 import '../../ads/ad_action.dart';
 import '../../navigation/app_page_route.dart';
 import '../../screens/legal/legal_document_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/constants/app_config.dart';
+import '../../widgets/account_deletion_flow.dart';
 import '../../widgets/rate_feedback_sheet.dart';
 import '../../widgets/settings_profile_header.dart';
 import '../../widgets/ui/app_page_shell.dart';
@@ -123,6 +127,19 @@ class SettingsScreen extends StatelessWidget {
           context,
           appPageRoute(const LegalDocumentScreen(kind: LegalDocumentKind.privacy)),
         ),
+      ),
+      _SettingsItem(
+        icon: Icons.delete_forever_outlined,
+        label: strings.deleteAccount,
+        onTap: () => showDeleteAccountDialog(context),
+      ),
+      _SettingsItem(
+        icon: Icons.language_outlined,
+        label: strings.deleteAccountWeb,
+        onTap: () async {
+          final uri = Uri.parse(AppConfig.accountDeletionWebUrl);
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        },
       ),
       _SettingsItem(
         icon: Icons.lock_open_rounded,

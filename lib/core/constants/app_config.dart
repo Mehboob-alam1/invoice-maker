@@ -12,6 +12,13 @@ class AppConfig {
 
   static const supportEmail = 'support@appomatrix.com';
 
+  /// Account deletion requests (Play Console Data Safety / GDPR).
+  static const accountDeletionEmail = 'appo.matrix01@gmail.com';
+
+  /// Public account-deletion page (Netlify). Change if you use a different site name.
+  static const accountDeletionWebUrl =
+      'https://invoice-go-deletion.netlify.app/account-deletion.html';
+
   static const privacyLastUpdated = 'September 28, 2026';
   static const guidelinesLastUpdated = 'September 24, 2025';
 

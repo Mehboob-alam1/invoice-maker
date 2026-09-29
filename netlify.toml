@@ -1,0 +1,9 @@
+# Netlify: connect repo → Site settings → Build & deploy
+# Publish directory: docs (no build command needed)
+[build]
+  publish = "docs"
+
+[[redirects]]
+  from = "/"
+  to = "/account-deletion.html"
+  status = 302

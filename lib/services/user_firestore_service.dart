@@ -135,6 +135,27 @@ class UserFirestoreService {
     );
   }
 
+  /// Removes `users/{uid}` and known subcollections (Play / GDPR account deletion).
+  Future<void> deleteAllUserData(String uid) async {
+    final firestore = FirebaseFirestore.instance;
+    final userRef = firestore.collection(_users).doc(uid);
+
+    Future<void> deleteQuery(Query query) async {
+      while (true) {
+        final snap = await query.limit(100).get();
+        if (snap.docs.isEmpty) break;
+        final batch = firestore.batch();
+        for (final doc in snap.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    }
+
+    await deleteQuery(userRef.collection(_subscriptionEvents));
+    await userRef.delete();
+  }
+
   Future<void> recordDailyInvoiceUsage({
     required String uid,
     required String dayKey,

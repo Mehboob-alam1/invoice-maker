@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../core/constants/google_auth_config.dart';
@@ -21,9 +23,10 @@ class AuthService extends ChangeNotifier {
   final InvoiceProvider _invoiceProvider;
   final SubscriptionService _subscriptionService;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-    serverClientId: GoogleAuthConfig.serverClientId,
+  late final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: const ['email', 'profile'],
+    serverClientId: GoogleAuthConfig.webClientId,
+    clientId: Platform.isIOS ? GoogleAuthConfig.iosClientId : null,
   );
 
   StreamSubscription<User?>? _authSub;
@@ -87,9 +90,17 @@ class AuthService extends ChangeNotifier {
         return false;
       }
       final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        lastError =
+            'Google did not return a sign-in token. Check Firebase Web client ID and SHA-1 in Firebase Console.';
+        signingIn = false;
+        notifyListeners();
+        return false;
+      }
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+        idToken: idToken,
       );
       await _auth.signInWithCredential(credential);
       signingIn = false;
@@ -97,15 +108,39 @@ class AuthService extends ChangeNotifier {
       return true;
     } on FirebaseAuthException catch (e) {
       lastError = e.message ?? e.code;
+      debugPrint('AuthService FirebaseAuthException: ${e.code} ${e.message}');
       signingIn = false;
       notifyListeners();
       return false;
-    } catch (e) {
+    } on PlatformException catch (e) {
+      lastError = _googleSignInErrorMessage(e);
+      debugPrint('AuthService PlatformException: ${e.code} ${e.message} ${e.details}');
+      signingIn = false;
+      notifyListeners();
+      return false;
+    } catch (e, st) {
       lastError = e.toString();
+      debugPrint('AuthService signInWithGoogle: $e\n$st');
       signingIn = false;
       notifyListeners();
       return false;
     }
+  }
+
+  static String _googleSignInErrorMessage(PlatformException e) {
+    final code = e.code;
+    final message = '${e.message ?? ''} ${e.details ?? ''}';
+    if (message.contains('10') ||
+        message.toLowerCase().contains('developer_error') ||
+        code == 'sign_in_failed') {
+      return 'Google Sign-In failed (app not registered). In Firebase Console, open Project '
+          'settings → your Android app → add SHA-1 for your debug/release keystore, enable '
+          'Google sign-in in Authentication, then download a fresh google-services.json.';
+    }
+    if (code == 'network_error') {
+      return 'Network error during Google Sign-In. Check your connection and try again.';
+    }
+    return e.message ?? 'Google Sign-In failed ($code).';
   }
 
   Future<void> signOut() async {
