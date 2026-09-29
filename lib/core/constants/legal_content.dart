@@ -91,7 +91,7 @@ class LegalContent {
           'object, portability, and withdraw consent. California residents may have additional '
           'rights under the CCPA/CPRA.\n\n'
           'Account deletion: Open Settings → Delete account in the App (when signed in with Google), '
-          'or submit a request at https://mehboob-alam1.github.io/invoice-maker/account-deletion.html. '
+          'or submit a request at https://invoice-go-deletion.netlify.app/account-deletion.html. '
           'Email appo.matrix01@gmail.com if you need help. You may also complain to your local data '
           'protection authority. You can disable notifications in system settings and limit ad tracking '
           'in device settings.',

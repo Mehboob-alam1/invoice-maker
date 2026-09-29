@@ -15,9 +15,9 @@ class AppConfig {
   /// Account deletion requests (Play Console Data Safety / GDPR).
   static const accountDeletionEmail = 'appo.matrix01@gmail.com';
 
-  /// Host [docs/account-deletion.html] (e.g. GitHub Pages) and paste this URL in Play Console.
+  /// Public account-deletion page (Netlify). Change if you use a different site name.
   static const accountDeletionWebUrl =
-      'https://mehboob-alam1.github.io/invoice-maker/account-deletion.html';
+      'https://invoice-go-deletion.netlify.app/account-deletion.html';
 
   static const privacyLastUpdated = 'September 28, 2026';
   static const guidelinesLastUpdated = 'September 24, 2025';
