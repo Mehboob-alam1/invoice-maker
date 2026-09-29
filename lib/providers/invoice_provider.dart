@@ -517,4 +517,28 @@ class InvoiceProvider extends ChangeNotifier {
     notifyListeners();
     _save();
   }
+
+  /// After account deletion — clear invoices, profile, and onboarding flags on device.
+  Future<void> wipeAllLocalDataAfterAccountDeletion() async {
+    businessName = '';
+    businessEmail = '';
+    businessPhone = '';
+    businessAddress = '';
+    businessTaxId = '';
+    languageCode = 'en';
+    subscriptionTier = SubscriptionTier.free;
+    _invoiceQuotaDayKey = '';
+    _invoicesCreatedOnQuotaDay = 0;
+    _aiQuotaMonthKey = '';
+    _aiTokensUsedThisMonth = 0;
+    onboardingLanguageDone = false;
+    onboardingCarouselDone = false;
+    onboardingGoogleStepDone = false;
+    clients.clear();
+    invoices.clear();
+    catalogItems.clear();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_storageKey);
+  }
 }

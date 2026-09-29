@@ -89,9 +89,12 @@ class LegalContent {
       '10. Your rights',
       'Depending on your location, you may have rights to access, rectify, erase, restrict, '
           'object, portability, and withdraw consent. California residents may have additional '
-          'rights under the CCPA/CPRA. To exercise rights, contact support@appomatrix.com. You may also '
-          'complain to your local data protection authority. You can disable notifications in system settings '
-          'and limit ad tracking in device settings.',
+          'rights under the CCPA/CPRA.\n\n'
+          'Account deletion: Open Settings → Delete account in the App (when signed in with Google), '
+          'or submit a request at https://mehboob-alam1.github.io/invoice-maker/account-deletion.html. '
+          'Email appo.matrix01@gmail.com if you need help. You may also complain to your local data '
+          'protection authority. You can disable notifications in system settings and limit ad tracking '
+          'in device settings.',
     ),
     LegalSection(
       '11. Security',

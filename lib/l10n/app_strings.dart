@@ -271,6 +271,14 @@ class AppStrings {
   String get googleAccountHint => t('googleAccountHint');
   String get signInWithGoogle => t('signInWithGoogle');
   String get signOut => t('signOut');
+  String get deleteAccount => t('deleteAccount');
+  String get deleteAccountWeb => t('deleteAccountWeb');
+  String get deleteAccountTitle => t('deleteAccountTitle');
+  String get deleteAccountBody => t('deleteAccountBody');
+  String get deleteAccountConfirm => t('deleteAccountConfirm');
+  String get deleteAccountSuccess => t('deleteAccountSuccess');
+  String get deleteAccountSignInRequired => t('deleteAccountSignInRequired');
+  String deleteAccountUidHint(String uid) => t('deleteAccountUidHint', {'uid': uid});
   String get googleUser => t('googleUser');
   String get signInToSyncSubscription => t('signInToSyncSubscription');
   String get googleLoginTitle => t('googleLoginTitle');

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invoice GO — Account &amp; Data Deletion</title>
+  <meta name="description" content="Request deletion of your Invoice GO account and associated data stored by Appomatrix." />
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    h1 { font-size: 1.75rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+    h2 { font-size: 1.1rem; margin: 0 0 12px; }
+    p, li { color: var(--text); }
+    ul { padding-left: 1.25rem; margin: 0 0 16px; }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin: 16px 0 6px;
+    }
+    input[type="email"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    .check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin: 20px 0;
+      font-size: 0.9rem;
+    }
+    .check input { margin-top: 4px; }
+    button {
+      width: 100%;
+      padding: 14px 18px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--danger);
+      color: #fff;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .note {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 16px;
+    }
+    a { color: var(--primary); }
+    .app-link {
+      display: inline-block;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+    footer {
+      margin-top: 28px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Invoice GO — Account deletion</h1>
+    <p class="sub">Appomatrix · <a href="mailto:appo.matrix01@gmail.com">appo.matrix01@gmail.com</a></p>
+
+    <div class="card">
+      <h2>Delete in the app (fastest)</h2>
+      <p>If you are signed in with Google, open <strong>Invoice GO → Settings → Delete account</strong> to remove your Firebase account and cloud profile immediately.</p>
+
+      <h2>Request deletion by email</h2>
+      <p>Use this form if you cannot access the app or are not signed in. We will verify your identity and delete:</p>
+      <ul>
+        <li>Your Google-linked Firebase authentication record</li>
+        <li>Cloud profile (business details, subscription sync, FCM token, usage metadata)</li>
+        <li>Any invoice-related data stored under your user ID in Firebase</li>
+      </ul>
+      <p><strong>Local data</strong> on your device is removed when you uninstall the app or use in-app deletion.</p>
+
+      <form id="deletionForm">
+        <label for="email">Google account email (used in Invoice GO) *</label>
+        <input type="email" id="email" name="email" required placeholder="you@gmail.com" autocomplete="email" />
+
+        <label for="uid">Firebase user ID (optional — shown in app deletion screen if signed in)</label>
+        <input type="text" id="uid" name="uid" placeholder="Optional" />
+
+        <label for="reason">Notes (optional)</label>
+        <textarea id="reason" name="reason" placeholder="Any details that help us locate your account"></textarea>
+
+        <label class="check">
+          <input type="checkbox" id="confirm" required />
+          <span>I understand that account deletion is permanent and cannot be undone.</span>
+        </label>
+
+        <button type="submit" id="submitBtn" disabled>Send deletion request</button>
+      </form>
+
+      <p class="note">Submitting opens your email app with a pre-filled message to <strong>appo.matrix01@gmail.com</strong>. We aim to process verified requests within 30 days.</p>
+    </div>
+
+    <footer>
+      Invoice GO · Package: com.invoice.maker.estimate.billing.ocr.appomatrix<br />
+      Last updated: September 29, 2026
+    </footer>
+  </div>
+
+  <script>
+    const DELETION_EMAIL = 'appo.matrix01@gmail.com';
+    const form = document.getElementById('deletionForm');
+    const confirm = document.getElementById('confirm');
+    const submitBtn = document.getElementById('submitBtn');
+
+    confirm.addEventListener('change', () => {
+      submitBtn.disabled = !confirm.checked;
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const uid = document.getElementById('uid').value.trim();
+      const reason = document.getElementById('reason').value.trim();
+      const subject = encodeURIComponent('Invoice GO — Account deletion request');
+      const body = encodeURIComponent(
+        'Please delete my Invoice GO account and associated cloud data.\n\n' +
+        'Google account email: ' + email + '\n' +
+        (uid ? 'Firebase UID: ' + uid + '\n' : '') +
+        (reason ? 'Notes: ' + reason + '\n' : '') +
+        '\nI confirm this request is permanent.\n' +
+        'App: Invoice GO (com.invoice.maker.estimate.billing.ocr.appomatrix)'
+      );
+      window.location.href = 'mailto:' + DELETION_EMAIL + '?subject=' + subject + '&body=' + body;
+    });
+  </script>
+</body>
+</html>

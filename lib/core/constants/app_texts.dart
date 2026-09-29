@@ -294,6 +294,17 @@ class AppTexts {
       'Sign in to save your profile and Pro subscription to the cloud and restore them on a new device.';
   static const signInWithGoogle = 'Sign in with Google';
   static const signOut = 'Sign out';
+  static const deleteAccount = 'Delete account';
+  static const deleteAccountWeb = 'Account deletion (web form)';
+  static const deleteAccountTitle = 'Delete your account?';
+  static const deleteAccountBody =
+      'This permanently deletes your Google sign-in account, cloud profile, and synced data. '
+      'Invoices and clients stored on this device will also be removed. This cannot be undone.';
+  static const deleteAccountConfirm = 'Delete permanently';
+  static const deleteAccountSuccess = 'Your account and data were deleted.';
+  static const deleteAccountSignInRequired =
+      'Sign in with Google to delete your cloud account from the app, or use the web deletion form.';
+  static const deleteAccountUidHint = 'Your user ID (for web requests): {uid}';
   static const googleUser = 'Google user';
   static const signInToSyncSubscription =
       'You\'re Pro on this device. Sign in with Google in Settings to back up your subscription.';
@@ -671,6 +682,14 @@ class AppTexts {
     'googleAccountHint': googleAccountHint,
     'signInWithGoogle': signInWithGoogle,
     'signOut': signOut,
+    'deleteAccount': deleteAccount,
+    'deleteAccountWeb': deleteAccountWeb,
+    'deleteAccountTitle': deleteAccountTitle,
+    'deleteAccountBody': deleteAccountBody,
+    'deleteAccountConfirm': deleteAccountConfirm,
+    'deleteAccountSuccess': deleteAccountSuccess,
+    'deleteAccountSignInRequired': deleteAccountSignInRequired,
+    'deleteAccountUidHint': deleteAccountUidHint,
     'googleUser': googleUser,
     'signInToSyncSubscription': signInToSyncSubscription,
     'googleLoginTitle': googleLoginTitle,
