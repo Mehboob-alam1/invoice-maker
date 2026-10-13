@@ -5,11 +5,11 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 class OcrService {
   OcrService._();
 
-  static bool get isSupported => Platform.isAndroid || Platform.isIOS;
+  static bool get isSupported => Platform.isAndroid;
 
   static Future<String> recognizeText(String imagePath) async {
     if (!isSupported) {
-      throw UnsupportedError('OCR is available on Android and iOS only.');
+      throw UnsupportedError('OCR is available on Android only.');
     }
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {

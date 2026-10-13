@@ -15,8 +15,7 @@ import '../../ads/ad_flows.dart';
 import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../navigation/app_route_observer.dart';
-import '../../services/premium_upsell_service.dart';
-import '../../services/push_notification_service.dart';
+import '../../widgets/notification_prompt_sheet.dart';
 import '../../services/subscription_renewal_prompt.dart';
 import '../../widgets/ui/app_page_shell.dart';
 import '../../widgets/ui/empty_state_view.dart';
@@ -40,13 +39,11 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await Future<void>.delayed(const Duration(milliseconds: 900));
       if (!mounted) return;
-      await PushNotificationService.instance.requestPermissionIfNeeded();
+      await NotificationPrompt.maybeAsk(context);
       if (!mounted) return;
       await SubscriptionRenewalPrompt.maybeShow(context);
-      if (!mounted) return;
-      PremiumUpsellService.maybeShow(context);
     });
   }
 
@@ -70,7 +67,6 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen>
   @override
   void didPopNext() {
     SubscriptionRenewalPrompt.maybeShow(context);
-    PremiumUpsellService.maybeShow(context);
   }
 
   void _openCreateInvoice() {
@@ -169,7 +165,7 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen>
                         SizedBox(
                           width: _kSidePanelWidth,
                           child: SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(20, 4, 12, 24),
+                            padding: const EdgeInsets.fromLTRB(20, 28, 12, 24),
                             child: Column(
                               children: [
                                 banner,
@@ -207,7 +203,7 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen>
                       child: Column(
                         children: [
                           Padding(
-                            padding: EdgeInsets.fromLTRB(hPad, 4, hPad, 12),
+                            padding: EdgeInsets.fromLTRB(hPad, 28, hPad, 12),
                             child: banner,
                           ),
                           Padding(

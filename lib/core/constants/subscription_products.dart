@@ -2,14 +2,9 @@ import '../../models/subscription_tier.dart';
 
 /// Play Console / App Store subscription product IDs.
 ///
-/// Create **two** subscription groups (or one group with two base plans each):
-/// - **Premium**: `invoice_maker_premium_monthly`, `invoice_maker_premium_yearly`
-/// - **Pro**: `invoice_maker_pro_monthly`, `invoice_maker_pro_yearly`
-///
-/// Suggested list prices (set in Play Console — shown live via [ProductDetails.price]):
-/// | Plan     | Monthly | Yearly (≈33% off) |
-/// | Premium  | $4.99   | $39.99            |
-/// | Pro      | $9.99   | $79.99              |
+/// The only plan for sale is [weekly] (`invoice_maker_weekly`).
+/// The 3-day trial is configured on that Play base plan.
+/// Older monthly and yearly SKUs are recognized on restore only.
 class SubscriptionProducts {
   SubscriptionProducts._();
 
@@ -21,7 +16,7 @@ class SubscriptionProducts {
   /// Legacy weekly Pro SKU (maps to Pro tier).
   static const legacyProWeekly = 'invoice_maker_pro_weekly';
 
-  /// The only plan offered in the paywall. 3-day trial is set on the Play base plan.
+  /// The only plan offered in the paywall.
   static const weekly = 'invoice_maker_weekly';
 
   static const Set<String> premiumProductIds = {premiumMonthly, premiumYearly};
@@ -32,14 +27,8 @@ class SubscriptionProducts {
     weekly,
   };
 
-  /// SKUs queried from Google Play / App Store (active products only).
-  static const Set<String> storeProductIds = {
-    weekly,
-    premiumMonthly,
-    premiumYearly,
-    proMonthly,
-    proYearly,
-  };
+  /// The only SKU queried for purchase.
+  static const Set<String> storeProductIds = {weekly};
 
   static const Set<String> allPaidProductIds = {
     ...premiumProductIds,
@@ -52,11 +41,8 @@ class SubscriptionProducts {
     return null;
   }
 
-  static String productIdFor(SubscriptionTier tier, {required bool yearly}) {
-    return switch (tier) {
-      SubscriptionTier.free => '',
-      SubscriptionTier.premium => yearly ? premiumYearly : premiumMonthly,
-      SubscriptionTier.pro => yearly ? proYearly : proMonthly,
-    };
+  static String productIdFor(SubscriptionTier tier, {bool yearly = false}) {
+    if (tier == SubscriptionTier.free) return '';
+    return weekly;
   }
 }

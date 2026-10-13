@@ -6,25 +6,19 @@ class AdConfig {
   AdConfig._();
 
   static bool get isSupported =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS);
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   static const androidAppId = 'ca-app-pub-3843970042444074~9694723819';
-  static const iosAppId = 'ca-app-pub-3940256099942544~1458002511';
 
   /// Optional HTTP override (CDN). Primary source is Firebase Remote Config.
   static const String? remoteAdConfigUrl = null;
 
   // Google sample ad units (development / store review only).
   static const testAndroidNative = 'ca-app-pub-3940256099942544/2247696110';
-  static const testIosNative = 'ca-app-pub-3940256099942544/3986624511';
   static const testAndroidInterstitial = 'ca-app-pub-3940256099942544/1033173712';
-  static const testIosInterstitial = 'ca-app-pub-3940256099942544/4411468910';
   static const testAndroidAppOpen = 'ca-app-pub-3940256099942544/9257395921';
-  static const testIosAppOpen = 'ca-app-pub-3940256099942544/5575463023';
   static const testAndroidBanner = 'ca-app-pub-3940256099942544/6300978111';
-  static const testIosBanner = 'ca-app-pub-3940256099942544/2934735716';
+  static const testAndroidRewarded = 'ca-app-pub-3940256099942544/5224354917';
 
   static const _testPublisherId = '3940256099942544';
 
@@ -33,19 +27,9 @@ class AdConfig {
         test: testAndroidNative,
       );
 
-  static String get defaultIosNative => _pick(
-        production: ProductionAdUnits.iosNative,
-        test: testIosNative,
-      );
-
   static String get defaultAndroidInterstitial => _pick(
         production: ProductionAdUnits.androidInterstitial,
         test: testAndroidInterstitial,
-      );
-
-  static String get defaultIosInterstitial => _pick(
-        production: ProductionAdUnits.iosInterstitial,
-        test: testIosInterstitial,
       );
 
   static String get defaultAndroidAppOpen => _pick(
@@ -53,19 +37,14 @@ class AdConfig {
         test: testAndroidAppOpen,
       );
 
-  static String get defaultIosAppOpen => _pick(
-        production: ProductionAdUnits.iosAppOpen,
-        test: testIosAppOpen,
-      );
-
   static String get defaultAndroidBanner => _pick(
         production: ProductionAdUnits.androidBanner,
         test: testAndroidBanner,
       );
 
-  static String get defaultIosBanner => _pick(
-        production: ProductionAdUnits.iosBanner,
-        test: testIosBanner,
+  static String get defaultAndroidRewarded => _pick(
+        production: ProductionAdUnits.androidRewarded,
+        test: testAndroidRewarded,
       );
 
   static String _pick({required String production, required String test}) {

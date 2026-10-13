@@ -1,18 +1,22 @@
 import 'dart:math' as math;
 
+import 'package:circle_flags/circle_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../ads/ad_placement.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_languages.dart';
 import '../../l10n/app_strings.dart';
 import '../../navigation/app_page_route.dart';
 import '../../providers/invoice_provider.dart';
 import '../../widgets/blue_screen.dart';
+import '../../widgets/bottom_banner_host.dart';
+import '../../widgets/placement_native_ad.dart';
 import '../../widgets/ui/app_page_shell.dart';
 import 'onboarding_screen.dart';
 
-class LanguageScreen extends StatefulWidget {
+class LanguageScreen extends StatefulWidget with NoBottomBanner {
   final bool fromOnboarding;
 
   const LanguageScreen({super.key, this.fromOnboarding = false});
@@ -179,6 +183,11 @@ class _LanguageScreenState extends State<LanguageScreen> {
                                       const SizedBox(height: 20),
                                     ],
                                     search,
+                                    const SizedBox(height: 16),
+                                    const PlacementNativeAd(
+                                      placement: AdPlacement.nativeLanguage,
+                                      large: true,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -334,7 +343,7 @@ class _LanguageTile extends StatelessWidget {
                       color: cs.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Text(language.flag, style: const TextStyle(fontSize: 26)),
+                    child: CircleFlag(language.countryCode, size: 32),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

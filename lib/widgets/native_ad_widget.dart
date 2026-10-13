@@ -12,7 +12,13 @@ import '../l10n/app_strings.dart';
 
 /// Edge-to-edge bottom native ad (AdMob small template).
 class NativeAdWidget extends StatefulWidget {
-  const NativeAdWidget({super.key});
+  const NativeAdWidget({super.key, this.inline = false, this.large = false});
+
+  /// In-list ad. Hidden until it loads, and shorter than the bottom bar.
+  final bool inline;
+
+  /// AdMob medium template, the larger built-in native layout.
+  final bool large;
 
   /// AdMob small template baseline width (logical px).
   static const double templateDesignWidth = 360;
@@ -117,7 +123,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
         },
       ),
       nativeTemplateStyle: NativeTemplateStyle(
-        templateType: TemplateType.small,
+        templateType: widget.large ? TemplateType.medium : TemplateType.small,
         mainBackgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
         cornerRadius: 0,
         callToActionTextStyle: NativeTemplateTextStyle(
@@ -182,26 +188,34 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
     final showRealAd = _isAdLoaded && _nativeAd != null;
+    if ((widget.inline || widget.large) && !showRealAd) return const SizedBox.shrink();
     final borderColor = theme.colorScheme.primary.withValues(alpha: 0.12);
+    final framed = widget.inline || widget.large;
+    final bottomInset = framed ? 0.0 : MediaQuery.paddingOf(context).bottom;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final layoutWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final contentH = NativeAdWidget.contentHeight(context, layoutWidth: layoutWidth);
+        final contentH = widget.large
+            ? 350.0
+            : widget.inline
+                ? 72.0
+                : NativeAdWidget.contentHeight(context, layoutWidth: layoutWidth);
 
         return SizedBox(
           width: layoutWidth,
           child: Material(
           color: theme.cardColor,
           elevation: 0,
+          borderRadius: framed ? BorderRadius.circular(14) : null,
+          clipBehavior: framed ? Clip.antiAlias : Clip.none,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Divider(height: 1, thickness: 1, color: borderColor),
+              if (!framed) Divider(height: 1, thickness: 1, color: borderColor),
               RepaintBoundary(
                 child: ClipRect(
                   clipBehavior: Clip.hardEdge,

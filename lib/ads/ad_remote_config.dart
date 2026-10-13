@@ -22,13 +22,10 @@ class AdRemoteConfig {
   bool _pushNotificationsEnabled = true;
 
   String _androidNative = AdConfig.defaultAndroidNative;
-  String _iosNative = AdConfig.defaultIosNative;
   String _androidInterstitial = AdConfig.defaultAndroidInterstitial;
-  String _iosInterstitial = AdConfig.defaultIosInterstitial;
   String _androidAppOpen = AdConfig.defaultAndroidAppOpen;
-  String _iosAppOpen = AdConfig.defaultIosAppOpen;
   String _androidBanner = AdConfig.defaultAndroidBanner;
-  String _iosBanner = AdConfig.defaultIosBanner;
+  String _androidRewarded = AdConfig.defaultAndroidRewarded;
 
   final Map<String, bool> _placementEnabled = {
     for (final placement in AdPlacement.all) placement.remoteKey: true,
@@ -42,28 +39,18 @@ class AdRemoteConfig {
   /// Optional kill switch for prompting notification permission.
   bool get pushNotificationsEnabled => _pushNotificationsEnabled;
 
-  String get nativeAdUnitId {
-    if (defaultTargetPlatform == TargetPlatform.iOS) return _iosNative;
-    return _androidNative;
-  }
+  String get nativeAdUnitId => _androidNative;
 
-  String get interstitialAdUnitId {
-    if (defaultTargetPlatform == TargetPlatform.iOS) return _iosInterstitial;
-    return _androidInterstitial;
-  }
+  String get interstitialAdUnitId => _androidInterstitial;
 
-  String get appOpenAdUnitId {
-    if (defaultTargetPlatform == TargetPlatform.iOS) return _iosAppOpen;
-    return _androidAppOpen;
-  }
+  String get appOpenAdUnitId => _androidAppOpen;
 
-  String get bannerAdUnitId {
-    final id = defaultTargetPlatform == TargetPlatform.iOS ? _iosBanner : _androidBanner;
-    final fallback = defaultTargetPlatform == TargetPlatform.iOS
-        ? AdConfig.defaultIosBanner
-        : AdConfig.defaultAndroidBanner;
-    return ProductionAdUnits.isValidUnit(id) ? id : fallback;
-  }
+  String get bannerAdUnitId =>
+      ProductionAdUnits.isValidUnit(_androidBanner) ? _androidBanner : AdConfig.defaultAndroidBanner;
+
+  String get rewardedAdUnitId => ProductionAdUnits.isValidUnit(_androidRewarded)
+      ? _androidRewarded
+      : AdConfig.defaultAndroidRewarded;
 
   /// Master switch and the per-screen switch must both be on.
   bool isPlacementEnabled(AdPlacement placement) =>
@@ -103,13 +90,10 @@ class AdRemoteConfig {
         'ads_enabled': true,
         'push_notifications_enabled': true,
         'ad_native_android': AdConfig.defaultAndroidNative,
-        'ad_native_ios': AdConfig.defaultIosNative,
         'ad_interstitial_android': AdConfig.defaultAndroidInterstitial,
-        'ad_interstitial_ios': AdConfig.defaultIosInterstitial,
         'ad_app_open_android': AdConfig.defaultAndroidAppOpen,
-        'ad_app_open_ios': AdConfig.defaultIosAppOpen,
         'ad_banner_android': AdConfig.defaultAndroidBanner,
-        'ad_banner_ios': AdConfig.defaultIosBanner,
+        'ad_rewarded_android': AdConfig.defaultAndroidRewarded,
         'paywall_close_delay_seconds': 5,
         for (final placement in AdPlacement.all) placement.remoteKey: true,
         InvoiceLimitsRemoteConfig.remoteKeyFree: SubscriptionTier.free.dailyInvoiceLimit,
@@ -132,13 +116,10 @@ class AdRemoteConfig {
     }
 
     pickString('ad_native_android', (v) => _androidNative = v);
-    pickString('ad_native_ios', (v) => _iosNative = v);
     pickString('ad_interstitial_android', (v) => _androidInterstitial = v);
-    pickString('ad_interstitial_ios', (v) => _iosInterstitial = v);
     pickString('ad_app_open_android', (v) => _androidAppOpen = v);
-    pickString('ad_app_open_ios', (v) => _iosAppOpen = v);
     pickString('ad_banner_android', (v) => _androidBanner = v);
-    pickString('ad_banner_ios', (v) => _iosBanner = v);
+    pickString('ad_rewarded_android', (v) => _androidRewarded = v);
     _paywallCloseDelaySeconds = remoteConfig.getInt('paywall_close_delay_seconds');
     if (_paywallCloseDelaySeconds < 0) _paywallCloseDelaySeconds = 0;
     for (final placement in AdPlacement.all) {
@@ -191,13 +172,10 @@ class AdRemoteConfig {
     }
 
     pick('ad_native_android', (v) => _androidNative = v);
-    pick('ad_native_ios', (v) => _iosNative = v);
     pick('ad_interstitial_android', (v) => _androidInterstitial = v);
-    pick('ad_interstitial_ios', (v) => _iosInterstitial = v);
     pick('ad_app_open_android', (v) => _androidAppOpen = v);
-    pick('ad_app_open_ios', (v) => _iosAppOpen = v);
     pick('ad_banner_android', (v) => _androidBanner = v);
-    pick('ad_banner_ios', (v) => _iosBanner = v);
+    pick('ad_rewarded_android', (v) => _androidRewarded = v);
 
     final delay = map['paywall_close_delay_seconds'];
     if (delay is int) _paywallCloseDelaySeconds = delay;
@@ -213,11 +191,8 @@ class AdRemoteConfig {
     }
 
     pick('android_native', (v) => _androidNative = v);
-    pick('ios_native', (v) => _iosNative = v);
     pick('android_interstitial', (v) => _androidInterstitial = v);
-    pick('ios_interstitial', (v) => _iosInterstitial = v);
     pick('android_app_open', (v) => _androidAppOpen = v);
-    pick('ios_app_open', (v) => _iosAppOpen = v);
 
     InvoiceLimitsRemoteConfig.instance.applyFromMap(map);
   }

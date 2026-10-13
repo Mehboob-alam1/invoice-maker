@@ -22,25 +22,11 @@
       "description": "AdMob native ad unit ID (Android). Replace with production ID before release.",
       "valueType": "STRING"
     },
-    "ad_native_ios": {
-      "defaultValue": {
-        "value": "ca-app-pub-3940256099942544/3986624511"
-      },
-      "description": "AdMob native ad unit ID (iOS).",
-      "valueType": "STRING"
-    },
     "ad_interstitial_android": {
       "defaultValue": {
         "value": "ca-app-pub-3940256099942544/1033173712"
       },
       "description": "AdMob interstitial unit ID (Android).",
-      "valueType": "STRING"
-    },
-    "ad_interstitial_ios": {
-      "defaultValue": {
-        "value": "ca-app-pub-3940256099942544/4411468910"
-      },
-      "description": "AdMob interstitial unit ID (iOS).",
       "valueType": "STRING"
     },
     "ad_app_open_android": {
@@ -50,25 +36,11 @@
       "description": "AdMob app open unit ID (Android).",
       "valueType": "STRING"
     },
-    "ad_app_open_ios": {
-      "defaultValue": {
-        "value": "ca-app-pub-3940256099942544/5575463023"
-      },
-      "description": "AdMob app open unit ID (iOS).",
-      "valueType": "STRING"
-    },
     "ad_banner_android": {
       "defaultValue": {
         "value": "ca-app-pub-3940256099942544/6300978111"
       },
       "description": "AdMob banner unit ID (Android), including the collapsible main-screen banner.",
-      "valueType": "STRING"
-    },
-    "ad_banner_ios": {
-      "defaultValue": {
-        "value": "ca-app-pub-3940256099942544/2934735716"
-      },
-      "description": "AdMob banner unit ID (iOS).",
       "valueType": "STRING"
     },
     "paywall_close_delay_seconds": {
@@ -166,6 +138,36 @@
     "ad_app_open_media_return": {
       "defaultValue": { "value": "true" },
       "description": "App open ad when returning from the camera or gallery.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_banner_settings": {
+      "defaultValue": { "value": "true" },
+      "description": "Banner between settings sections.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_native_settings": {
+      "defaultValue": { "value": "true" },
+      "description": "Small native ad after a few settings tiles.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_rewarded_template": {
+      "defaultValue": { "value": "true" },
+      "description": "Rewarded ad that unlocks one premium template for a single use.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_rewarded_android": {
+      "defaultValue": { "value": "ca-app-pub-3940256099942544/5224354917" },
+      "description": "AdMob rewarded unit ID (Android).",
+      "valueType": "STRING"
+    },
+    "ad_native_splash": {
+      "defaultValue": { "value": "true" },
+      "description": "Large native ad on the splash screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_banner_screen": {
+      "defaultValue": { "value": "true" },
+      "description": "Floating banner at the bottom of screens other than splash and language.",
       "valueType": "BOOLEAN"
     },
     "free_daily_invoice_limit": {

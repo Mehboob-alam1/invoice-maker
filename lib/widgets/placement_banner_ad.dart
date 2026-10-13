@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
@@ -17,10 +19,14 @@ class PlacementBannerAd extends StatefulWidget {
     super.key,
     required this.placement,
     this.collapsible = false,
+    this.framed = false,
   });
 
   final AdPlacement placement;
   final bool collapsible;
+
+  /// Draws the banner in its own card, separate from the page.
+  final bool framed;
 
   @override
   State<PlacementBannerAd> createState() => _PlacementBannerAdState();
@@ -33,22 +39,23 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
   bool _loaded = false;
   bool _loading = false;
   int _attempts = 0;
+  int? _scheduledWidth;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _load();
+  void _schedule(int width) {
+    if (width < 1 || _loaded || _loading || _attempts >= _maxAttempts) return;
+    if (_scheduledWidth == width) return;
+    _scheduledWidth = width;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _load(width);
+    });
   }
 
-  Future<void> _load() async {
+  Future<void> _load(int width) async {
     if (_loading || _loaded || !mounted || !AdConfig.isSupported) return;
-    if (_attempts >= _maxAttempts) return;
+    if (_attempts >= _maxAttempts || width < 1) return;
     if (!AdRemoteConfig.instance.isPlacementEnabled(widget.placement)) return;
     final tier = context.read<InvoiceProvider>().subscriptionTier;
     if (!tier.showNativeAds) return;
-
-    final width = MediaQuery.sizeOf(context).width.truncate();
-    if (width < 1) return;
 
     final unitId = AdRemoteConfig.instance.bannerAdUnitId;
     if (!ProductionAdUnits.isValidUnit(unitId)) return;
@@ -88,7 +95,7 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
           if (!mounted) return;
           if (_attempts < _maxAttempts) {
             Future<void>.delayed(Duration(milliseconds: 400 * _attempts), () {
-              if (mounted) _load();
+              if (mounted) _load(width);
             });
           }
         },
@@ -106,15 +113,57 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
 
   @override
   Widget build(BuildContext context) {
-    final ad = _ad;
-    if (!_loaded || ad == null) return const SizedBox.shrink();
-    return SafeArea(
-      top: false,
-      child: SizedBox(
-        width: ad.size.width.toDouble(),
-        height: ad.size.height.toDouble(),
-        child: AdWidget(ad: ad),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screen = MediaQuery.sizeOf(context).width;
+        final available = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+            ? constraints.maxWidth
+            : screen;
+        final sideInset = widget.framed ? 24 + MediaQuery.paddingOf(context).horizontal : 0.0;
+        final requestWidth = math.max(1, (available - sideInset).truncate());
+        _schedule(requestWidth);
+
+        final ad = _ad;
+        if (!_loaded || ad == null) return const SizedBox.shrink();
+
+        final creative = SizedBox(
+          width: ad.size.width.toDouble(),
+          height: ad.size.height.toDouble(),
+          child: AdWidget(ad: ad),
+        );
+        if (!widget.framed) {
+          return SafeArea(top: false, child: Center(child: creative));
+        }
+
+        final theme = Theme.of(context);
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+          child: SafeArea(
+            top: false,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.18)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.14),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: ColoredBox(
+                  color: theme.cardColor,
+                  child: Center(child: creative),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

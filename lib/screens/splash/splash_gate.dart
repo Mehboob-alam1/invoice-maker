@@ -4,8 +4,7 @@ import '../../ads/ad_placement.dart';
 import '../../ads/ad_service.dart';
 import '../../ads/ad_flows.dart';
 import '../../bootstrap/app_bootstrap.dart';
-import '../../widgets/native_ad_host.dart';
-import '../../widgets/placement_banner_ad.dart';
+import '../../widgets/bottom_banner_host.dart';
 import '../../widgets/splash_launch_view.dart';
 
 /// One splash for the whole startup. Stays on screen through bootstrap, the
@@ -62,19 +61,10 @@ class _SplashShellState extends State<SplashShell> {
   Widget build(BuildContext context) {
     final result = widget.result;
     if (_done && result != null) {
-      return NativeAdHost(
-        adScopeKey: 'start',
-        child: result.initialScreen,
-      );
+      final next = result.initialScreen;
+      if (next is NoBottomBanner) return next;
+      return BottomBannerHost(child: next);
     }
-    return ColoredBox(
-      color: SplashLaunchView.backgroundColor,
-      child: Column(
-        children: [
-          const Expanded(child: SplashLaunchView()),
-          if (result != null) const PlacementBannerAd(placement: AdPlacement.bannerSplash),
-        ],
-      ),
-    );
+    return SplashLaunchView(showAd: result != null);
   }
 }

@@ -26,7 +26,10 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        return ios;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for ios - '
+          'this app is Android only.',
+        );
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -55,15 +58,5 @@ class DefaultFirebaseOptions {
     messagingSenderId: '668634441558',
     projectId: 'aiinvoicemaker-3a0af',
     storageBucket: 'aiinvoicemaker-3a0af.firebasestorage.app',
-  );
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB8CkSeXnQmVE0ATeh5_l516VikbDQaZ94',
-    appId: '1:668634441558:ios:f39841e51e14ce6b59d8f7',
-    messagingSenderId: '668634441558',
-    projectId: 'aiinvoicemaker-3a0af',
-    storageBucket: 'aiinvoicemaker-3a0af.firebasestorage.app',
-    androidClientId: '668634441558-52c7rbu6ul7ohpgdptjnvslafj6gefcs.apps.googleusercontent.com',
-    iosClientId: '668634441558-6h68dgai9ggkatekj6m6cihe3lqhi6ed.apps.googleusercontent.com',
-    iosBundleId: 'com.invoice.maker.estimate.billing.ocr.appomatrix',
   );
 }

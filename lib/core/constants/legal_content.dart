@@ -18,7 +18,7 @@ class LegalContent {
     ),
     LegalSection(
       '2. Scope & children',
-      'This Policy applies to the App on Android and iOS. The App is intended for business users '
+      'This Policy applies to the App on Android. The App is intended for business users '
           'and is not directed at children under 16 (or the minimum age required in your country). '
           'We do not knowingly collect personal data from children.',
     ),
@@ -45,12 +45,7 @@ class LegalContent {
           '• Camera — Capture receipts/invoices for on-device OCR scanning.\n'
           '• Post notifications — Optional service messages via Firebase Cloud Messaging.\n'
           '• Photos/media (gallery picker) — Used only when you choose an image for OCR; not accessed in the background.\n'
-          '• Google Play Billing — Process Premium/Pro subscriptions (handled by Google Play).\n\n'
-          'iOS:\n'
-          '• Camera — Document scanning for OCR.\n'
-          '• Photo Library (read) — Pick images for OCR when you choose from the library.\n'
-          '• Photo Library (add) — Save a captured scan if you use that option.\n'
-          '• Notifications — Optional; requested only if push is enabled in the App.',
+          '• Google Play Billing — Process Premium/Pro subscriptions (handled by Google Play).',
     ),
     LegalSection(
       '5. How we use information',

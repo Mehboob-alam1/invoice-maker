@@ -104,7 +104,7 @@ class AppTexts {
   static const newClientFallback = 'New Client';
   static const serviceThisMonth = 'Service for this month';
 
-  static const ocrMobileOnly = 'OCR works on Android and iOS devices.';
+  static const ocrMobileOnly = 'OCR works on Android devices.';
   static const scanInvoice = 'Scan invoice';
   static const scanInvoiceHelp = 'Take a photo or choose an image from your gallery.';
   static const openCamera = 'Open camera';
@@ -180,8 +180,10 @@ class AppTexts {
   static const freeTemplatesHint = '3 free layouts for every invoice';
   static const browseAllTemplates = 'Browse all templates';
   static const chooseTemplate = 'Choose template';
-  static const templatesSheetSubtitle = 'Preview any design free · Pro required to save with premium templates';
-  static const previewAnyTemplateHint = 'Tap preview to see your invoice · Use Pro templates after subscribing';
+  static const templatesSheetSubtitle =
+      'Preview any design free. Watch a short ad to use one premium template once, or unlock them all with Pro.';
+  static const previewAnyTemplateHint =
+      'Tap preview to see your invoice. A rewarded ad unlocks that template for one use.';
   static const useThisTemplate = 'Use this template';
   static const previewTemplate = 'Preview: {name}';
   static const proTemplateRequired = 'Pro template';
@@ -379,7 +381,18 @@ class AppTexts {
       'You have {remaining} tokens left this month (limit {limit}). This request needs about {needed} tokens. Upgrade to Pro for a higher monthly allowance, or wait until next month.';
   static const premiumTemplateRequired = 'Premium template';
   static const premiumTemplateRequiredBody =
-      'Upgrade to Premium or Pro to use this template on your invoices.';
+      'Unlock every template for good with Pro. A rewarded ad unlocks only the template you pick, and only once.';
+  static const templateUnlockTitle = 'Use this template once';
+  static const templateUnlockOnceBody =
+      'Watch a short ad to use this template on one invoice. It locks again after you use it. Pro unlocks every template, with no ads.';
+  static const unlockAllTemplates = 'Unlock all with Pro';
+  static const watchAdToUse = 'Watch ad to use';
+  static const rewardedAdNotReady = 'The ad is not ready yet. Try again, or unlock every template with Pro.';
+  static const notificationPromptTitle = 'Stay on top of invoices';
+  static const notificationPromptBody =
+      'Invoice GO can remind you when an invoice is due and when a payment comes in. You can turn this off anytime in Settings.';
+  static const notificationPromptAllow = 'Allow notifications';
+  static const notificationPromptLater = 'Not now';
   static const customizeProOnly = 'Template customization is a Pro feature.';
   static const homeQuotaBanner = '{remaining}/{limit} invoices left today';
   static const premiumUpsellTitle = 'Unlock Premium';
@@ -388,8 +401,8 @@ class AppTexts {
   static const premiumUpsellFeature1 = '10 invoices per day (vs 3 on Free)';
   static const premiumUpsellFeature2 = 'All premium invoice templates';
   static const premiumUpsellFeature3 = 'No interstitial ads + fewer app-open ads';
-  static const premiumUpsellPriceHint = 'From about \$4.99/month — yearly saves ~33%.';
-  static const premiumUpsellCta = 'See Premium plans';
+  static const premiumUpsellPriceHint = '3-day free trial, then weekly';
+  static const premiumUpsellCta = 'Start weekly plan';
   static const premiumUpsellDismiss = 'Maybe later';
   static const watchAd = 'Watch Ad';
   static const buyPremium = 'Buy Premium';
@@ -766,6 +779,15 @@ class AppTexts {
     'aiMonthlyLimitBody': aiMonthlyLimitBody,
     'premiumTemplateRequired': premiumTemplateRequired,
     'premiumTemplateRequiredBody': premiumTemplateRequiredBody,
+    'templateUnlockTitle': templateUnlockTitle,
+    'templateUnlockOnceBody': templateUnlockOnceBody,
+    'unlockAllTemplates': unlockAllTemplates,
+    'watchAdToUse': watchAdToUse,
+    'rewardedAdNotReady': rewardedAdNotReady,
+    'notificationPromptTitle': notificationPromptTitle,
+    'notificationPromptBody': notificationPromptBody,
+    'notificationPromptAllow': notificationPromptAllow,
+    'notificationPromptLater': notificationPromptLater,
     'customizeProOnly': customizeProOnly,
     'homeQuotaBanner': homeQuotaBanner,
     'premiumUpsellTitle': premiumUpsellTitle,

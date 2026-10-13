@@ -58,6 +58,7 @@ dependencies:
   firebase_remote_config: ^5.5.0
   permission_handler: ^11.4.0
   supabase_flutter: ^2.18.3
+  circle_flags: ^5.0.1
 
 dependency_overrides:
   in_app_purchase_android:

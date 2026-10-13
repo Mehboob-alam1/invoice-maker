@@ -12,8 +12,4 @@ class GoogleAuthConfig {
   /// Web client ID — pass as [GoogleSignIn.serverClientId] on Android (required for id token).
   static const String webClientId =
       '668634441558-45nkk47ik4of5g5rb8t9g33n4aq0e248.apps.googleusercontent.com';
-
-  /// iOS client from `GoogleService-Info.plist` → `CLIENT_ID`.
-  static const String iosClientId =
-      '668634441558-6h68dgai9ggkatekj6m6cihe3lqhi6ed.apps.googleusercontent.com';
 }

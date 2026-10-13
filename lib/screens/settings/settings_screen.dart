@@ -13,6 +13,9 @@ import '../clients/clients_screen.dart';
 import '../items/items_screen.dart';
 import '../onboarding/language_screen.dart';
 import '../../ads/ad_flows.dart';
+import '../../ads/ad_placement.dart';
+import '../../widgets/placement_banner_ad.dart';
+import '../../widgets/placement_native_ad.dart';
 import '../../services/push_notification_service.dart';
 import '../../services/subscription_service.dart';
 import '../../ads/ad_action.dart';
@@ -75,7 +78,7 @@ class SettingsScreen extends StatelessWidget {
     ]);
 
     final generalItems = <_SettingsItem>[
-      if (Platform.isAndroid || Platform.isIOS)
+      if (Platform.isAndroid)
         _SettingsItem(
           icon: Icons.notifications_outlined,
           label: strings.notifications,
@@ -212,6 +215,8 @@ class SettingsScreen extends StatelessWidget {
                           planBanner,
                           const SizedBox(height: 16),
                           workSection,
+                          const SizedBox(height: 16),
+                          const PlacementBannerAd(placement: AdPlacement.bannerSettings),
                         ],
                       ),
                     ),
@@ -228,6 +233,8 @@ class SettingsScreen extends StatelessWidget {
                     planBanner,
                     const SizedBox(height: 16),
                     workSection,
+                    const SizedBox(height: 16),
+                    const PlacementBannerAd(placement: AdPlacement.bannerSettings),
                     const SizedBox(height: 8),
                     generalSection,
                   ],
@@ -385,6 +392,11 @@ class _SettingsSection extends StatelessWidget {
                 ),
               ),
             ),
+            if (i == 2)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: PlacementNativeAd(placement: AdPlacement.nativeSettings, inline: true),
+              ),
             if (i != items.length - 1)
               Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.5)),
           ],

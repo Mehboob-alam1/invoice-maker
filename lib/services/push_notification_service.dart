@@ -23,7 +23,7 @@ class PushNotificationService {
 
   /// Wire FCM without showing the system permission dialog (safe during splash).
   Future<void> prepare() async {
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+    if (!Platform.isAndroid) return;
     try {
       if (!AdRemoteConfig.instance.pushNotificationsEnabled) {
         debugPrint('PushNotificationService: disabled via Remote Config');
@@ -59,7 +59,7 @@ class PushNotificationService {
     required bool respectRemoteConfig,
     required bool openSettingsIfPermanentlyDenied,
   }) async {
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+    if (!Platform.isAndroid) return;
     if (_permissionRequestInFlight) return;
     if (respectRemoteConfig && !AdRemoteConfig.instance.pushNotificationsEnabled) {
       debugPrint('PushNotificationService: push disabled via Remote Config');
@@ -91,23 +91,6 @@ class PushNotificationService {
             await NotificationPermissionPlatform.requestAndroidPostNotifications();
         debugPrint('PushNotificationService: Android native result=$outcome');
         if (outcome == 'granted' || await _hasNotificationPermission()) {
-          await _syncToken();
-          return;
-        }
-      }
-
-      if (Platform.isIOS) {
-        final settings = await _messaging.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-          provisional: false,
-        );
-        debugPrint(
-          'PushNotificationService: iOS FCM=${settings.authorizationStatus}',
-        );
-        if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-            settings.authorizationStatus == AuthorizationStatus.provisional) {
           await _syncToken();
           return;
         }

@@ -4,23 +4,25 @@ import 'package:flutter/services.dart';
 import '../ads/ad_config.dart';
 import '../l10n/app_strings.dart';
 import '../screens/invoice/invoice_preview_edit_screen.dart';
+import '../widgets/bottom_banner_host.dart';
 import '../widgets/native_ad_host.dart';
 
 /// Slide-up route for invoice create / preview flow.
 Route<T> appInvoiceFlowRoute<T>(
   Widget page, {
   required String adScopeKey,
-  bool showNativeAd = true,
+  bool showNativeAd = false,
 }) {
   return PageRouteBuilder<T>(
     settings: RouteSettings(name: adScopeKey),
     transitionDuration: const Duration(milliseconds: 380),
     reverseTransitionDuration: const Duration(milliseconds: 300),
     pageBuilder: (context, animation, secondaryAnimation) {
-      final child = showNativeAd && AdConfig.isSupported
+      final hosted = showNativeAd && AdConfig.isSupported
           ? NativeAdHost(adScopeKey: adScopeKey, child: page)
           : page;
-      return child;
+      if (page is NoBottomBanner) return hosted;
+      return BottomBannerHost(child: hosted);
     },
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);

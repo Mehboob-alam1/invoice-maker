@@ -1,6 +1,6 @@
-import 'subscription_plans_screen.dart';
+import 'weekly_paywall_screen.dart';
 
-/// Legacy entry — opens the full plans & billing screen.
-class ProPaywallScreen extends SubscriptionPlansScreen {
+/// Legacy entry. Opens the weekly plan.
+class ProPaywallScreen extends WeeklyPaywallScreen {
   const ProPaywallScreen({super.key});
 }

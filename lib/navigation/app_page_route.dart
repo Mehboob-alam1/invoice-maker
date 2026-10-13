@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../ads/ad_config.dart';
+import '../widgets/bottom_banner_host.dart';
 import '../widgets/native_ad_host.dart';
 
 /// Wraps [page] with a bottom native ad that is tied to this route only.
@@ -17,14 +18,15 @@ Route<T> appPageRoute<T>(
   Widget page, {
   RouteSettings? settings,
   String? adScopeKey,
-  bool showNativeAd = true,
+  bool showNativeAd = false,
 }) {
   final scope = adScopeKey ?? settings?.name ?? page.runtimeType.toString();
   return MaterialPageRoute<T>(
     settings: settings ?? RouteSettings(name: scope),
     builder: (context) {
-      if (!showNativeAd) return page;
-      return wrapPageWithNativeAd(page, adScopeKey: scope);
+      final child = showNativeAd ? wrapPageWithNativeAd(page, adScopeKey: scope) : page;
+      if (page is NoBottomBanner) return child;
+      return BottomBannerHost(child: child);
     },
   );
 }
@@ -33,7 +35,7 @@ Route<T> appPageRoute<T>(
 Route<T> appFadeRoute<T>(
   Widget page, {
   String? adScopeKey,
-  bool showNativeAd = true,
+  bool showNativeAd = false,
   Duration duration = const Duration(milliseconds: 450),
 }) {
   final scope = adScopeKey ?? page.runtimeType.toString();
@@ -42,7 +44,8 @@ Route<T> appFadeRoute<T>(
     transitionDuration: duration,
     pageBuilder: (context, animation, secondaryAnimation) {
       final child = showNativeAd ? wrapPageWithNativeAd(page, adScopeKey: scope) : page;
-      return child;
+      if (page is NoBottomBanner) return child;
+      return BottomBannerHost(child: child);
     },
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       return FadeTransition(opacity: animation, child: child);

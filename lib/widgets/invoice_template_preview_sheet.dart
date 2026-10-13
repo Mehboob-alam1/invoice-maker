@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../navigation/app_page_route.dart';
 import 'package:provider/provider.dart';
 
 import '../ads/ad_flows.dart';
 import '../ads/ad_placement.dart';
+import '../ads/ad_remote_config.dart';
+import '../ads/ad_service.dart';
 import '../l10n/app_strings.dart';
 import '../models/invoice.dart';
 import '../models/invoice_template.dart';
 import '../providers/invoice_provider.dart';
-import '../screens/subscription/subscription_plans_screen.dart';
 import 'invoice_document_view.dart';
 
 Future<void> showInvoiceTemplatePreviewSheet(
@@ -69,28 +69,58 @@ Future<void> showInvoiceTemplatePreviewSheet(
   );
 }
 
-/// Returns true if [templateId] is free or user's tier includes premium templates.
+/// Free templates are always allowed. Paid plans unlock every template.
+/// Free users can watch a rewarded ad to use one premium template a single time.
 Future<bool> confirmPremiumTemplateUse(BuildContext context, InvoiceTemplateId templateId) async {
   final provider = context.read<InvoiceProvider>();
-  if (InvoiceTemplateInfo.canUseTemplate(templateId, provider.subscriptionTier)) return true;
+  if (!InvoiceTemplateInfo.requiresPro(templateId)) return true;
+  if (provider.subscriptionTier.canUsePremiumTemplates) return true;
 
   final strings = AppStrings.read(context);
-  final unlock = await showDialog<bool>(
+  final choice = await showDialog<String>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(strings.premiumTemplateRequired),
-      content: Text(strings.premiumTemplateRequiredBody),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(strings.viewPlans)),
-      ],
-    ),
+    builder: (ctx) {
+      final theme = Theme.of(ctx);
+      final rewardedOn = AdRemoteConfig.instance.isPlacementEnabled(AdPlacement.rewardedTemplate);
+      return AlertDialog(
+        icon: Icon(Icons.auto_awesome_rounded, color: theme.colorScheme.primary, size: 32),
+        title: Text(strings.t('templateUnlockTitle')),
+        content: Text(
+          rewardedOn ? strings.t('templateUnlockOnceBody') : strings.premiumTemplateRequiredBody,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.cancel)),
+          if (rewardedOn)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'watch'),
+              child: Text(strings.t('watchAd')),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'pro'),
+            child: Text(strings.t('unlockAllTemplates')),
+          ),
+        ],
+      );
+    },
   );
-  if (unlock != true || !context.mounted) return false;
+  if (!context.mounted || choice == null) return false;
 
-  await Navigator.of(context).push(appPageRoute(const SubscriptionPlansScreen()));
-  if (!context.mounted) return false;
-  return InvoiceTemplateInfo.canUseTemplate(templateId, context.read<InvoiceProvider>().subscriptionTier);
+  if (choice == 'pro') {
+    await openPaywall(context);
+    if (!context.mounted) return false;
+    return context.read<InvoiceProvider>().subscriptionTier.canUsePremiumTemplates;
+  }
+
+  final earned = await AdService.instance.showRewarded(
+    adUnitId: AdRemoteConfig.instance.rewardedAdUnitId,
+  );
+  if (!context.mounted) return earned;
+  if (!earned) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(strings.t('rewardedAdNotReady'))),
+    );
+  }
+  return earned;
 }
 
 /// @deprecated Use [confirmPremiumTemplateUse].

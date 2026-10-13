@@ -297,7 +297,13 @@ class _TemplateGridCard extends StatelessWidget {
                   ),
                 ),
                 if (template.proOnly)
-                  Text('PRO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
+                  Icon(
+                    context.watch<InvoiceProvider>().subscriptionTier.canUsePremiumTemplates
+                        ? Icons.workspace_premium_rounded
+                        : Icons.lock_rounded,
+                    size: 14,
+                    color: theme.colorScheme.primary,
+                  ),
               ],
             ),
             const SizedBox(height: 6),
@@ -306,7 +312,12 @@ class _TemplateGridCard extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: onUse,
                 style: OutlinedButton.styleFrom(padding: EdgeInsets.zero, textStyle: const TextStyle(fontSize: 11)),
-                child: Text(strings.useThisTemplate),
+                child: Text(
+                  template.proOnly &&
+                          !context.watch<InvoiceProvider>().subscriptionTier.canUsePremiumTemplates
+                      ? strings.t('watchAdToUse')
+                      : strings.useThisTemplate,
+                ),
               ),
             ),
           ],

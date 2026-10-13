@@ -25,9 +25,9 @@ class AdService {
   bool _awaitingMediaReturn = false;
   DateTime _suppressForegroundUntil = DateTime.fromMillisecondsSinceEpoch(0);
 
-  static const _minAppOpenInterval = Duration(minutes: 4);
-  static const _minAppOpenIntervalPremium = Duration(minutes: 10);
-  static const _minInterstitialInterval = Duration(seconds: 20);
+  static const _minAppOpenInterval = Duration(minutes: 8);
+  static const _minAppOpenIntervalPremium = Duration(minutes: 15);
+  static const _minInterstitialInterval = Duration(seconds: 90);
 
   Future<void> initialize() async {
     if (!AdConfig.isSupported) return;
@@ -355,5 +355,54 @@ class AdService {
   Future<void> showColdStartAppOpen({SubscriptionTier tier = SubscriptionTier.free}) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     await showAppOpenIfAvailable(tier: tier);
+  }
+
+  /// Loads and shows a rewarded ad. True only when the user earns the reward.
+  Future<bool> showRewarded({required String adUnitId}) async {
+    if (!AdConfig.isSupported || _isShowingFullScreenAd) return false;
+
+    final loaded = Completer<RewardedAd?>();
+    RewardedAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          if (!loaded.isCompleted) loaded.complete(ad);
+        },
+        onAdFailedToLoad: (error) {
+          debugPrint('Rewarded load failed: $error');
+          if (!loaded.isCompleted) loaded.complete(null);
+        },
+      ),
+    );
+
+    final ad = await loaded.future.timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => null,
+    );
+    if (ad == null) return false;
+
+    final finished = Completer<bool>();
+    var earned = false;
+    _isShowingFullScreenAd = true;
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _isShowingFullScreenAd = false;
+        if (!finished.isCompleted) finished.complete(earned);
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _isShowingFullScreenAd = false;
+        debugPrint('Rewarded show failed: $error');
+        if (!finished.isCompleted) finished.complete(false);
+      },
+    );
+    await ad.show(
+      onUserEarnedReward: (_, _) {
+        earned = true;
+      },
+    );
+    return finished.future.timeout(const Duration(minutes: 2), onTimeout: () => earned);
   }
 }

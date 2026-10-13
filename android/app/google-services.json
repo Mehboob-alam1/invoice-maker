@@ -29,13 +29,6 @@
             {
               "client_id": "668634441558-45nkk47ik4of5g5rb8t9g33n4aq0e248.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "668634441558-s9qr16t3lrcl7870ooec8c07tolmmsad.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.aiInvoiceMakerReceiptApp"
-              }
             }
           ]
         }

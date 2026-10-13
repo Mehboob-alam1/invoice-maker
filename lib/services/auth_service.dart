@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -26,7 +25,6 @@ class AuthService extends ChangeNotifier {
   late final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: const ['email', 'profile'],
     serverClientId: GoogleAuthConfig.webClientId,
-    clientId: Platform.isIOS ? GoogleAuthConfig.iosClientId : null,
   );
 
   StreamSubscription<User?>? _authSub;
