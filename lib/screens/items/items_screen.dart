@@ -65,18 +65,17 @@ class ItemsScreen extends StatelessWidget {
               ),
             ),
             floatingActionButton: _GradientFab(
-              onPressed: () => runMajorActionAsync(context, () => _edit(context)),
+              onPressed: () => _edit(context),
             ),
             body: AppPageShell(
               child: items.isEmpty
                   ? _EmptyStateWrapper(
                 strings: strings,
-                onAction: () => runMajorActionAsync(context, () => _edit(context)),
+                onAction: () => _edit(context),
               )
                   : _ResponsiveItemsList(
                 items: items,
-                onTapItem: (item) =>
-                    runMajorActionAsync(context, () => _edit(context, item: item)),
+                onTapItem: (item) => _edit(context, item: item),
                 onDeleteItem: (item) => runWithInterstitial(context, () {
                   context.read<InvoiceProvider>().deleteCatalogItem(item.id);
                 }),

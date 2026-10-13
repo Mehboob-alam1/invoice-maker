@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../ads/ad_flows.dart';
+import '../ads/ad_placement.dart';
 import '../l10n/app_strings.dart';
 import '../models/invoice.dart';
 import '../models/invoice_template.dart';
@@ -114,6 +116,8 @@ class _TemplatePickerSheet extends StatelessWidget {
   Future<void> _useTemplate(BuildContext context, InvoiceTemplateId id) async {
     final ok = await confirmProTemplateUse(context, id);
     if (!ok || !context.mounted) return;
+    await showPlacementInterstitial(context, AdPlacement.interstitialUseTemplate);
+    if (!context.mounted) return;
     onChanged(id);
     Navigator.pop(context);
   }

@@ -13,6 +13,8 @@ import '../../models/invoice.dart';
 import '../../models/invoice_template.dart';
 import '../../providers/invoice_provider.dart';
 import '../../ads/ad_action.dart';
+import '../../ads/ad_flows.dart';
+import '../../ads/ad_placement.dart';
 import '../../services/invoice_pdf_export.dart';
 import '../../widgets/blue_screen.dart';
 import '../../widgets/ui/app_page_shell.dart';
@@ -172,14 +174,20 @@ class InvoiceDetailScreen extends StatelessWidget {
                 action(
                   tooltip: strings.printPdf,
                   icon: Icons.print_outlined,
-                  onPressed: () =>
-                      runMajorActionAsync(context, () => _exportPdf(context, invoice, share: false)),
+                  onPressed: () => runWithWatchOrPremium(
+                    context: context,
+                    placement: AdPlacement.interstitialPrint,
+                    action: () => _exportPdf(context, invoice, share: false),
+                  ),
                 ),
                 action(
                   tooltip: strings.sharePdf,
                   icon: Icons.picture_as_pdf_outlined,
-                  onPressed: () =>
-                      runMajorActionAsync(context, () => _exportPdf(context, invoice, share: true)),
+                  onPressed: () => runWithWatchOrPremium(
+                    context: context,
+                    placement: AdPlacement.interstitialPdf,
+                    action: () => _exportPdf(context, invoice, share: true),
+                  ),
                 ),
                 action(
                   icon: Icons.ios_share_rounded,

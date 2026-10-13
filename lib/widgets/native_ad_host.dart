@@ -29,13 +29,13 @@ class NativeAdHost extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: showBar
-                ? MediaQuery.removePadding(
-                    context: context,
-                    removeBottom: true,
-                    child: child ?? const SizedBox.shrink(),
-                  )
-                : child ?? const SizedBox.shrink(),
+            // Keep this wrapper in place when the keyboard opens. Swapping it
+            // out remounts the page and the focused field loses the keyboard.
+            child: MediaQuery.removePadding(
+              context: context,
+              removeBottom: showBar,
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
           if (showBar)
             MediaQuery.removePadding(

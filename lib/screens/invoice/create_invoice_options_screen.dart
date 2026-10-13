@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
@@ -12,7 +11,6 @@ import '../../widgets/blue_screen.dart';
 import '../ocr/ocr_flow.dart';
 import 'create_with_ai_screen.dart';
 import 'new_invoice_screen.dart';
-import '../../ads/ad_action.dart';
 import '../../widgets/ui/app_page_shell.dart';
 
 const double _kCardsRowBreakpoint = 800; // three cards side by side
@@ -47,11 +45,11 @@ class CreateInvoiceOptionsScreen extends StatelessWidget {
               colors: const [BlueColors.bright, BlueColors.light],
               title: strings.customInvoice,
               subtitle: strings.customInvoiceSubtitle,
-              onTap: () => runWithInterstitial(context, () {
+              onTap: () {
                 Navigator.of(context).push(
                   appInvoiceFlowRoute(const NewInvoiceScreen(), adScopeKey: 'new_invoice'),
                 );
-              }),
+              },
             ),
             _OptionTile(
               vertical: vertical,
@@ -59,7 +57,7 @@ class CreateInvoiceOptionsScreen extends StatelessWidget {
               colors: const [_kSkyDeep, BlueColors.sky],
               title: strings.scanWithOcr,
               subtitle: strings.scanOcrOptionSubtitle,
-              onTap: () => runWithInterstitial(context, () => startOcrScan(context)),
+              onTap: () => startOcrScan(context),
             ),
             _OptionTile(
               vertical: vertical,
@@ -83,11 +81,9 @@ class CreateInvoiceOptionsScreen extends StatelessWidget {
               onTap: () async {
                 if (!await ensurePaidAiAccessOrPrompt(context)) return;
                 if (!context.mounted) return;
-                runWithInterstitial(context, () {
-                  Navigator.of(context).push(
-                    appInvoiceFlowRoute(const CreateWithAiScreen(), adScopeKey: 'create_ai'),
-                  );
-                });
+                Navigator.of(context).push(
+                  appInvoiceFlowRoute(const CreateWithAiScreen(), adScopeKey: 'create_ai'),
+                );
               },
             ),
           ];

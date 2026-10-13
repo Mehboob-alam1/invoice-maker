@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../providers/invoice_provider.dart';
@@ -12,7 +11,7 @@ import '../invoice/create_invoice_options_screen.dart';
 import '../invoice/invoice_detail_screen.dart';
 import '../ocr/ocr_flow.dart';
 import '../settings/settings_screen.dart';
-import '../../ads/ad_action.dart';
+import '../../ads/ad_flows.dart';
 import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../navigation/app_route_observer.dart';
@@ -75,7 +74,7 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen>
   }
 
   void _openCreateInvoice() {
-    runWithInterstitial(context, () {
+    onMainScreenClick(context, () {
       Navigator.of(context).push(
         appInvoiceFlowRoute(const CreateInvoiceOptionsScreen(), adScopeKey: 'create_invoice_options'),
       );
@@ -95,13 +94,13 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen>
           final scheme = theme.colorScheme;
 
           final banner = _OcrScannerBanner(
-            onScan: () => runWithInterstitial(context, () => startOcrScan(context)),
+            onScan: () => onMainScreenClick(context, () => startOcrScan(context)),
           );
           final tabs = _TabSwitcher(
             controller: _tabController,
             unpaidLabel: strings.unpaid,
             paidLabel: strings.paid,
-            onTap: (_) => afterMajorAction(context),
+            onTap: (_) => onMainScreenClick(context, () {}),
           );
           final lists = TabBarView(
             controller: _tabController,
@@ -138,12 +137,19 @@ class _InvoicesHomeScreenState extends State<InvoicesHomeScreen>
               leading: const SizedBox.shrink(),
               leadingWidth: 0,
               actions: [
+                IconButton(
+                  tooltip: 'Premium',
+                  icon: const Icon(Icons.workspace_premium_rounded),
+                  onPressed: () => openPaywall(context),
+                ),
                 const ThemeToggleButton(),
                 IconButton(
                   icon: const Icon(Icons.settings_rounded),
-                  onPressed: () => runWithInterstitial(context, () {
-                    Navigator.of(context).push(appPageRoute(const SettingsScreen()));
-                  }),
+                  onPressed: () async {
+                    await Navigator.of(context).push(appPageRoute(const SettingsScreen()));
+                    if (!context.mounted) return;
+                    await openPaywallIfFree(context);
+                  },
                 ),
                 const SizedBox(width: 4),
               ],
@@ -428,7 +434,7 @@ class _InvoiceList extends StatelessWidget {
         final invoice = invoices[i];
         return InvoiceCard(
           invoice: invoice,
-          onTap: () => runWithInterstitial(context, () {
+          onTap: () => onMainScreenClick(context, () {
             Navigator.of(context).push(
               appPageRoute(
                 InvoiceDetailScreen(invoiceId: invoice.id),

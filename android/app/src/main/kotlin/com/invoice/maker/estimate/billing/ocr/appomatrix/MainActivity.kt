@@ -3,6 +3,7 @@ package com.invoice.maker.estimate.billing.ocr.appomatrix
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterFragmentActivity
@@ -10,6 +11,16 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Drop Android 12+'s system splash immediately. The Flutter splash is the only one.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            splashScreen.setOnExitAnimationListener { splashScreenView ->
+                splashScreenView.remove()
+            }
+        }
+        super.onCreate(savedInstanceState)
+    }
 
     private val channelName =
         "com.invoice.maker.estimate.billing.ocr.appomatrix/notifications"

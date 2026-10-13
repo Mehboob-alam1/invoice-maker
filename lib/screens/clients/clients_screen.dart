@@ -52,7 +52,7 @@ class ClientsScreen extends StatelessWidget {
       child: Builder(
         builder: (context) {
           final isWide = MediaQuery.sizeOf(context).width >= _kTabletBreakpoint;
-          void add() => runMajorActionAsync(context, () => _edit(context));
+          void add() => _edit(context);
 
           return Scaffold(
             appBar: AppBar(title: Text(strings.clients)),
@@ -105,10 +105,7 @@ class ClientsScreen extends StatelessWidget {
                           final client = clients[i];
                           return _ClientCard(
                             client: client,
-                            onTap: () => runMajorActionAsync(
-                              context,
-                                  () => _edit(context, client: client),
-                            ),
+                            onTap: () => _edit(context, client: client),
                             onDelete: () => runWithInterstitial(context, () {
                               context
                                   .read<InvoiceProvider>()

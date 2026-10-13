@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../ads/ad_remote_config.dart';
 import 'notification_permission_platform.dart';
-import 'user_firestore_service.dart';
+import 'user_database_service.dart';
 
 /// Firebase Cloud Messaging — token sync + foreground hooks.
 class PushNotificationService {
@@ -161,7 +161,7 @@ class PushNotificationService {
     if (token == null || token.isEmpty) return;
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    await UserFirestoreService.instance.saveFcmToken(uid: uid, token: token);
+    await UserDatabaseService.instance.saveFcmToken(uid: uid, token: token);
   }
 }
 

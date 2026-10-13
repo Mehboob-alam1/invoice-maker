@@ -10,7 +10,7 @@ import '../core/constants/google_auth_config.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
 import 'subscription_service.dart';
-import 'user_firestore_service.dart';
+import 'user_database_service.dart';
 import 'user_profile_sync.dart';
 
 class AuthService extends ChangeNotifier {
@@ -49,8 +49,8 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
     if (user == null) return;
 
-    await UserFirestoreService.instance.upsertGoogleAccount(user);
-    final account = await UserFirestoreService.instance.fetchAccount(user.uid);
+    await UserDatabaseService.instance.upsertGoogleAccount(user);
+    final account = await UserDatabaseService.instance.fetchAccount(user.uid);
     if (account != null) {
       final b = account.business;
       if (b.hasAnyField) {
@@ -73,7 +73,7 @@ class AuthService extends ChangeNotifier {
     }
     await UserProfileSync.pushFromProvider(_invoiceProvider);
     if (_invoiceProvider.subscriptionTier != SubscriptionTier.free) {
-      await _subscriptionService.syncTierToFirestoreIfNeeded();
+      await _subscriptionService.syncTierToCloudIfNeeded();
     }
     notifyListeners();
   }

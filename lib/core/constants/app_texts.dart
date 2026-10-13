@@ -93,6 +93,8 @@ class AppTexts {
 
   static const aiIntro = "Enter a few details — we'll handle the rest.";
   static const clientNameOptional = "Client's Name (optional)";
+  static const aiClientNameRequired = 'Enter the client name';
+  static const aiInvoiceDetailRequired = 'Write the invoice details before generating';
   static const clientNameHintAi = "Enter the client's name or business";
   static const writeInvoiceDetail = 'Write your invoice in detail';
   static const invoiceThisMonthHint = 'Invoice for this month';
@@ -389,6 +391,18 @@ class AppTexts {
   static const premiumUpsellPriceHint = 'From about \$4.99/month — yearly saves ~33%.';
   static const premiumUpsellCta = 'See Premium plans';
   static const premiumUpsellDismiss = 'Maybe later';
+  static const watchAd = 'Watch Ad';
+  static const buyPremium = 'Buy Premium';
+  static const watchOrPremiumTitle = 'Continue';
+  static const watchOrPremiumBody = 'Watch a short ad or start Premium to continue.';
+  static const paywallHeadline = 'Premium';
+  static const paywallWeeklyTitle = 'Weekly';
+  static const paywallTrialLine = '3-day free trial, then weekly';
+  static const paywallCta = 'Start 3-day free trial';
+  static const paywallFeatureNoAds = 'Remove ads';
+  static const paywallFeatureTemplates = 'All invoice templates';
+  static const paywallFeatureInvoices = 'Higher invoice limits';
+  static const paywallAlreadyActive = 'Premium is active on this account.';
 
   static const trialDisclaimer =
       'After 3 day free trial then Rs 3,350.00 will start. Cancel anytime 24 hour before renewal.';
@@ -495,6 +509,8 @@ class AppTexts {
     'enterValidPrice': enterValidPrice,
     'aiIntro': aiIntro,
     'clientNameOptional': clientNameOptional,
+    'aiClientNameRequired': aiClientNameRequired,
+    'aiInvoiceDetailRequired': aiInvoiceDetailRequired,
     'clientNameHintAi': clientNameHintAi,
     'writeInvoiceDetail': writeInvoiceDetail,
     'invoiceThisMonthHint': invoiceThisMonthHint,
@@ -760,6 +776,18 @@ class AppTexts {
     'premiumUpsellPriceHint': premiumUpsellPriceHint,
     'premiumUpsellCta': premiumUpsellCta,
     'premiumUpsellDismiss': premiumUpsellDismiss,
+    'watchAd': watchAd,
+    'buyPremium': buyPremium,
+    'watchOrPremiumTitle': watchOrPremiumTitle,
+    'watchOrPremiumBody': watchOrPremiumBody,
+    'paywallHeadline': paywallHeadline,
+    'paywallWeeklyTitle': paywallWeeklyTitle,
+    'paywallTrialLine': paywallTrialLine,
+    'paywallCta': paywallCta,
+    'paywallFeatureNoAds': paywallFeatureNoAds,
+    'paywallFeatureTemplates': paywallFeatureTemplates,
+    'paywallFeatureInvoices': paywallFeatureInvoices,
+    'paywallAlreadyActive': paywallAlreadyActive,
     'trialDisclaimer': trialDisclaimer,
     'noClientsYet': noClientsYet,
     'noItemsYet': noItemsYet,

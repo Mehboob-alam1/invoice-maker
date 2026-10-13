@@ -10,10 +10,12 @@ class ProductionAdUnits {
   static const androidNative = _placeholder;
   static const androidInterstitial = _placeholder;
   static const androidAppOpen = _placeholder;
+  static const androidBanner = _placeholder;
 
   static const iosNative = _placeholder;
   static const iosInterstitial = _placeholder;
   static const iosAppOpen = _placeholder;
+  static const iosBanner = _placeholder;
 
   static bool isValidUnit(String id) =>
       id.isNotEmpty && id != _placeholder && !id.contains('REPLACE');

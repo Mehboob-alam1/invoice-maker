@@ -17,7 +17,8 @@ import '../../widgets/client_form_sheet.dart';
 import '../../widgets/item_form_sheet.dart';
 import '../../widgets/invoice_template_preview_sheet.dart';
 import '../../widgets/template_picker.dart';
-import '../../ads/ad_action.dart';
+import '../../ads/ad_flows.dart';
+import '../../ads/ad_placement.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../widgets/ui/app_page_shell.dart';
 
@@ -308,7 +309,8 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
     );
     if (!mounted || selected == null) return;
     setState(() {
-      _items.add(
+      _items.insert(
+        0,
         selected.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString()),
       );
     });
@@ -321,7 +323,18 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
       onCurrencyChanged: (c) => setState(() => _currency = c),
     );
     if (!mounted || result == null) return;
-    setState(() => _items.add(result.copyWith()));
+    context.read<InvoiceProvider>().addCatalogItem(
+      description: result.description,
+      notes: result.notes,
+      unitCost: result.unitCost,
+      quantity: result.quantity,
+    );
+    setState(() {
+      _items.insert(
+        0,
+        result.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString()),
+      );
+    });
   }
 
   Future<void> _editItem(int index) async {
@@ -389,7 +402,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         templateId: _template.name,
       );
       if (!mounted) return;
-      await showInterstitialWithLoadingIfEligible(context);
+      await afterGenerationAd(context, AdPlacement.interstitialCustomInvoice);
       if (!mounted) return;
       await navigateAfterInvoiceCreated(context, invoice.id);
     } finally {

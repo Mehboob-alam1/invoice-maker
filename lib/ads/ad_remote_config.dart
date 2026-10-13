@@ -4,9 +4,11 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/constants/production_ad_units.dart';
 import '../core/remote_config/invoice_limits_remote_config.dart';
 import '../models/subscription_tier.dart';
 import 'ad_config.dart';
+import 'ad_placement.dart';
 
 /// AdMob unit IDs + global toggles from Firebase Remote Config (with HTTP + local fallbacks).
 class AdRemoteConfig {
@@ -25,6 +27,14 @@ class AdRemoteConfig {
   String _iosInterstitial = AdConfig.defaultIosInterstitial;
   String _androidAppOpen = AdConfig.defaultAndroidAppOpen;
   String _iosAppOpen = AdConfig.defaultIosAppOpen;
+  String _androidBanner = AdConfig.defaultAndroidBanner;
+  String _iosBanner = AdConfig.defaultIosBanner;
+
+  final Map<String, bool> _placementEnabled = {
+    for (final placement in AdPlacement.all) placement.remoteKey: true,
+  };
+
+  int _paywallCloseDelaySeconds = 5;
 
   /// Remote Config key: set to `false` to turn off ads for everyone.
   bool get adsEnabled => _adsEnabled;
@@ -46,6 +56,20 @@ class AdRemoteConfig {
     if (defaultTargetPlatform == TargetPlatform.iOS) return _iosAppOpen;
     return _androidAppOpen;
   }
+
+  String get bannerAdUnitId {
+    final id = defaultTargetPlatform == TargetPlatform.iOS ? _iosBanner : _androidBanner;
+    final fallback = defaultTargetPlatform == TargetPlatform.iOS
+        ? AdConfig.defaultIosBanner
+        : AdConfig.defaultAndroidBanner;
+    return ProductionAdUnits.isValidUnit(id) ? id : fallback;
+  }
+
+  /// Master switch and the per-screen switch must both be on.
+  bool isPlacementEnabled(AdPlacement placement) =>
+      _adsEnabled && (_placementEnabled[placement.remoteKey] ?? true);
+
+  int get paywallCloseDelaySeconds => _paywallCloseDelaySeconds;
 
   Future<void> load() async {
     if (_loaded) return;
@@ -84,6 +108,10 @@ class AdRemoteConfig {
         'ad_interstitial_ios': AdConfig.defaultIosInterstitial,
         'ad_app_open_android': AdConfig.defaultAndroidAppOpen,
         'ad_app_open_ios': AdConfig.defaultIosAppOpen,
+        'ad_banner_android': AdConfig.defaultAndroidBanner,
+        'ad_banner_ios': AdConfig.defaultIosBanner,
+        'paywall_close_delay_seconds': 5,
+        for (final placement in AdPlacement.all) placement.remoteKey: true,
         InvoiceLimitsRemoteConfig.remoteKeyFree: SubscriptionTier.free.dailyInvoiceLimit,
         InvoiceLimitsRemoteConfig.remoteKeyPremium: SubscriptionTier.premium.dailyInvoiceLimit,
       });
@@ -109,6 +137,13 @@ class AdRemoteConfig {
     pickString('ad_interstitial_ios', (v) => _iosInterstitial = v);
     pickString('ad_app_open_android', (v) => _androidAppOpen = v);
     pickString('ad_app_open_ios', (v) => _iosAppOpen = v);
+    pickString('ad_banner_android', (v) => _androidBanner = v);
+    pickString('ad_banner_ios', (v) => _iosBanner = v);
+    _paywallCloseDelaySeconds = remoteConfig.getInt('paywall_close_delay_seconds');
+    if (_paywallCloseDelaySeconds < 0) _paywallCloseDelaySeconds = 0;
+    for (final placement in AdPlacement.all) {
+      _placementEnabled[placement.remoteKey] = remoteConfig.getBool(placement.remoteKey);
+    }
 
     InvoiceLimitsRemoteConfig.instance.applyFrom(remoteConfig);
 
@@ -161,6 +196,21 @@ class AdRemoteConfig {
     pick('ad_interstitial_ios', (v) => _iosInterstitial = v);
     pick('ad_app_open_android', (v) => _androidAppOpen = v);
     pick('ad_app_open_ios', (v) => _iosAppOpen = v);
+    pick('ad_banner_android', (v) => _androidBanner = v);
+    pick('ad_banner_ios', (v) => _iosBanner = v);
+
+    final delay = map['paywall_close_delay_seconds'];
+    if (delay is int) _paywallCloseDelaySeconds = delay;
+    if (delay is num) _paywallCloseDelaySeconds = delay.round();
+    if (_paywallCloseDelaySeconds < 0) _paywallCloseDelaySeconds = 0;
+
+    for (final placement in AdPlacement.all) {
+      final raw = map[placement.remoteKey];
+      if (raw is bool) _placementEnabled[placement.remoteKey] = raw;
+      if (raw is String) {
+        _placementEnabled[placement.remoteKey] = raw.toLowerCase() != 'false';
+      }
+    }
 
     pick('android_native', (v) => _androidNative = v);
     pick('ios_native', (v) => _iosNative = v);

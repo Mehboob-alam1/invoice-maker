@@ -7,10 +7,11 @@ import '../core/theme/app_theme.dart';
 import '../l10n/app_languages.dart';
 import '../navigation/app_route_observer.dart';
 import '../widgets/app_open_lifecycle.dart';
+import '../screens/splash/splash_gate.dart';
 import '../widgets/splash_launch_view.dart';
 import 'app_bootstrap.dart';
 
-/// Single [MaterialApp]: light window matches splash, then same app shows logo + loading.
+/// Single [MaterialApp]. The native window is plain blue; Flutter draws the splash once.
 class AppRoot extends StatefulWidget {
   const AppRoot({super.key});
 
@@ -20,7 +21,7 @@ class AppRoot extends StatefulWidget {
 
 class _AppRootState extends State<AppRoot> {
   AppBootstrapResult? _result;
-  String? _status;
+  final _splashKey = GlobalKey<State<SplashShell>>();
 
   @override
   void initState() {
@@ -30,11 +31,7 @@ class _AppRootState extends State<AppRoot> {
 
   Future<void> _startBootstrap() async {
     try {
-      final result = await runAppBootstrap(
-        onStatus: (message) {
-          if (mounted) setState(() => _status = message);
-        },
-      );
+      final result = await runAppBootstrap();
       if (!mounted) return;
       setState(() => _result = result);
     } catch (e, st) {
@@ -62,6 +59,7 @@ class _AppRootState extends State<AppRoot> {
         return MaterialApp(
           title: AppConfig.appDisplayName,
           debugShowCheckedModeBanner: false,
+          color: SplashLaunchView.backgroundColor,
           theme: ready ? AppTheme.light : splashTheme,
           darkTheme: AppTheme.dark,
           themeMode: ready ? themeMode : ThemeMode.light,
@@ -91,7 +89,7 @@ class _AppRootState extends State<AppRoot> {
               child: AppOpenLifecycle(child: body),
             );
           },
-          home: ready ? result.initialScreen : SplashLaunchView(statusText: _status),
+          home: SplashShell(key: _splashKey, result: result),
         );
       },
     );

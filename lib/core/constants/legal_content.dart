@@ -67,14 +67,15 @@ class LegalContent {
     LegalSection(
       '7. Storage & retention',
       'Invoice and client data are stored locally on your device by default. If you sign in, selected '
-          'profile and subscription fields may be stored in Google Firebase (Firestore) in regions '
-          'used by Google. We retain cloud data while your account is active and for a reasonable period '
+          'profile and subscription fields may be stored in Supabase. We retain cloud data while your '
+          'account is active and for a reasonable period '
           'after deletion requests. Local data is removed when you uninstall the App.',
     ),
     LegalSection(
       '8. Sharing & processors',
       'We share data only with service providers that help operate the App, including:\n'
-          '• Google — Sign-In, Firebase (Auth, Firestore, Cloud Messaging, Remote Config), AdMob, Play Billing.\n'
+          '• Google — Sign-In, Firebase (Auth, Cloud Messaging, Remote Config), AdMob, Play Billing.\n'
+          '• Supabase — Account profile, subscription, usage, and feedback storage.\n'
           '• AI provider — Invoice text you submit for AI generation (Premium/Pro).\n'
           'We do not sell your personal information. Ad partners may use data for personalized ads per '
           'their policies and your device settings.',

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/constants/app_config.dart';
+import '../services/user_database_service.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/blue_theme.dart';
 import '../l10n/app_strings.dart';
@@ -55,14 +55,12 @@ class _RateFeedbackSheetState extends State<_RateFeedbackSheet> {
       await prefs.setString('last_app_feedback', text);
 
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      await FirebaseFirestore.instance.collection('app_feedback').add({
-        'stars': rating,
-        'comment': text,
-        'uid': uid,
-        'platform': 'android',
-        'packageId': AppConfig.androidPackageId,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      await UserDatabaseService.instance.submitAppFeedback(
+        stars: rating,
+        comment: text,
+        uid: uid,
+        packageId: AppConfig.androidPackageId,
+      );
 
       if (rating >= 4) {
         final review = InAppReview.instance;

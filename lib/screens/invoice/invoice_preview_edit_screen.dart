@@ -23,6 +23,8 @@ import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../services/premium_upsell_service.dart';
 import '../../ads/ad_action.dart';
+import '../../ads/ad_flows.dart';
+import '../../ads/ad_placement.dart';
 import '../../widgets/ui/app_page_shell.dart';
 import '../subscription/pro_paywall_screen.dart';
 import 'invoice_detail_screen.dart';
@@ -156,6 +158,14 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
   }
 
   Future<void> _openInvoiceDetail() async {
+    await runWithWatchOrPremium(
+      context: context,
+      placement: AdPlacement.interstitialOpenInvoice,
+      action: _openInvoiceDetailAfterChoice,
+    );
+  }
+
+  Future<void> _openInvoiceDetailAfterChoice() async {
     if (_finishing) return;
     setState(() => _finishing = true);
     final ok = await _save(quiet: true);
@@ -164,7 +174,6 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
       return;
     }
     HapticFeedback.lightImpact();
-    await showInterstitialWithLoadingIfEligible(context);
     if (!mounted) {
       setState(() => _finishing = false);
       return;
@@ -193,9 +202,14 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     final base = _workingInvoice();
     if (base == null) return;
     final snapshot = _buildDraftInvoice(base);
-    await runMajorActionAsync(
-      context,
-      () => InvoicePdfExport.export(context, snapshot, share: share),
+    await InvoicePdfExport.export(context, snapshot, share: share);
+  }
+
+  Future<void> _exportWithChoice({required bool share, required AdPlacement placement}) {
+    return runWithWatchOrPremium(
+      context: context,
+      placement: placement,
+      action: () => _exportPdf(share: share),
     );
   }
 
@@ -243,7 +257,13 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
       onCurrencyChanged: (c) => setState(() => _draft = _draft!.copyWith(currency: c)),
     );
     if (item == null || !mounted || _draft == null) return;
-    setState(() => _draft = _draft!.copyWith(items: [..._draft!.items, item]));
+    context.read<InvoiceProvider>().addCatalogItem(
+      description: item.description,
+      notes: item.notes,
+      unitCost: item.unitCost,
+      quantity: item.quantity,
+    );
+    setState(() => _draft = _draft!.copyWith(items: [item, ..._draft!.items]));
     _commitDraft();
   }
 
@@ -392,12 +412,12 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
                   _AppBarAction(
                     tooltip: strings.printPdf,
                     icon: Icons.print_outlined,
-                    onPressed: () => _exportPdf(share: false),
+                    onPressed: () => _exportWithChoice(share: false, placement: AdPlacement.interstitialPrint),
                   ),
                   _AppBarAction(
                     tooltip: strings.sharePdf,
                     icon: Icons.picture_as_pdf_outlined,
-                    onPressed: () => _exportPdf(share: true),
+                    onPressed: () => _exportWithChoice(share: true, placement: AdPlacement.interstitialPdf),
                   ),
                   if (!widget.justCreated)
                     _AppBarAction(
@@ -444,7 +464,7 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
                           ? _JustCreatedActions(
                         finishing: _finishing,
                         onOpenDetail: _openInvoiceDetail,
-                        onShare: () => _exportPdf(share: true),
+                        onShare: () => _exportWithChoice(share: true, placement: AdPlacement.interstitialSharePdf),
                         onHome: _backToHome,
                       )
                           : BlueGradientButton(

@@ -23,6 +23,8 @@ class AdConfig {
   static const testIosInterstitial = 'ca-app-pub-3940256099942544/4411468910';
   static const testAndroidAppOpen = 'ca-app-pub-3940256099942544/9257395921';
   static const testIosAppOpen = 'ca-app-pub-3940256099942544/5575463023';
+  static const testAndroidBanner = 'ca-app-pub-3940256099942544/6300978111';
+  static const testIosBanner = 'ca-app-pub-3940256099942544/2934735716';
 
   static const _testPublisherId = '3940256099942544';
 
@@ -54,6 +56,16 @@ class AdConfig {
   static String get defaultIosAppOpen => _pick(
         production: ProductionAdUnits.iosAppOpen,
         test: testIosAppOpen,
+      );
+
+  static String get defaultAndroidBanner => _pick(
+        production: ProductionAdUnits.androidBanner,
+        test: testAndroidBanner,
+      );
+
+  static String get defaultIosBanner => _pick(
+        production: ProductionAdUnits.iosBanner,
+        test: testIosBanner,
       );
 
   static String _pick({required String production, required String test}) {

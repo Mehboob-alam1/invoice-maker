@@ -5,6 +5,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../models/subscription_tier.dart';
 import 'ad_config.dart';
+import 'ad_placement.dart';
 import 'ad_remote_config.dart';
 
 class AdService {
@@ -21,6 +22,8 @@ class AdService {
 
   Future<bool>? _interstitialLoadFuture;
   Future<bool>? _appOpenLoadFuture;
+  bool _awaitingMediaReturn = false;
+  DateTime _suppressForegroundUntil = DateTime.fromMillisecondsSinceEpoch(0);
 
   static const _minAppOpenInterval = Duration(minutes: 4);
   static const _minAppOpenIntervalPremium = Duration(minutes: 10);
@@ -29,33 +32,27 @@ class AdService {
   Future<void> initialize() async {
     if (!AdConfig.isSupported) return;
     await AdRemoteConfig.instance.load();
-    preloadInterstitial();
-    preloadAppOpen();
+  }
+
+  /// Camera or gallery is about to cover the app. The next resume shows an app-open ad.
+  void markAwaitingMediaReturn() {
+    _awaitingMediaReturn = true;
+  }
+
+  /// True when the picker returned without a resume consuming the flag.
+  bool takeMediaReturn() {
+    if (!_awaitingMediaReturn) return false;
+    _awaitingMediaReturn = false;
+    return true;
   }
 
   bool get appOpenReady => _appOpenAd != null;
 
-  /// Waits for startup ad preloads (interstitial + app open) during splash.
+  /// Interstitials and app-open ads load on demand, so splash does not prefetch them.
   Future<void> waitForStartupPreloads({
     required SubscriptionTier tier,
     Duration timeout = const Duration(seconds: 14),
-  }) async {
-    if (!AdConfig.isSupported || !AdRemoteConfig.instance.adsEnabled) return;
-
-    final tasks = <Future<void>>[];
-    if (tier.showInterstitialAds) {
-      tasks.add(
-        ensureInterstitialLoaded(timeout: timeout).then((_) {}),
-      );
-    }
-    if (tier.showAppOpenAds) {
-      tasks.add(
-        ensureAppOpenLoaded(timeout: timeout).then((_) {}),
-      );
-    }
-    if (tasks.isEmpty) return;
-    await Future.wait(tasks);
-  }
+  }) async {}
 
   bool get isShowingFullScreenAd => _isShowingFullScreenAd;
 
@@ -137,11 +134,7 @@ class AdService {
   }
 
   void preloadInterstitial() {
-    if (!AdConfig.isSupported || _interstitial != null || _interstitialLoadFuture != null) return;
-    _interstitialLoadFuture = _loadInterstitialOnce().then((ok) {
-      if (!ok) _interstitialLoadFuture = null;
-      return ok;
-    });
+    // On demand: the next show loads a fresh interstitial.
   }
 
   /// Shows a loaded interstitial. Returns whether the ad was presented.
@@ -251,11 +244,77 @@ class AdService {
   }
 
   void preloadAppOpen() {
-    if (!AdConfig.isSupported || _appOpenAd != null || _appOpenLoadFuture != null) return;
-    _appOpenLoadFuture = _loadAppOpenOnce().then((ok) {
-      if (!ok) _appOpenLoadFuture = null;
-      return ok;
-    });
+    // On demand: the next show loads a fresh app-open ad.
+  }
+
+  Future<void> handleResume({required SubscriptionTier tier}) async {
+    if (takeMediaReturn()) {
+      await showAppOpenOnDemand(
+        tier: tier,
+        placement: AdPlacement.appOpenMediaReturn,
+        ignoreInterval: true,
+      );
+      return;
+    }
+    if (DateTime.now().isBefore(_suppressForegroundUntil) || _isShowingFullScreenAd) return;
+    await showAppOpenOnDemand(
+      tier: tier,
+      placement: AdPlacement.appOpenForeground,
+    );
+  }
+
+  /// Loads an app-open ad at the moment it should appear, then waits until it closes.
+  Future<bool> showAppOpenOnDemand({
+    required SubscriptionTier tier,
+    required AdPlacement placement,
+    bool ignoreInterval = false,
+  }) async {
+    if (!AdConfig.isSupported ||
+        !AdRemoteConfig.instance.isPlacementEnabled(placement) ||
+        !tier.showAppOpenAds ||
+        _isShowingFullScreenAd) {
+      return false;
+    }
+    final now = DateTime.now();
+    final minGap = tier.reducedAppOpenAds ? _minAppOpenIntervalPremium : _minAppOpenInterval;
+    if (!ignoreInterval &&
+        _lastAppOpenShown != null &&
+        now.difference(_lastAppOpenShown!) < minGap) {
+      return false;
+    }
+    _suppressForegroundUntil = DateTime.now().add(const Duration(seconds: 8));
+
+    final loaded = await ensureAppOpenLoaded(timeout: const Duration(seconds: 8));
+    final ad = _appOpenAd;
+    if (!loaded || ad == null) return false;
+
+    _appOpenAd = null;
+    _appOpenLoadFuture = null;
+    _isShowingFullScreenAd = true;
+    final closed = Completer<bool>();
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _isShowingFullScreenAd = false;
+        _lastAppOpenShown = DateTime.now();
+        _suppressForegroundUntil = DateTime.now().add(const Duration(seconds: 3));
+        if (!closed.isCompleted) closed.complete(true);
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _isShowingFullScreenAd = false;
+        debugPrint('App open show failed: $error');
+        if (!closed.isCompleted) closed.complete(false);
+      },
+    );
+    try {
+      await ad.show();
+      return await closed.future.timeout(const Duration(minutes: 2), onTimeout: () => true);
+    } catch (e) {
+      debugPrint('App open show exception: $e');
+      _isShowingFullScreenAd = false;
+      return false;
+    }
   }
 
   Future<void> showAppOpenIfAvailable({SubscriptionTier tier = SubscriptionTier.free}) async {

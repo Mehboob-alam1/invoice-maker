@@ -1,4 +1,4 @@
-/// Business details stored under `users/{uid}/business` in Firestore.
+/// Business details stored on the Supabase `users` row.
 /// [logoUrl] is reserved for a future Pro feature — not the Google account photo.
 class BusinessProfileRecord {
   const BusinessProfileRecord({

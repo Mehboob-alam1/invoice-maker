@@ -27,6 +27,8 @@ import '../../widgets/ui/app_page_shell.dart';
 import '../../widgets/ui/app_section_card.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../ads/ad_action.dart';
+import '../../ads/ad_flows.dart';
+import '../../ads/ad_placement.dart';
 import 'ocr_flow.dart';
 
 class OcrReviewScreen extends StatefulWidget {
@@ -215,7 +217,7 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
     );
     if (!mounted) return;
     try {
-      await showInterstitialWithLoadingIfEligible(context);
+      await afterGenerationAd(context, AdPlacement.interstitialOcrCreate);
       if (!mounted) return;
       await navigateAfterInvoiceCreated(context, invoice.id);
     } finally {

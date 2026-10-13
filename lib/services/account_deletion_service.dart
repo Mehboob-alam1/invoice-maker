@@ -4,9 +4,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../core/constants/google_auth_config.dart';
 import '../providers/invoice_provider.dart';
-import 'user_firestore_service.dart';
+import 'user_database_service.dart';
 
-/// Deletes Firebase Auth user, Firestore profile, and local app data.
+/// Deletes the Firebase Auth user, the Supabase profile, and local app data.
 class AccountDeletionService {
   AccountDeletionService._();
   static final AccountDeletionService instance = AccountDeletionService._();
@@ -30,9 +30,9 @@ class AccountDeletionService {
 
     final uid = user.uid;
     try {
-      await UserFirestoreService.instance.deleteAllUserData(uid);
+      await UserDatabaseService.instance.deleteAllUserData(uid);
     } catch (e) {
-      debugPrint('AccountDeletionService Firestore: $e');
+      debugPrint('AccountDeletionService database: $e');
       return AccountDeletionResult.failure(
         'Could not remove cloud data. Check your connection and try again.',
       );

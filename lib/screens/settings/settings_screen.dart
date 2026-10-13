@@ -12,7 +12,7 @@ import '../../widgets/blue_screen.dart';
 import '../clients/clients_screen.dart';
 import '../items/items_screen.dart';
 import '../onboarding/language_screen.dart';
-import '../subscription/subscription_plans_screen.dart';
+import '../../ads/ad_flows.dart';
 import '../../services/push_notification_service.dart';
 import '../../services/subscription_service.dart';
 import '../../ads/ad_action.dart';
@@ -54,9 +54,7 @@ class SettingsScreen extends StatelessWidget {
       tier: provider.subscriptionTier,
       remaining: provider.invoicesRemainingToday,
       limit: provider.dailyInvoiceLimit,
-      onTap: () => runWithInterstitial(context, () {
-        Navigator.of(context).push(appPageRoute(const SubscriptionPlansScreen()));
-      }),
+      onTap: () => openPaywall(context),
     );
 
     final workSection = _SettingsSection(items: [

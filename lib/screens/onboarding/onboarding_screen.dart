@@ -7,6 +7,7 @@ import '../../core/constants/app_texts.dart';
 import '../../l10n/app_strings.dart';
 import '../../navigation/app_page_route.dart';
 import '../../providers/invoice_provider.dart';
+import '../../ads/ad_flows.dart';
 import '../../widgets/blue_screen.dart';
 import '../../widgets/onboarding_page.dart';
 import 'google_login_screen.dart';
@@ -28,14 +29,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _next() {
+  Future<void> _next() async {
     final pageCount = AppTexts.onboarding.length;
     if (_page < pageCount - 1) {
       _controller.nextPage(duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
-    } else {
-      context.read<InvoiceProvider>().completeOnboardingCarouselStep();
-      Navigator.of(context).pushReplacement(appPageRoute(const GoogleLoginScreen()));
+      return;
     }
+    context.read<InvoiceProvider>().completeOnboardingCarouselStep();
+    await openPaywallIfFree(context);
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(appPageRoute(const GoogleLoginScreen()));
   }
 
   @override

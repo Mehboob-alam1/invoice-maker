@@ -21,15 +21,20 @@ class SubscriptionProducts {
   /// Legacy weekly Pro SKU (maps to Pro tier).
   static const legacyProWeekly = 'invoice_maker_pro_weekly';
 
+  /// The only plan offered in the paywall. 3-day trial is set on the Play base plan.
+  static const weekly = 'invoice_maker_weekly';
+
   static const Set<String> premiumProductIds = {premiumMonthly, premiumYearly};
   static const Set<String> proProductIds = {
     proMonthly,
     proYearly,
     legacyProWeekly,
+    weekly,
   };
 
   /// SKUs queried from Google Play / App Store (active products only).
   static const Set<String> storeProductIds = {
+    weekly,
     premiumMonthly,
     premiumYearly,
     proMonthly,

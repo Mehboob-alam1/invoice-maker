@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../navigation/app_page_route.dart';
 import 'package:provider/provider.dart';
 
+import '../ads/ad_flows.dart';
+import '../ads/ad_placement.dart';
 import '../l10n/app_strings.dart';
 import '../models/invoice.dart';
 import '../models/invoice_template.dart';
@@ -52,6 +54,8 @@ Future<void> showInvoiceTemplatePreviewSheet(
                 onPressed: () async {
                   final ok = await confirmPremiumTemplateUse(ctx, templateId);
                   if (!ok || !ctx.mounted) return;
+                  await showPlacementInterstitial(ctx, AdPlacement.interstitialUseTemplate);
+                  if (!ctx.mounted) return;
                   onApplied?.call();
                   Navigator.pop(ctx);
                 },

@@ -20,8 +20,8 @@ class AppOpenLifecycle extends StatefulWidget {
 }
 
 class _AppOpenLifecycleState extends State<AppOpenLifecycle> with WidgetsBindingObserver {
-  bool _coldStartHandled = false;
   SubscriptionTier _tier = SubscriptionTier.free;
+  bool _hasPaused = false;
 
   @override
   void initState() {
@@ -37,14 +37,17 @@ class _AppOpenLifecycleState extends State<AppOpenLifecycle> with WidgetsBinding
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _coldStartHandled) {
+    if (state == AppLifecycleState.paused) {
+      _hasPaused = true;
+    }
+    if (state == AppLifecycleState.resumed && _hasPaused) {
       unawaited(() async {
         await AdRemoteConfig.instance.refresh();
         if (mounted) {
           context.read<InvoiceProvider>().applyRemoteInvoiceLimits();
         }
       }());
-      AdService.instance.showAppOpenIfAvailable(tier: _tier);
+      AdService.instance.handleResume(tier: _tier);
       if (mounted) {
         context.read<SubscriptionService>().refreshEntitlementsFromStore(silent: true);
       }
@@ -54,12 +57,6 @@ class _AppOpenLifecycleState extends State<AppOpenLifecycle> with WidgetsBinding
   @override
   Widget build(BuildContext context) {
     _tier = context.watch<InvoiceProvider>().subscriptionTier;
-    if (!_coldStartHandled) {
-      _coldStartHandled = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        AdService.instance.showColdStartAppOpen(tier: _tier);
-      });
-    }
     return widget.child;
   }
 }

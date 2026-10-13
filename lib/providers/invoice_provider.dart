@@ -27,7 +27,7 @@ class InvoiceProvider extends ChangeNotifier {
   String _aiQuotaMonthKey = '';
   int _aiTokensUsedThisMonth = 0;
 
-  /// Legacy flag; true when tier is Pro (kept for older builds / Firestore).
+  /// Legacy flag; true when tier is Pro (kept for older builds).
   bool get isPro => subscriptionTier == SubscriptionTier.pro;
 
   bool get isPremiumOrAbove => subscriptionTier != SubscriptionTier.free;
@@ -40,7 +40,7 @@ class InvoiceProvider extends ChangeNotifier {
 
   bool get hasCompletedOnboarding => businessName.isNotEmpty;
 
-  /// Called after local profile changes to mirror data in Firestore (set from [main.dart]).
+  /// Called after local profile changes to mirror data in Supabase (set from bootstrap).
   Future<void> Function()? onCloudSyncRequested;
 
   bool _importingFromCloud = false;
@@ -203,7 +203,7 @@ class InvoiceProvider extends ChangeNotifier {
     _save();
   }
 
-  /// Updated from verified store purchases ([SubscriptionService]) or Firestore restore.
+  /// Updated from verified store purchases ([SubscriptionService]) or the cloud account.
   void setSubscriptionTier(SubscriptionTier tier) {
     if (subscriptionTier == tier) return;
     subscriptionTier = tier;
@@ -349,7 +349,7 @@ class InvoiceProvider extends ChangeNotifier {
       address: address,
       taxId: taxId,
     );
-    clients.add(client);
+    clients.insert(0, client);
     notifyListeners();
     _save();
     return client;
@@ -408,7 +408,7 @@ class InvoiceProvider extends ChangeNotifier {
       unitCost: unitCost,
       quantity: quantity,
     );
-    catalogItems.add(item);
+    catalogItems.insert(0, item);
     notifyListeners();
     _save();
     return item;

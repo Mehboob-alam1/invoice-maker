@@ -4,7 +4,8 @@ import '../../l10n/app_strings.dart';
 import '../../models/invoice_item.dart';
 import '../../models/subscription_tier.dart';
 import '../../providers/invoice_provider.dart';
-import '../../ads/ad_action.dart';
+import '../../ads/ad_flows.dart';
+import '../../ads/ad_placement.dart';
 import '../../services/invoice_create_gate.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../widgets/blue_screen.dart';
@@ -23,12 +24,39 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
   final _clientController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _generating = false;
+  String? _clientError;
+  String? _detailError;
+
+  @override
+  void initState() {
+    super.initState();
+    _clientController.addListener(() {
+      if (_clientError != null && _clientController.text.trim().isNotEmpty) {
+        setState(() => _clientError = null);
+      }
+    });
+    _descriptionController.addListener(() {
+      if (_detailError != null && _descriptionController.text.trim().isNotEmpty) {
+        setState(() => _detailError = null);
+      }
+    });
+  }
 
   @override
   void dispose() {
     _clientController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  bool _validate(AppStrings strings) {
+    final client = _clientController.text.trim();
+    final detail = _descriptionController.text.trim();
+    setState(() {
+      _clientError = client.isEmpty ? strings.t('aiClientNameRequired') : null;
+      _detailError = detail.isEmpty ? strings.t('aiInvoiceDetailRequired') : null;
+    });
+    return _clientError == null && _detailError == null;
   }
 
   List<InvoiceItem> _itemsFromDescription(String raw, String fallback) {
@@ -66,6 +94,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
 
   Future<void> _generate() async {
     final strings = AppStrings.read(context);
+    if (!_validate(strings)) return;
     final combinedInput = '${_clientController.text}\n${_descriptionController.text}';
     if (!await ensureAiGenerationAllowed(context, inputText: combinedInput)) return;
     if (!mounted) return;
@@ -77,8 +106,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
     final provider = context.read<InvoiceProvider>();
     final estimatedTokens = InvoiceProvider.estimateAiTokensForInput(combinedInput);
     provider.recordAiTokenUsage(estimatedTokens);
-    final clientName =
-    _clientController.text.trim().isEmpty ? strings.newClientFallback : _clientController.text.trim();
+    final clientName = _clientController.text.trim();
     final client = provider.findOrCreateClient(name: clientName);
     final invoice = await provider.createInvoice(
       client: client,
@@ -87,7 +115,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
 
     if (!mounted) return;
     setState(() => _generating = false);
-    await showInterstitialWithLoadingIfEligible(context);
+    await afterGenerationAd(context, AdPlacement.interstitialGenerateAi);
     if (!mounted) return;
     await navigateAfterInvoiceCreated(context, invoice.id);
   }
@@ -159,7 +187,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        _FieldLabel(strings.clientNameOptional),
+                                        _FieldLabel(strings.clientName),
                                         TextField(
                                           controller: _clientController,
                                           textCapitalization: TextCapitalization.words,
@@ -167,6 +195,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
                                           decoration: InputDecoration(
                                             hintText: strings.clientNameHintAi,
                                             prefixIcon: const Icon(Icons.person_add_alt_1_rounded),
+                                            errorText: _clientError,
                                           ),
                                         ),
                                         const SizedBox(height: 22),
@@ -181,6 +210,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
                                           decoration: InputDecoration(
                                             hintText: strings.invoiceThisMonthHint,
                                             alignLabelWithHint: true,
+                                            errorText: _detailError,
                                           ),
                                         ),
                                       ],

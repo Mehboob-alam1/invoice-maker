@@ -1,69 +1,60 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Single app splash — logo + loading (native launch is plain color only).
+/// Single app splash — tick icon on the brand blue background.
 class SplashLaunchView extends StatelessWidget {
-  const SplashLaunchView({
-    super.key,
-    this.statusText,
-  });
+  const SplashLaunchView({super.key});
 
-  final String? statusText;
-
-  static const _splashAsset = 'assets/images/splash_ai.png';
+  static const assetPath = 'assets/images/splash_tick.png';
 
   /// Matches native window color until this view paints.
-  static const backgroundColor = Color(0xFFF8FAFC);
+  static const backgroundColor = Color(0xFF2563EB);
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final logoWidth = (size.width * 0.82).clamp(260.0, 400.0);
+    final iconWidth = (MediaQuery.sizeOf(context).width * 0.42).clamp(140.0, 220.0);
 
     return ColoredBox(
       color: backgroundColor,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.asset(
-                _splashAsset,
-                width: logoWidth,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-                errorBuilder: (_, _, _) => Icon(
-                  Icons.receipt_long_rounded,
-                  size: 72,
-                  color: Colors.blue.shade700,
-                ),
+      child: Stack(
+        children: [
+          Center(
+            child: Image.asset(
+              assetPath,
+              gaplessPlayback: true,
+              width: iconWidth,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.check_rounded,
+                size: 96,
+                color: Colors.white,
               ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.blue.shade700,
-                ),
-              ),
-              if (statusText != null && statusText!.trim().isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(
-                  statusText!,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
+            ),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 36),
+                child: Center(
+                  child: SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      strokeCap: StrokeCap.round,
+                      color: Colors.white,
+                      backgroundColor: Color(0x38FFFFFF),
+                    ),
                   ),
                 ),
-              ],
-            ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

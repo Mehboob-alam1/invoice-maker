@@ -58,28 +58,27 @@ class UserAccountSnapshot {
   final String? languageCode;
   final UserSubscriptionRecord subscription;
 
-  factory UserAccountSnapshot.fromFirestore(String uid, Map<String, dynamic> data) {
-    final topTier = data['subscriptionTier'] as String?;
-    var subscription = UserSubscriptionRecord.fromMap(
-      data['subscription'] as Map<String, dynamic>?,
-    );
-    if (topTier != null) {
-      subscription = UserSubscriptionRecord(
-        tier: SubscriptionTier.fromStorage(topTier),
-        productId: subscription.productId,
-        platform: subscription.platform,
-        purchaseId: subscription.purchaseId,
-      );
-    }
-    final prefs = data['preferences'] as Map<String, dynamic>?;
+  factory UserAccountSnapshot.fromDatabaseRow(Map<String, dynamic> row) {
     return UserAccountSnapshot(
-      uid: uid,
-      email: data['email'] as String?,
-      displayName: data['displayName'] as String?,
-      photoUrl: data['googlePhotoUrl'] as String? ?? data['photoUrl'] as String?,
-      business: BusinessProfileRecord.fromMap(data['business'] as Map<String, dynamic>?),
-      languageCode: prefs?['languageCode'] as String?,
-      subscription: subscription,
+      uid: row['id'] as String,
+      email: row['email'] as String?,
+      displayName: row['display_name'] as String?,
+      photoUrl: row['google_photo_url'] as String? ?? row['photo_url'] as String?,
+      business: BusinessProfileRecord(
+        name: row['business_name'] as String? ?? '',
+        email: row['business_email'] as String? ?? '',
+        phone: row['business_phone'] as String? ?? '',
+        address: row['business_address'] as String? ?? '',
+        taxId: row['business_tax_id'] as String? ?? '',
+        logoUrl: row['business_logo_url'] as String?,
+      ),
+      languageCode: row['language_code'] as String?,
+      subscription: UserSubscriptionRecord(
+        tier: SubscriptionTier.fromStorage(row['subscription_tier'] as String?),
+        productId: row['subscription_product_id'] as String?,
+        platform: row['subscription_platform'] as String? ?? 'google_play',
+        purchaseId: row['subscription_purchase_id'] as String?,
+      ),
     );
   }
 }

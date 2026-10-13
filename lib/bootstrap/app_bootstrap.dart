@@ -18,6 +18,7 @@ import '../screens/onboarding/onboarding_screen.dart';
 import '../services/auth_service.dart';
 import '../services/push_notification_service.dart';
 import '../services/subscription_service.dart';
+import '../services/user_database_service.dart';
 import '../services/user_profile_sync.dart';
 
 class AppBootstrapResult {
@@ -66,6 +67,7 @@ Future<AppBootstrapResult> runAppBootstrap({
   status('Starting…');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  await UserDatabaseService.initialize();
 
   final invoiceProvider = InvoiceProvider();
   invoiceProvider.onCloudSyncRequested = () => UserProfileSync.pushFromProvider(invoiceProvider);

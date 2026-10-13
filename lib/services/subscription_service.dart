@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/subscription_products.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
-import 'user_firestore_service.dart';
+import 'user_database_service.dart';
 
 /// Google Play / App Store auto-renewing subscriptions (Premium & Pro).
 class SubscriptionService extends ChangeNotifier {
@@ -138,6 +138,33 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
+  String? priceForProduct(String productId) => _products[productId]?.price;
+
+  Future<bool> purchaseProductId(String productId) async {
+    final product = _products[productId];
+    if (!storeAvailable || product == null) {
+      lastError = 'Store or product unavailable. Check Play Console product IDs.';
+      notifyListeners();
+      return false;
+    }
+    purchasePending = true;
+    lastError = null;
+    notifyListeners();
+
+    final PurchaseParam param = Platform.isAndroid
+        ? GooglePlayPurchaseParam(productDetails: product)
+        : PurchaseParam(productDetails: product);
+
+    try {
+      return await _iap.buyNonConsumable(purchaseParam: param);
+    } catch (e) {
+      lastError = e.toString();
+      purchasePending = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   String priceLabel(SubscriptionTier tier, {required bool yearly, String fallback = '—'}) {
     final p = productFor(tier, yearly: yearly);
     if (p == null) return fallback;
@@ -226,7 +253,7 @@ class SubscriptionService extends ChangeNotifier {
     _invoiceProvider.setSubscriptionTier(SubscriptionTier.free);
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      await UserFirestoreService.instance.recordSubscription(
+      await UserDatabaseService.instance.recordSubscription(
         uid: uid,
         tier: SubscriptionTier.free,
         productId: 'none',
@@ -245,7 +272,7 @@ class SubscriptionService extends ChangeNotifier {
     lastGrantedProductId = purchase.productID;
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    UserFirestoreService.instance.recordSubscription(
+    UserDatabaseService.instance.recordSubscription(
       uid: uid,
       tier: tier,
       productId: purchase.productID,
@@ -253,11 +280,11 @@ class SubscriptionService extends ChangeNotifier {
     );
   }
 
-  Future<void> syncTierToFirestoreIfNeeded() async {
+  Future<void> syncTierToCloudIfNeeded() async {
     if (currentTier == SubscriptionTier.free) return;
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    await UserFirestoreService.instance.syncLocalSubscription(
+    await UserDatabaseService.instance.syncLocalSubscription(
       uid: uid,
       tier: currentTier,
       productId: lastGrantedProductId,

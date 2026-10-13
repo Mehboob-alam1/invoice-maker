@@ -12,7 +12,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../navigation/app_page_route.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:provider/provider.dart';
+
+import '../../ads/ad_placement.dart';
+import '../../ads/ad_service.dart';
 import '../../l10n/app_strings.dart';
+import '../../providers/invoice_provider.dart';
 import '../../services/invoice_parser.dart';
 import '../../services/ocr_service.dart';
 import '../../widgets/blue_screen.dart';
@@ -43,7 +48,16 @@ Future<void> startOcrScan(BuildContext context) async {
 
   var loadingShown = false;
   try {
+    AdService.instance.markAwaitingMediaReturn();
     final picked = await ImagePicker().pickImage(source: source, imageQuality: 100);
+    if (!context.mounted) return;
+    if (AdService.instance.takeMediaReturn()) {
+      await AdService.instance.showAppOpenOnDemand(
+        tier: context.read<InvoiceProvider>().subscriptionTier,
+        placement: AdPlacement.appOpenMediaReturn,
+        ignoreInterval: true,
+      );
+    }
     if (picked == null || !context.mounted) return;
 
     loadingShown = true;

@@ -57,6 +57,117 @@
       "description": "AdMob app open unit ID (iOS).",
       "valueType": "STRING"
     },
+    "ad_banner_android": {
+      "defaultValue": {
+        "value": "ca-app-pub-3940256099942544/6300978111"
+      },
+      "description": "AdMob banner unit ID (Android), including the collapsible main-screen banner.",
+      "valueType": "STRING"
+    },
+    "ad_banner_ios": {
+      "defaultValue": {
+        "value": "ca-app-pub-3940256099942544/2934735716"
+      },
+      "description": "AdMob banner unit ID (iOS).",
+      "valueType": "STRING"
+    },
+    "paywall_close_delay_seconds": {
+      "defaultValue": {
+        "value": "5"
+      },
+      "description": "Seconds before the paywall close button appears.",
+      "valueType": "NUMBER"
+    },
+    "ad_app_open_splash": {
+      "defaultValue": { "value": "true" },
+      "description": "App open ad on the splash screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_banner_splash": {
+      "defaultValue": { "value": "true" },
+      "description": "Banner ad at the bottom of the splash screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_native_language": {
+      "defaultValue": { "value": "true" },
+      "description": "Native ad on the language screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_native_htu": {
+      "defaultValue": { "value": "true" },
+      "description": "Native ad at the bottom of the how-to-use screens.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_banner_business_name": {
+      "defaultValue": { "value": "true" },
+      "description": "Banner ad on the business name screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_banner_main": {
+      "defaultValue": { "value": "true" },
+      "description": "Collapsible banner ad on the main screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_main": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial on the main screen: first click, then every 3 clicks.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_banner_create_invoice": {
+      "defaultValue": { "value": "true" },
+      "description": "Banner ad on the create invoice screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_use_template": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial on the Use Template button.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_open_invoice": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial when Watch Ad is tapped on Open Invoice.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_share_pdf": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial when Watch Ad is tapped on Share PDF.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_print": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial when Watch Ad is tapped on Print.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_pdf": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial when Watch Ad is tapped on the PDF button.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_custom_invoice": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial after generating a custom invoice.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_generate_ai": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial on Generate in Create with AI.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_ocr_create": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial on Create Invoice in Scan with OCR.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_app_open_foreground": {
+      "defaultValue": { "value": "true" },
+      "description": "App open ad when the app returns to the foreground.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_app_open_media_return": {
+      "defaultValue": { "value": "true" },
+      "description": "App open ad when returning from the camera or gallery.",
+      "valueType": "BOOLEAN"
+    },
     "free_daily_invoice_limit": {
       "defaultValue": {
         "value": "3"
