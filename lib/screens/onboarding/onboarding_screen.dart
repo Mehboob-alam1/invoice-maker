@@ -8,11 +8,15 @@ import '../../l10n/app_strings.dart';
 import '../../navigation/app_page_route.dart';
 import '../../providers/invoice_provider.dart';
 import '../../ads/ad_flows.dart';
+import '../../services/paywall_analytics.dart';
+import '../../ads/ad_placement.dart';
 import '../../widgets/blue_screen.dart';
+import '../../widgets/bottom_banner_host.dart';
 import '../../widgets/onboarding_page.dart';
+import '../../widgets/placement_native_ad.dart';
 import 'google_login_screen.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends StatefulWidget with NoBottomBanner {
   const OnboardingScreen({super.key});
 
   @override
@@ -36,7 +40,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
     context.read<InvoiceProvider>().completeOnboardingCarouselStep();
-    await openPaywallIfFree(context);
+    await openPaywallIfFree(context, source: PaywallSource.onboarding);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(appPageRoute(const GoogleLoginScreen()));
   }
@@ -163,6 +167,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          const ScreenBottomAdSlot(
+                            child: PlacementNativeAd(
+                              placement: AdPlacement.nativeOnboarding,
                             ),
                           ),
                         ],

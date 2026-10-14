@@ -4,31 +4,46 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../ads/ad_remote_config.dart';
 import '../../core/constants/subscription_products.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/remote_config/remote_config_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/blue_theme.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/subscription_tier.dart';
 import '../../providers/invoice_provider.dart';
+import '../../services/paywall_analytics.dart';
 import '../../services/subscription_service.dart';
+import '../../widgets/bottom_banner_host.dart';
 
 /// Single weekly plan with a 3-day free trial. The close button waits [delay].
-class WeeklyPaywallScreen extends StatefulWidget {
-  const WeeklyPaywallScreen({super.key});
+class WeeklyPaywallScreen extends StatefulWidget with NoBottomBanner {
+  const WeeklyPaywallScreen({super.key, this.source = PaywallSource.crown});
+
+  final PaywallSource source;
 
   @override
   State<WeeklyPaywallScreen> createState() => _WeeklyPaywallScreenState();
 }
 
-class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> {
+class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> with SingleTickerProviderStateMixin {
   bool _canClose = false;
+  bool _winBack = false;
+  bool _purchased = false;
+  bool _closedLogged = false;
   Timer? _closeTimer;
+  late final AnimationController _pulse;
+  late final String _variant;
+  InvoiceProvider? _invoices;
 
   @override
   void initState() {
     super.initState();
+    _variant = RemoteConfigRepository.instance.paywallVariant;
+    _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat(reverse: true);
     final seconds = AdRemoteConfig.instance.paywallCloseDelaySeconds;
     if (seconds == 0) {
       _canClose = true;
@@ -37,20 +52,49 @@ class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> {
         if (mounted) setState(() => _canClose = true);
       });
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final prefs = await SharedPreferences.getInstance();
+      final winBack = prefs.getBool(SubscriptionService.winBackEligibleKey) == true;
+      if (winBack) await prefs.setBool(SubscriptionService.winBackEligibleKey, false);
+      if (!mounted) return;
+      setState(() => _winBack = winBack);
       context.read<SubscriptionService>().loadProducts();
+      _invoices = context.read<InvoiceProvider>();
+      _invoices!.addListener(_onTier);
+      await PaywallAnalytics.log('paywall_shown', variant: _variant, source: widget.source);
     });
+  }
+
+  void _onTier() {
+    if (!mounted || _purchased) return;
+    if (_invoices?.subscriptionTier == SubscriptionTier.free) return;
+    _purchased = true;
+    PaywallAnalytics.log('paywall_purchase_success', variant: _variant, source: widget.source);
+  }
+
+  void _logClosed() {
+    if (_closedLogged || _purchased) return;
+    _closedLogged = true;
+    PaywallAnalytics.log('paywall_closed', variant: _variant, source: widget.source);
   }
 
   @override
   void dispose() {
     _closeTimer?.cancel();
+    _pulse.dispose();
+    _invoices?.removeListener(_onTier);
+    _logClosed();
     super.dispose();
   }
 
   Future<void> _startTrial() async {
+    await PaywallAnalytics.log('paywall_plan_selected', variant: _variant, source: widget.source);
+    await PaywallAnalytics.log('paywall_purchase_start', variant: _variant, source: widget.source);
+    if (!mounted) return;
     final sub = context.read<SubscriptionService>();
-    final ok = await sub.purchaseProductId(SubscriptionProducts.weekly);
+    final offer = _winBack ? sub.winBackOffer : null;
+    final ok = await sub.purchaseProductId(SubscriptionProducts.weekly, offerToken: offer?.token);
     if (!mounted) return;
     if (!ok && sub.lastError != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(sub.lastError!)));
@@ -63,7 +107,22 @@ class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> {
     final sub = context.watch<SubscriptionService>();
     final tier = context.watch<InvoiceProvider>().subscriptionTier;
     final price = sub.priceForProduct(SubscriptionProducts.weekly);
+    final offer = _winBack ? sub.winBackOffer : null;
+    final shownPrice = offer?.price ?? price;
     final active = tier != SubscriptionTier.free;
+    final headline = _winBack
+        ? strings.t('paywallWinBackTitle')
+        : switch (widget.source) {
+            PaywallSource.aiCap => strings.t('paywallHeadlineAi'),
+            PaywallSource.template => strings.t('paywallHeadlineTemplates'),
+            PaywallSource.invoiceCap => strings.t('paywallHeadlineInvoices'),
+            _ => strings.t('paywallHeadline'),
+          };
+    final trialLine = _winBack
+        ? strings.t('paywallWinBackBody')
+        : shownPrice == null
+            ? strings.t('paywallTrialLine')
+            : strings.t('paywallThenWeekly', {'price': shownPrice});
 
     final dark = AppTheme.dark;
     return PopScope(
@@ -82,7 +141,7 @@ class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> {
                     const Icon(Icons.workspace_premium_rounded, size: 56, color: BlueColors.sky),
                     const SizedBox(height: 12),
                     Text(
-                      strings.t('paywallHeadline'),
+                      headline,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.spaceGrotesk(
                         fontSize: 32,
@@ -93,11 +152,24 @@ class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      strings.t('paywallTrialLine'),
+                      trialLine,
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 16, height: 1.4, color: AppColors.darkTextSecondary),
                     ),
                     const SizedBox(height: 24),
+                    if (_variant == 'C') ...[
+                      FadeTransition(
+                        opacity: Tween<double>(begin: 0.55, end: 1).animate(_pulse),
+                        child: Column(
+                          children: [
+                            _Feature(text: strings.t('paywallFeatureNoAds')),
+                            _Feature(text: strings.t('paywallFeatureTemplates')),
+                            _Feature(text: strings.t('paywallFeatureInvoices')),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -108,6 +180,17 @@ class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (_variant == 'B' || _winBack)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                strings.t('paywallBestValue'),
+                                style: const TextStyle(
+                                  color: BlueColors.sky,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
                           Text(
                             strings.t('paywallWeeklyTitle'),
                             style: GoogleFonts.spaceGrotesk(
@@ -118,17 +201,19 @@ class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            price ?? strings.t('paywallTrialLine'),
+                            shownPrice ?? strings.t('paywallTrialLine'),
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
                               color: BlueColors.bright,
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          _Feature(text: strings.t('paywallFeatureNoAds')),
-                          _Feature(text: strings.t('paywallFeatureTemplates')),
-                          _Feature(text: strings.t('paywallFeatureInvoices')),
+                          if (_variant != 'C') ...[
+                            const SizedBox(height: 16),
+                            _Feature(text: strings.t('paywallFeatureNoAds')),
+                            _Feature(text: strings.t('paywallFeatureTemplates')),
+                            _Feature(text: strings.t('paywallFeatureInvoices')),
+                          ],
                         ],
                       ),
                     ),
@@ -160,10 +245,15 @@ class _WeeklyPaywallScreenState extends State<WeeklyPaywallScreen> {
                 ),
                 Positioned(
                   top: 8,
-                  right: 8,
+                  left: 8,
                   child: IconButton(
                     tooltip: strings.close,
-                    onPressed: _canClose ? () => Navigator.of(context).pop() : null,
+                    onPressed: _canClose
+                        ? () {
+                            _logClosed();
+                            Navigator.of(context).pop();
+                          }
+                        : null,
                     icon: Icon(
                       Icons.close_rounded,
                       color: _canClose ? Colors.white : Colors.transparent,

@@ -5,6 +5,9 @@ class AppConfig {
   /// User-facing app name (home screen, splash, share text, store listing).
   static const appDisplayName = 'Invoice GO';
 
+  /// Android versionCode from pubspec (`1.0.0+2`). Play in-app updates compare this.
+  static const buildNumber = 2;
+
   static const androidPackageId = 'com.invoice.maker.estimate.billing.ocr.appomatrix';
 
   static const playStoreUrl =

@@ -11,7 +11,6 @@ import '../../l10n/app_strings.dart';
 import '../../models/client.dart';
 import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
-import '../../models/invoice_template.dart';
 import '../../providers/invoice_provider.dart';
 import '../../widgets/blue_screen.dart';
 import '../../widgets/client_form_sheet.dart';
@@ -21,9 +20,9 @@ import '../../widgets/invoice_template_preview_sheet.dart';
 import '../../widgets/template_picker.dart';
 import '../../navigation/app_page_route.dart';
 import '../../navigation/invoice_flow.dart';
-import '../../services/premium_upsell_service.dart';
 import '../../ads/ad_action.dart';
 import '../../ads/ad_flows.dart';
+import '../../ads/ad_manager.dart';
 import '../../ads/ad_placement.dart';
 import '../../widgets/ui/app_page_shell.dart';
 import '../subscription/pro_paywall_screen.dart';
@@ -57,6 +56,7 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
   late final TextEditingController _invoiceNumber;
   bool _editExpanded = false;
   bool _finishing = false;
+  bool _openingDetail = false;
 
   @override
   void initState() {
@@ -75,8 +75,6 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
 
   Future<void> _schedulePostCreateExtras() async {
     await Future<void>.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    await PremiumUpsellService.maybeShow(context, forceIfLowQuota: true);
     if (!mounted) return;
     await showInterstitialWithLoadingIfEligible(context);
   }
@@ -141,8 +139,7 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     final base = _workingInvoice();
     if (base == null) return false;
     final template = base.template;
-    final tier = context.read<InvoiceProvider>().subscriptionTier;
-    if (!InvoiceTemplateInfo.canUseTemplate(template, tier)) {
+    if (!context.read<InvoiceProvider>().canUseTemplate(template)) {
       final ok = await confirmProTemplateUse(context, template);
       if (!ok || !mounted) return false;
     }
@@ -157,33 +154,24 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     return true;
   }
 
-  Future<void> _openInvoiceDetail() async {
-    await runWithWatchOrPremium(
-      context: context,
-      placement: AdPlacement.interstitialOpenInvoice,
-      action: _openInvoiceDetailAfterChoice,
-    );
-  }
+  Future<void> _openInvoiceDetail() => _openInvoiceDetailAfterChoice();
 
   Future<void> _openInvoiceDetailAfterChoice() async {
-    if (_finishing) return;
-    setState(() => _finishing = true);
+    if (_finishing || _openingDetail) return;
+    setState(() => _openingDetail = true);
     final ok = await _save(quiet: true);
     if (!ok || !mounted) {
-      setState(() => _finishing = false);
+      if (mounted) setState(() => _openingDetail = false);
       return;
     }
     HapticFeedback.lightImpact();
-    if (!mounted) {
-      setState(() => _finishing = false);
-      return;
-    }
-    await Navigator.of(context).pushReplacement(
+    await Navigator.of(context).push(
       appInvoiceFlowRoute<void>(
         InvoiceDetailScreen(invoiceId: widget.invoiceId),
         adScopeKey: 'invoice_detail_${widget.invoiceId}',
       ),
     );
+    if (mounted) setState(() => _openingDetail = false);
   }
 
   Future<void> _backToHome() async {
@@ -192,25 +180,26 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
     await _save(quiet: true);
     if (!mounted) return;
     HapticFeedback.selectionClick();
-    await showInterstitialWithLoadingIfEligible(context);
+    if (!AdManager.instance.invoiceAlreadyShowedInterstitial(widget.invoiceId)) {
+      final shown = await showPlacementInterstitial(context, AdPlacement.interstitialPreviewBack);
+      if (shown) AdManager.instance.markInvoiceInterstitial(widget.invoiceId);
+    }
     if (!mounted) return;
-    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 
   Future<void> _exportPdf({required bool share}) async {
-    _syncDraftFromProvider();
+    final ok = await _save(quiet: true);
+    if (!ok || !mounted) return;
     final base = _workingInvoice();
     if (base == null) return;
-    final snapshot = _buildDraftInvoice(base);
-    await InvoicePdfExport.export(context, snapshot, share: share);
+    await InvoicePdfExport.export(context, base, share: share);
   }
 
-  Future<void> _exportWithChoice({required bool share, required AdPlacement placement}) {
-    return runWithWatchOrPremium(
-      context: context,
-      placement: placement,
-      action: () => _exportPdf(share: share),
-    );
+  Future<void> _exportWithChoice({required bool share}) {
+    return _exportPdf(share: share);
   }
 
   Future<void> _editClient() async {
@@ -400,10 +389,19 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
           }
 
           return PopScope(
-            canPop: !widget.justCreated || _finishing,
+            canPop: _finishing,
             onPopInvokedWithResult: (didPop, result) async {
-              if (didPop || !widget.justCreated) return;
-              await _backToHome();
+              if (didPop) return;
+              if (widget.justCreated) {
+                await _backToHome();
+                return;
+              }
+              final ok = await _save(quiet: true);
+              if (!ok || !mounted) return;
+              setState(() => _finishing = true);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) Navigator.of(context).pop();
+              });
             },
             child: Scaffold(
               appBar: AppBar(
@@ -412,19 +410,19 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
                   _AppBarAction(
                     tooltip: strings.printPdf,
                     icon: Icons.print_outlined,
-                    onPressed: () => _exportWithChoice(share: false, placement: AdPlacement.interstitialPrint),
+                    onPressed: () => _exportWithChoice(share: false),
                   ),
                   _AppBarAction(
                     tooltip: strings.sharePdf,
                     icon: Icons.picture_as_pdf_outlined,
-                    onPressed: () => _exportWithChoice(share: true, placement: AdPlacement.interstitialPdf),
+                    onPressed: () => _exportWithChoice(share: true),
                   ),
                   if (!widget.justCreated)
                     _AppBarAction(
                       tooltip: strings.viewInvoice,
                       icon: Icons.receipt_long_outlined,
                       onPressed: () => runWithInterstitial(context, () {
-                        Navigator.of(context).pushReplacement(
+                        Navigator.of(context).push(
                           appPageRoute<void>(
                             InvoiceDetailScreen(invoiceId: widget.invoiceId),
                             adScopeKey: 'invoice_detail_${widget.invoiceId}',
@@ -462,9 +460,9 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
                       constraints: BoxConstraints(maxWidth: isDesktop ? 560 : maxW),
                       child: widget.justCreated
                           ? _JustCreatedActions(
-                        finishing: _finishing,
+                        finishing: _finishing || _openingDetail,
                         onOpenDetail: _openInvoiceDetail,
-                        onShare: () => _exportWithChoice(share: true, placement: AdPlacement.interstitialSharePdf),
+                        onShare: () => _exportWithChoice(share: true),
                         onHome: _backToHome,
                       )
                           : BlueGradientButton(
@@ -658,7 +656,7 @@ class _InvoicePreviewEditScreenState extends State<InvoicePreviewEditScreen> {
       onChanged: (_) => setState(() {}),
     );
 
-    final canCustomize = context.watch<InvoiceProvider>().subscriptionTier.canCustomizeTemplates;
+    final canCustomize = context.watch<InvoiceProvider>().featureTier.canCustomizeTemplates;
 
     return _BlueCard(
       padding: EdgeInsets.zero,

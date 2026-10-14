@@ -124,6 +124,16 @@ class DigitalInvoice {
 
   /// Invoice-level tax (matches [app.Invoice.taxRate]); line items stay pre-tax.
   final double invoiceTaxRatePercent;
+  final double amountPaid;
+  final String howToPay;
+  final bool taxInclusive;
+  final double deposit;
+  final String documentLabel;
+  final List<int>? logoBytes;
+  final List<int>? signatureBytes;
+  final List<int>? stampBytes;
+  final String watermark;
+  final String watermarkUrl;
 
   const DigitalInvoice({
     required this.invoiceNumber,
@@ -143,6 +153,16 @@ class DigitalInvoice {
     this.termsAndConditions = '',
     this.status = DigitalPaymentStatus.sent,
     this.invoiceTaxRatePercent = 0,
+    this.amountPaid = 0,
+    this.howToPay = '',
+    this.taxInclusive = false,
+    this.deposit = 0,
+    this.documentLabel = 'INVOICE',
+    this.logoBytes,
+    this.signatureBytes,
+    this.stampBytes,
+    this.watermark = '',
+    this.watermarkUrl = '',
   });
 
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.netAmount);
@@ -153,12 +173,34 @@ class DigitalInvoice {
 
   double get totalTax {
     if (invoiceTaxRatePercent > 0) {
+      if (taxInclusive) {
+        return taxableBase - taxableBase / (1 + invoiceTaxRatePercent / 100);
+      }
       return taxableBase * (invoiceTaxRatePercent / 100);
     }
-    return items.fold(0.0, (sum, item) => sum + item.taxAmount);
+    if (!taxInclusive) {
+      return items.fold(0.0, (sum, item) => sum + item.taxAmount);
+    }
+    if (subtotal <= 0) return 0;
+    final ratio = taxableBase / subtotal;
+    var tax = 0.0;
+    for (final item in items) {
+      if (item.taxRatePercent <= 0) continue;
+      final line = item.netAmount * ratio;
+      tax += line - line / (1 + item.taxRatePercent / 100);
+    }
+    return tax;
   }
 
-  double get grandTotal => taxableBase + totalTax + shippingCost;
+  double get grandTotal => (taxInclusive ? taxableBase : taxableBase + totalTax) + shippingCost;
+
+  double get balanceDue {
+    final left = grandTotal - amountPaid - deposit;
+    return left < 0 ? 0 : left;
+  }
+
+  bool get showPaidStamp =>
+      status == DigitalPaymentStatus.paid || (grandTotal > 0 && amountPaid + deposit + 0.009 >= grandTotal);
 
   List<TaxBreakdownEntry> get taxBreakdown {
     if (invoiceTaxRatePercent > 0) {

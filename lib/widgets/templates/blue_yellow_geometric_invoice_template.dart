@@ -7,6 +7,7 @@ import '../../core/utils/invoice_layout_scale.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../providers/invoice_provider.dart';
+import '../invoice_brand_images.dart';
 
 const Color kGeoNavy = Color(0xFF14224E);
 const Color kGeoNavyLight = Color(0xFF1D2E66);
@@ -132,6 +133,13 @@ class BlueYellowGeometricInvoiceTemplate extends StatelessWidget {
                   SizedBox(height: 4 * s),
                   Text(invoice.paymentTerms!, style: GoogleFonts.lato(fontSize: 11 * s, color: kGeoMuted)),
                 ],
+                SizedBox(height: 16 * s),
+                InvoiceBrandImages(
+                  logoPath: provider.businessLogoPath,
+                  signaturePath: provider.signaturePath,
+                  stampPath: provider.stampPath,
+                  showStamp: provider.isPro,
+                ),
                 SizedBox(height: 20 * s),
               ],
             ),

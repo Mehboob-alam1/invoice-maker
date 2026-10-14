@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -18,13 +20,13 @@ class InvoicePdfService {
   static const _muted = PdfColor.fromInt(0xFF6B6B6B);
 
   static Future<void> printRedModernPdf(DigitalInvoice invoice) async {
-    final doc = await _buildRedModern(invoice);
-    await Printing.layoutPdf(onLayout: (format) async => doc.save());
+    final bytes = await (await _buildRedModern(invoice)).save();
+    await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   static Future<void> shareRedModernPdf(DigitalInvoice invoice) async {
-    final doc = await _buildRedModern(invoice);
-    await Printing.sharePdf(bytes: await doc.save(), filename: _pdfFilename(invoice));
+    final bytes = await (await _buildRedModern(invoice)).save();
+    await Printing.sharePdf(bytes: bytes, filename: _pdfFilename(invoice));
   }
 
   static const _geoNavy = PdfColor.fromInt(0xFF14224E);
@@ -33,48 +35,89 @@ class InvoicePdfService {
   static const _corpTeal = PdfColor.fromInt(0xFF9FD8D6);
 
   static Future<void> printBlueYellowPdf(DigitalInvoice invoice) async {
-    final doc = await _buildBlueYellow(invoice);
-    await Printing.layoutPdf(onLayout: (format) async => doc.save());
+    final bytes = await (await _buildBlueYellow(invoice)).save();
+    await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   static Future<void> shareBlueYellowPdf(DigitalInvoice invoice) async {
-    final doc = await _buildBlueYellow(invoice);
-    await Printing.sharePdf(bytes: await doc.save(), filename: _pdfFilename(invoice));
+    final bytes = await (await _buildBlueYellow(invoice)).save();
+    await Printing.sharePdf(bytes: bytes, filename: _pdfFilename(invoice));
   }
 
   static Future<void> printBlueCorporatePdf(DigitalInvoice invoice) async {
-    final doc = await _buildBlueCorporate(invoice);
-    await Printing.layoutPdf(onLayout: (format) async => doc.save());
+    final bytes = await (await _buildBlueCorporate(invoice)).save();
+    await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   static Future<void> shareBlueCorporatePdf(DigitalInvoice invoice) async {
-    final doc = await _buildBlueCorporate(invoice);
-    await Printing.sharePdf(bytes: await doc.save(), filename: _pdfFilename(invoice));
+    final bytes = await (await _buildBlueCorporate(invoice)).save();
+    await Printing.sharePdf(bytes: bytes, filename: _pdfFilename(invoice));
   }
 
   static const _receiptNavy = PdfColor.fromInt(0xFF1F2937);
   static const _receiptOrange = PdfColor.fromInt(0xFFE0872A);
 
   static Future<void> printOrangeReceiptPdf(DigitalInvoice invoice) async {
-    final doc = await _buildOrangeReceipt(invoice);
-    await Printing.layoutPdf(onLayout: (format) async => doc.save());
+    final bytes = await (await _buildOrangeReceipt(invoice)).save();
+    await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   static Future<void> shareOrangeReceiptPdf(DigitalInvoice invoice) async {
-    final doc = await _buildOrangeReceipt(invoice);
-    await Printing.sharePdf(bytes: await doc.save(), filename: _pdfFilename(invoice));
+    final bytes = await (await _buildOrangeReceipt(invoice)).save();
+    await Printing.sharePdf(bytes: bytes, filename: _pdfFilename(invoice));
   }
 
-  static String _pdfFilename(DigitalInvoice invoice) =>
-      'Invoice-${invoice.invoiceNumber.replaceAll('#', '').replaceAll('/', '-')}';
+  static String _pdfFilename(DigitalInvoice invoice) {
+    final raw = invoice.invoiceNumber.replaceAll('#', '').replaceAll('/', '-').trim();
+    final name = raw.isEmpty ? 'invoice' : 'Invoice-$raw';
+    return name.toLowerCase().endsWith('.pdf') ? name : '$name.pdf';
+  }
+
+  static Future<Uint8List> bytesFor(
+    DigitalInvoice invoice, {
+    InvoiceGradientTheme? theme,
+    InvoicePdfLayout layout = InvoicePdfLayout.digital,
+  }) async {
+    final doc = await _documentFor(invoice, theme: theme ?? InvoiceThemes.midnight, layout: layout);
+    return doc.save();
+  }
+
+  static Future<Uint8List> templateBytes(
+    DigitalInvoice invoice, {
+    required String templateId,
+    InvoiceGradientTheme? theme,
+  }) async {
+    switch (templateId) {
+      case 'redModern':
+        return (await _buildRedModern(invoice)).save();
+      case 'blueYellow':
+        return (await _buildBlueYellow(invoice)).save();
+      case 'blueCorporate':
+        return (await _buildBlueCorporate(invoice)).save();
+      case 'orangeReceipt':
+        return (await _buildOrangeReceipt(invoice)).save();
+      case 'classic':
+        return bytesFor(invoice, theme: InvoiceThemes.classic, layout: InvoicePdfLayout.classic);
+      case 'modern':
+        return bytesFor(invoice, theme: InvoiceThemes.classic, layout: InvoicePdfLayout.modern);
+      case 'minimal':
+        return bytesFor(invoice, theme: InvoiceThemes.classic, layout: InvoicePdfLayout.minimal);
+      default:
+        return bytesFor(
+          invoice,
+          theme: theme ?? InvoiceThemes.midnight,
+          layout: InvoicePdfLayout.digital,
+        );
+    }
+  }
 
   static Future<void> printDocument(
     DigitalInvoice invoice, {
     InvoiceGradientTheme? theme,
     InvoicePdfLayout layout = InvoicePdfLayout.digital,
   }) async {
-    final doc = await _documentFor(invoice, theme: theme ?? InvoiceThemes.midnight, layout: layout);
-    await Printing.layoutPdf(onLayout: (format) async => doc.save());
+    final bytes = await bytesFor(invoice, theme: theme, layout: layout);
+    await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
 
   static Future<void> sharePdf(
@@ -82,8 +125,8 @@ class InvoicePdfService {
     InvoiceGradientTheme? theme,
     InvoicePdfLayout layout = InvoicePdfLayout.digital,
   }) async {
-    final doc = await _documentFor(invoice, theme: theme ?? InvoiceThemes.midnight, layout: layout);
-    await Printing.sharePdf(bytes: await doc.save(), filename: _pdfFilename(invoice));
+    final bytes = await bytesFor(invoice, theme: theme, layout: layout);
+    await Printing.sharePdf(bytes: bytes, filename: _pdfFilename(invoice));
   }
 
   static Future<pw.Document> _documentFor(
@@ -145,6 +188,10 @@ class InvoicePdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
+                  if (invoice.logoBytes != null && invoice.logoBytes!.isNotEmpty) ...[
+                    pw.Image(pw.MemoryImage(Uint8List.fromList(invoice.logoBytes!)), height: 48, width: 48, fit: pw.BoxFit.contain),
+                    pw.SizedBox(height: 6),
+                  ],
                   pw.Text(invoice.seller.name, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: accent)),
                   pw.SizedBox(height: 4),
                   if (invoice.seller.fullAddress.isNotEmpty)
@@ -156,7 +203,7 @@ class InvoicePdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text('INVOICE', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: accent)),
+                  pw.Text(invoice.documentLabel, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: accent)),
                   pw.Text('No. ${invoice.invoiceNumber}', style: const pw.TextStyle(fontSize: 10)),
                   pw.Text('Issued: ${dateFmt.format(invoice.issueDate)}', style: const pw.TextStyle(fontSize: 10)),
                   pw.Text('Due: ${dateFmt.format(invoice.dueDate)}', style: const pw.TextStyle(fontSize: 10)),
@@ -245,6 +292,9 @@ class InvoicePdfService {
             pw.Text('Terms & Conditions', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
             pw.Text(invoice.termsAndConditions, style: const pw.TextStyle(fontSize: 9)),
           ],
+          ..._signOff(invoice),
+          ..._paymentBlock(invoice, money),
+          ..._watermarkLink(invoice),
         ],
       ),
     );
@@ -328,7 +378,7 @@ class InvoicePdfService {
         margin: const pw.EdgeInsets.all(40),
         build: (context) => [
           pw.Text(
-            'INVOICE',
+            invoice.documentLabel,
             style: pw.TextStyle(fontSize: 10, letterSpacing: 2, color: PdfColors.grey700),
           ),
           pw.SizedBox(height: 4),
@@ -383,6 +433,14 @@ class InvoicePdfService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
+              if (invoice.logoBytes != null && invoice.logoBytes!.isNotEmpty) ...[
+                pw.Image(
+                  pw.MemoryImage(Uint8List.fromList(invoice.logoBytes!)),
+                  height: 42,
+                  fit: pw.BoxFit.contain,
+                ),
+                pw.SizedBox(height: 6),
+              ],
               pw.Text(invoice.seller.name, style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: onDark ? PdfColors.white : null)),
               if (invoice.seller.taxId.isNotEmpty) pw.Text('Tax ID: ${invoice.seller.taxId}', style: subStyle),
               if (invoice.seller.email.isNotEmpty) pw.Text(invoice.seller.email, style: subStyle),
@@ -497,7 +555,11 @@ class InvoicePdfService {
         : 'Tax';
     final rows = <pw.Widget>[
       _appTotalRow('Subtotal', money.format(invoice.subtotal)),
+      if (invoice.globalDiscountAmount > 0.005)
+        _appTotalRow('Discount', money.format(invoice.globalDiscountAmount)),
       if (invoice.totalTax > 0.005) _appTotalRow(taxLabel, money.format(invoice.totalTax)),
+      if (invoice.shippingCost > 0.005) _appTotalRow('Shipping', money.format(invoice.shippingCost)),
+      if (invoice.deposit > 0.005) _appTotalRow('Deposit', money.format(invoice.deposit)),
       pw.SizedBox(height: 4),
       _appTotalRow('Grand total', money.format(invoice.grandTotal), bold: true),
     ];
@@ -507,6 +569,69 @@ class InvoicePdfService {
       alignment: pw.Alignment.centerRight,
       child: pw.SizedBox(width: 220, child: block),
     );
+  }
+
+  static List<pw.Widget> _signOff(DigitalInvoice invoice) {
+    final marks = <pw.Widget>[];
+    void add(List<int>? bytes) {
+      if (bytes == null || bytes.isEmpty) return;
+      marks.add(
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(left: 12),
+          child: pw.Image(
+            pw.MemoryImage(Uint8List.fromList(bytes)),
+            height: 48,
+            fit: pw.BoxFit.contain,
+          ),
+        ),
+      );
+    }
+
+    add(invoice.signatureBytes);
+    add(invoice.stampBytes);
+    if (marks.isEmpty) return const [];
+    return [
+      pw.SizedBox(height: 12),
+      pw.Align(
+        alignment: pw.Alignment.centerRight,
+        child: pw.Row(mainAxisSize: pw.MainAxisSize.min, children: marks),
+      ),
+    ];
+  }
+
+  static List<pw.Widget> _brandBlock(DigitalInvoice invoice) {
+    final brand = _brandImages(invoice);
+    if (brand == null) return const [];
+    return [pw.SizedBox(height: 12), brand];
+  }
+
+  static pw.Widget? _brandImages(DigitalInvoice invoice) {
+    pw.Widget? image(List<int>? bytes, String label) {
+      if (bytes == null || bytes.isEmpty) return null;
+      return pw.Padding(
+        padding: const pw.EdgeInsets.only(right: 16),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Image(
+              pw.MemoryImage(Uint8List.fromList(bytes)),
+              height: 42,
+              width: 90,
+              fit: pw.BoxFit.contain,
+            ),
+            pw.Text(label, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+          ],
+        ),
+      );
+    }
+
+    final marks = [
+      image(invoice.logoBytes, 'Logo'),
+      image(invoice.signatureBytes, 'Signature'),
+      image(invoice.stampBytes, 'Stamp'),
+    ].whereType<pw.Widget>().toList();
+    if (marks.isEmpty) return null;
+    return pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.end, children: marks);
   }
 
   static pw.Widget _appTotalRow(String label, String value, {bool bold = false}) => pw.Padding(
@@ -548,7 +673,67 @@ class InvoicePdfService {
         ),
       );
     }
+    final brand = _brandImages(invoice);
+    if (brand != null) {
+      sections.add(pw.SizedBox(height: 12));
+      sections.add(brand);
+    }
+    sections.addAll(_paymentBlock(invoice, NumberFormat.currency(
+      locale: invoice.locale,
+      symbol: invoice.currencySymbol,
+      decimalDigits: 2,
+    )));
+    sections.addAll(_watermarkLink(invoice));
     return sections;
+  }
+
+  static List<pw.Widget> _watermarkLink(DigitalInvoice invoice) {
+    if (invoice.watermark.isEmpty) return const [];
+    final destination = invoice.watermarkUrl.isEmpty ? 'https://play.google.com' : invoice.watermarkUrl;
+    return [
+      pw.SizedBox(height: 10),
+      pw.UrlLink(
+        destination: destination,
+        child: pw.Text(
+          invoice.watermark,
+          style: const pw.TextStyle(
+            fontSize: 8,
+            color: PdfColors.grey600,
+            decoration: pw.TextDecoration.underline,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  static List<pw.Widget> _paymentBlock(DigitalInvoice invoice, NumberFormat money) {
+    final widgets = <pw.Widget>[];
+    if (invoice.showPaidStamp) {
+      widgets.add(pw.SizedBox(height: 10));
+      widgets.add(
+        pw.Text(
+          'PAID',
+          style: pw.TextStyle(color: PdfColors.red, fontSize: 20, fontWeight: pw.FontWeight.bold),
+        ),
+      );
+    }
+    if (invoice.amountPaid > 0.009) {
+      widgets.add(pw.SizedBox(height: 6));
+      widgets.add(pw.Text('Amount paid: ${money.format(invoice.amountPaid)}', style: const pw.TextStyle(fontSize: 9)));
+      widgets.add(
+        pw.Text(
+          'Balance due: ${money.format(invoice.balanceDue)}',
+          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+        ),
+      );
+    }
+    if (invoice.howToPay.trim().isNotEmpty) {
+      widgets.add(pw.SizedBox(height: 12));
+      widgets.add(pw.Text('How to pay', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)));
+      widgets.add(pw.SizedBox(height: 3));
+      widgets.add(pw.Text(invoice.howToPay, style: const pw.TextStyle(fontSize: 9)));
+    }
+    return widgets;
   }
 
   static Future<pw.Document> _buildRedModern(DigitalInvoice invoice) async {
@@ -596,7 +781,7 @@ class InvoicePdfService {
                           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
-                            pw.Text('INVOICE', style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold, color: _maroon)),
+                            pw.Text(invoice.documentLabel, style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold, color: _maroon)),
                             pw.Text('NO: ${invoice.invoiceNumber}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
                           ],
                         ),
@@ -681,6 +866,7 @@ class InvoicePdfService {
                       ],
                     ),
                     pw.Spacer(),
+                    ..._brandBlock(invoice),
                     pw.Row(
                       crossAxisAlignment: pw.CrossAxisAlignment.end,
                       children: [
@@ -694,6 +880,7 @@ class InvoicePdfService {
                               if (invoice.seller.email.isNotEmpty) pw.Text('Email: ${invoice.seller.email}', style: const pw.TextStyle(fontSize: 9, color: _muted)),
                               if (invoice.termsAndConditions.isNotEmpty)
                                 pw.Text('Terms: ${invoice.termsAndConditions}', style: const pw.TextStyle(fontSize: 9, color: _muted)),
+                              ..._paymentBlock(invoice, money),
                             ],
                           ),
                         ),
@@ -844,6 +1031,8 @@ class InvoicePdfService {
                 ],
               ),
             ),
+            ..._paymentBlock(invoice, money),
+            ..._brandBlock(invoice),
             pw.Spacer(),
             pw.Container(height: 24, color: _receiptOrange),
           ],
@@ -901,7 +1090,7 @@ class InvoicePdfService {
               ],
             ),
             pw.SizedBox(height: 10),
-            pw.Text('INVOICE', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+            pw.Text(invoice.documentLabel, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
             pw.Text('Invoice Number: ${invoice.invoiceNumber}', style: const pw.TextStyle(fontSize: 10)),
             pw.Text('Date: ${dateFmt.format(invoice.issueDate)}', style: const pw.TextStyle(fontSize: 10)),
             pw.SizedBox(height: 14),
@@ -986,11 +1175,13 @@ class InvoicePdfService {
                 ),
               ),
             ),
+            ..._paymentBlock(invoice, money),
             if (invoice.termsAndConditions.isNotEmpty) ...[
               pw.SizedBox(height: 14),
               pw.Text('TERMS AND CONDITIONS:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
               pw.Text(invoice.termsAndConditions, style: const pw.TextStyle(fontSize: 9)),
             ],
+            ..._brandBlock(invoice),
             pw.Spacer(),
             pw.Container(height: 36, color: _geoNavy),
           ],
@@ -1019,7 +1210,7 @@ class InvoicePdfService {
                 pw.Positioned(
                   left: 0,
                   bottom: 8,
-                  child: pw.Text('INVOICE', style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: _corpNavy)),
+                  child: pw.Text(invoice.documentLabel, style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: _corpNavy)),
                 ),
               ],
             ),
@@ -1104,6 +1295,8 @@ class InvoicePdfService {
               pw.Text('Terms & Conditions', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
               pw.Text('• ${invoice.termsAndConditions}', style: const pw.TextStyle(fontSize: 9)),
             ],
+            ..._paymentBlock(invoice, money),
+            ..._brandBlock(invoice),
           ],
         ),
       ),

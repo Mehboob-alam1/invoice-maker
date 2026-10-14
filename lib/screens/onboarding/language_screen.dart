@@ -183,11 +183,6 @@ class _LanguageScreenState extends State<LanguageScreen> {
                                       const SizedBox(height: 20),
                                     ],
                                     search,
-                                    const SizedBox(height: 16),
-                                    const PlacementNativeAd(
-                                      placement: AdPlacement.nativeLanguage,
-                                      large: true,
-                                    ),
                                   ],
                                 ),
                               ),
@@ -220,7 +215,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                         ),
                       ),
                       Padding(
-                        padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 20),
+                        padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 8),
                         child: Center(
                           child: ConstrainedBox(
                             constraints: BoxConstraints(maxWidth: w >= 700 ? 420 : double.infinity),
@@ -229,6 +224,12 @@ class _LanguageScreenState extends State<LanguageScreen> {
                               onPressed: _continue,
                             ),
                           ),
+                        ),
+                      ),
+                      const ScreenBottomAdSlot(
+                        child: PlacementNativeAd(
+                          placement: AdPlacement.nativeLanguage,
+                          large: true,
                         ),
                       ),
                     ],

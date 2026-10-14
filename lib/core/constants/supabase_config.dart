@@ -20,8 +20,9 @@ class SupabaseConfig {
     defaultValue: _anonKey,
   );
 
-  static const String _url = '';
-  static const String _anonKey = '';
+  static const String _url = 'https://qaqbytgcnamdfuynuuda.supabase.co';
+  static const String _anonKey =
+      'sb_publishable_yAf7U-VOOWNCzNk22iD85w_B8F1RBks';
 
   static bool get isConfigured => url.isNotEmpty && anonKey.isNotEmpty;
 }

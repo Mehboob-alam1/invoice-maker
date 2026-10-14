@@ -7,6 +7,7 @@ import '../../core/utils/invoice_layout_scale.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../providers/invoice_provider.dart';
+import '../invoice_brand_images.dart';
 
 const Color kRedModernMaroon = Color(0xFF7B1E3A);
 const Color kRedModernBlack = Color(0xFF1B1B1B);
@@ -141,6 +142,13 @@ class RedModernInvoiceTemplate extends StatelessWidget {
                     style: GoogleFonts.poppins(fontSize: layout.sp(11), color: kRedModernMuted),
                   ),
                 ],
+                SizedBox(height: layout.sp(16)),
+                InvoiceBrandImages(
+                  logoPath: provider.businessLogoPath,
+                  signaturePath: provider.signaturePath,
+                  stampPath: provider.stampPath,
+                  showStamp: provider.isPro,
+                ),
               ],
             ),
           ),
@@ -304,7 +312,7 @@ class _ItemsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final totalLabel = invoice.taxRate > 0 ? strings.grandTotal : strings.subtotal;
-    final totalValue = invoice.taxRate > 0 ? invoice.total : invoice.subtotal;
+    final totalValue = invoice.total;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

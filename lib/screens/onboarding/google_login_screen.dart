@@ -7,13 +7,16 @@ import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
 import '../../navigation/app_page_route.dart';
 import '../../providers/invoice_provider.dart';
+import '../../ads/ad_placement.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/blue_screen.dart';
+import '../../widgets/bottom_banner_host.dart';
+import '../../widgets/placement_native_ad.dart';
 import '../../widgets/ui/app_page_shell.dart';
 import '../business_setup/business_name_screen.dart';
 
 /// Shown once after onboarding carousel — optional Google sign-in before business setup.
-class GoogleLoginScreen extends StatelessWidget {
+class GoogleLoginScreen extends StatelessWidget with NoBottomBanner {
   const GoogleLoginScreen({super.key});
 
   void _continue(BuildContext context) {
@@ -96,7 +99,9 @@ class GoogleLoginScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       body: AppPageShell(
         child: SafeArea(
-          child: LayoutBuilder(
+          child: Column(
+            children: [
+              Expanded(child: LayoutBuilder(
             builder: (context, constraints) {
               final w = constraints.maxWidth;
               final wide = w >= 900;
@@ -169,6 +174,15 @@ class GoogleLoginScreen extends StatelessWidget {
                 ),
               );
             },
+          ),
+              ),
+              const ScreenBottomAdSlot(
+                child: PlacementNativeAd(
+                  placement: AdPlacement.nativeGoogle,
+                  large: true,
+                ),
+              ),
+            ],
           ),
         ),
       ),

@@ -4,6 +4,7 @@ class InvoiceItem {
   final String? notes;
   final double unitCost;
   final int quantity;
+  final double taxRate;
 
   InvoiceItem({
     required this.id,
@@ -11,6 +12,7 @@ class InvoiceItem {
     this.notes,
     required this.unitCost,
     required this.quantity,
+    this.taxRate = 0,
   });
 
   double get total => unitCost * quantity;
@@ -22,6 +24,7 @@ class InvoiceItem {
     bool clearNotes = false,
     double? unitCost,
     int? quantity,
+    double? taxRate,
   }) {
     return InvoiceItem(
       id: id ?? this.id,
@@ -29,6 +32,7 @@ class InvoiceItem {
       notes: clearNotes ? null : (notes ?? this.notes),
       unitCost: unitCost ?? this.unitCost,
       quantity: quantity ?? this.quantity,
+      taxRate: taxRate ?? this.taxRate,
     );
   }
 
@@ -38,6 +42,7 @@ class InvoiceItem {
         'notes': notes,
         'unitCost': unitCost,
         'quantity': quantity,
+        'taxRate': taxRate,
       };
 
   factory InvoiceItem.fromJson(Map<String, dynamic> json) {
@@ -47,6 +52,7 @@ class InvoiceItem {
       notes: json['notes'] as String?,
       unitCost: (json['unitCost'] as num?)?.toDouble() ?? 0,
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0,
     );
   }
 }

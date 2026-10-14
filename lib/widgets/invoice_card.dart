@@ -25,19 +25,33 @@ class InvoiceCard extends StatelessWidget {
 
     late final Color statusColor;
     late final String label;
-    switch (invoice.displayStatus) {
-      case InvoiceStatus.paid:
-        statusColor = AppColors.success;
-        label = strings.paid;
-        break;
-      case InvoiceStatus.overdue:
-        statusColor = AppColors.danger;
-        label = strings.overdue;
-        break;
-      case InvoiceStatus.unpaid:
-        statusColor = BlueColors.bright;
-        label = strings.unpaid;
-        break;
+    if (invoice.isEstimate) {
+      statusColor = BlueColors.sky;
+      label = switch (invoice.estimateStatus) {
+        EstimateStatus.draft => strings.estimateDraft,
+        EstimateStatus.sent => strings.estimateSent,
+        EstimateStatus.accepted => strings.estimateAccepted,
+        EstimateStatus.declined => strings.estimateDeclined,
+      };
+    } else {
+      switch (invoice.displayStatus) {
+        case InvoiceStatus.paid:
+          statusColor = AppColors.success;
+          label = strings.paid;
+          break;
+        case InvoiceStatus.overdue:
+          statusColor = AppColors.danger;
+          label = strings.overdue;
+          break;
+        case InvoiceStatus.partiallyPaid:
+          statusColor = BlueColors.light;
+          label = strings.partiallyPaid;
+          break;
+        case InvoiceStatus.unpaid:
+          statusColor = BlueColors.bright;
+          label = strings.unpaid;
+          break;
+      }
     }
 
     return Material(

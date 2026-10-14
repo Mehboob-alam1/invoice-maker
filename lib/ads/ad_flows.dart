@@ -1,36 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../core/theme/blue_theme.dart';
 import '../l10n/app_strings.dart';
 import '../models/subscription_tier.dart';
 import '../navigation/app_page_route.dart';
 import '../providers/invoice_provider.dart';
+import '../core/remote_config/remote_config_repository.dart';
 import '../screens/subscription/weekly_paywall_screen.dart';
+import '../services/paywall_analytics.dart';
 import 'ad_action.dart';
+import 'ad_manager.dart';
 import 'ad_placement.dart';
 import 'ad_remote_config.dart';
 import 'main_screen_click_counter.dart';
 
-Future<void> openPaywall(BuildContext context) {
+Future<void> openPaywall(
+  BuildContext context, {
+  PaywallSource source = PaywallSource.crown,
+}) {
   return Navigator.of(context).push(
-    appPageRoute(const WeeklyPaywallScreen(), showNativeAd: false),
+    appPageRoute(WeeklyPaywallScreen(source: source), showNativeAd: false),
   );
 }
 
-Future<void> openPaywallIfFree(BuildContext context) async {
+Future<void> openPaywallIfFree(
+  BuildContext context, {
+  PaywallSource source = PaywallSource.crown,
+}) async {
   if (!context.mounted) return;
-  if (context.read<InvoiceProvider>().subscriptionTier != SubscriptionTier.free) return;
-  await openPaywall(context);
+  if (context.read<InvoiceProvider>().featureTier != SubscriptionTier.free) return;
+  await openPaywall(context, source: source);
 }
 
-/// On-demand interstitial for one Remote Config placement.
-Future<void> showPlacementInterstitial(BuildContext context, AdPlacement placement) async {
+Future<void> openPaywallAfterSettings(BuildContext context) async {
   if (!context.mounted) return;
-  if (!AdRemoteConfig.instance.isPlacementEnabled(placement)) return;
-  final tier = context.read<InvoiceProvider>().subscriptionTier;
-  if (!tier.showInterstitialAds) return;
-  await showInterstitialWithLoadingIfEligible(context);
+  if (context.read<InvoiceProvider>().featureTier != SubscriptionTier.free) return;
+  if (!await PaywallSettingsGate.allow()) return;
+  if (!context.mounted) return;
+  await openPaywall(context, source: PaywallSource.settingsExit);
+}
+
+/// How often leaving Settings may open the paywall.
+class PaywallSettingsGate {
+  PaywallSettingsGate._();
+
+  static const _dayKey = 'paywall_after_settings_day';
+  static bool _shownThisSession = false;
+
+  static Future<bool> allow() async {
+    final mode = RemoteConfigRepository.instance.paywallAfterSettingsMode;
+    if (mode == 'never') return false;
+    if (mode == 'always') return true;
+    if (mode == 'once_per_session') {
+      if (_shownThisSession) return false;
+      _shownThisSession = true;
+      return true;
+    }
+    final now = DateTime.now();
+    final today = '${now.year}-${now.month}-${now.day}';
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getString(_dayKey) == today) return false;
+    await prefs.setString(_dayKey, today);
+    return true;
+  }
+}
+
+/// Preloaded interstitial for one Remote Config placement.
+Future<bool> showPlacementInterstitial(BuildContext context, AdPlacement placement) async {
+  if (!context.mounted) return false;
+  if (!AdRemoteConfig.instance.isPlacementEnabled(placement)) return false;
+  final invoices = context.read<InvoiceProvider>();
+  if (invoices.adsHeld || !invoices.featureTier.showInterstitialAds) return false;
+  return showInterstitialWithLoadingIfEligible(context);
 }
 
 /// First main-screen click, then every third click after that.
@@ -52,8 +96,10 @@ Future<void> runWithWatchOrPremium({
   required Future<void> Function() action,
 }) async {
   if (!context.mounted) return;
-  final tier = context.read<InvoiceProvider>().subscriptionTier;
-  final enabled = tier.showInterstitialAds && AdRemoteConfig.instance.isPlacementEnabled(placement);
+  final invoices = context.read<InvoiceProvider>();
+  final enabled = !invoices.adsHeld &&
+      invoices.featureTier.showInterstitialAds &&
+      AdRemoteConfig.instance.isPlacementEnabled(placement);
   if (!enabled) {
     await action();
     return;
@@ -92,8 +138,15 @@ Future<void> runWithWatchOrPremium({
 }
 
 /// Interstitial for a generation step, then the paywall for free users.
-Future<void> afterGenerationAd(BuildContext context, AdPlacement placement) async {
-  await showPlacementInterstitial(context, placement);
+Future<void> afterGenerationAd(
+  BuildContext context,
+  AdPlacement placement, {
+  String? invoiceId,
+}) async {
+  final shown = await showPlacementInterstitial(context, placement);
+  if (shown && invoiceId != null) {
+    AdManager.instance.markInvoiceInterstitial(invoiceId);
+  }
   if (!context.mounted) return;
-  await openPaywallIfFree(context);
+  await openPaywallIfFree(context, source: PaywallSource.other);
 }

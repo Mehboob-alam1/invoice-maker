@@ -11,6 +11,8 @@ import '../../models/invoice.dart';
 import '../../models/invoice_item.dart';
 import '../../models/invoice_template.dart';
 import '../../providers/invoice_provider.dart';
+import '../../services/ai_helpers.dart';
+import '../../services/engagement_service.dart';
 import '../../services/invoice_create_gate.dart';
 import '../../widgets/blue_screen.dart';
 import '../../widgets/client_form_sheet.dart';
@@ -18,6 +20,7 @@ import '../../widgets/item_form_sheet.dart';
 import '../../widgets/invoice_template_preview_sheet.dart';
 import '../../widgets/template_picker.dart';
 import '../../ads/ad_flows.dart';
+import '../../services/paywall_analytics.dart';
 import '../../ads/ad_placement.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../widgets/ui/app_page_shell.dart';
@@ -26,12 +29,24 @@ class NewInvoiceScreen extends StatefulWidget {
   final Client? initialClient;
   final List<InvoiceItem>? initialItems;
   final String? currency;
+  final DocumentKind documentKind;
+  final double? initialTaxRate;
+  final String? initialNotes;
+  final int? initialDueDays;
+  final bool? initialTaxInclusive;
+  final String? initialTemplateId;
 
   const NewInvoiceScreen({
     super.key,
     this.initialClient,
     this.initialItems,
     this.currency,
+    this.documentKind = DocumentKind.invoice,
+    this.initialTaxRate,
+    this.initialNotes,
+    this.initialDueDays,
+    this.initialTaxInclusive,
+    this.initialTemplateId,
   });
 
   @override
@@ -40,32 +55,212 @@ class NewInvoiceScreen extends StatefulWidget {
 
 class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
   bool _saving = false;
+  bool _canLeave = false;
+  bool _leaving = false;
+  bool _dirty = false;
+  bool _applyingDraft = false;
+  Future<void>? _restoreTask;
+  Future<void> _draftQueue = Future<void>.value();
   Client? _client;
   final List<InvoiceItem> _items = [];
   String _currency = 'USD';
   InvoiceTemplateId _template = InvoiceTemplateId.classic;
   final _taxRateController = TextEditingController();
-  DateTime? _dueDate;
+  final _discountController = TextEditingController();
+  final _shippingController = TextEditingController();
+  final _depositController = TextEditingController();
+  final _notesController = TextEditingController();
+  final _everyDaysController = TextEditingController(text: '30');
+  bool _discountIsPercent = true;
+  bool _taxInclusive = false;
+  bool _repeat = false;
+  Recurrence _recurrence = Recurrence.monthly;
+  DateTime _repeatStart = DateTime.now();
+  DateTime? _repeatEnd;
+  DateTime? _serviceStart;
+  DateTime? _serviceEnd;
+  DateTime? _dueDate = DateTime.now().add(const Duration(days: 7));
+
+  bool get _estimate => widget.documentKind == DocumentKind.estimate;
 
   @override
   void initState() {
     super.initState();
     _client = widget.initialClient;
     if (widget.initialItems != null) _items.addAll(widget.initialItems!);
-    if (widget.currency != null) _currency = widget.currency!;
+    final provider = context.read<InvoiceProvider>();
+    if (widget.currency != null) {
+      _currency = widget.currency!;
+    } else if (provider.defaultCurrency.isNotEmpty) {
+      _currency = provider.defaultCurrency;
+    }
+    if (widget.initialTaxRate != null) {
+      _taxRateController.text = widget.initialTaxRate == 0 ? '' : widget.initialTaxRate.toString();
+    } else if (provider.defaultTaxRate > 0) {
+      _taxRateController.text = provider.defaultTaxRate.toString();
+    }
+    _taxInclusive = widget.initialTaxInclusive ?? provider.defaultTaxInclusive;
+    if (widget.initialNotes != null) _notesController.text = widget.initialNotes!;
+    if (widget.initialDueDays != null) {
+      _dueDate = DateTime.now().add(Duration(days: widget.initialDueDays!));
+    }
+    if (widget.initialTemplateId != null) {
+      _template = InvoiceTemplateIdStorage.fromStorage(widget.initialTemplateId);
+    }
+    _taxRateController.addListener(_enqueueDraft);
+    _discountController.addListener(_enqueueDraft);
+    _shippingController.addListener(_enqueueDraft);
+    _depositController.addListener(_enqueueDraft);
+    _notesController.addListener(_enqueueDraft);
+    if (widget.initialClient == null && widget.initialItems == null) {
+      _restoreTask = _restoreDraft();
+    }
+  }
+
+  void _enqueueDraft() {
+    if (_applyingDraft) return;
+    _dirty = true;
+    _draftQueue = _draftQueue.then((_) => _persistDraft()).catchError((_) {});
+  }
+
+  Future<void> _leaveCreateScreen() async {
+    if (_leaving) return;
+    _leaving = true;
+    await _restoreTask;
+    if (!mounted) return;
+    _enqueueDraft();
+    await _draftQueue;
+    if (!mounted) return;
+    await EngagementService.instance.reschedule(context.read<InvoiceProvider>());
+    if (!mounted) return;
+    setState(() => _canLeave = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  Future<void> _restoreDraft() async {
+    final json = await context.read<InvoiceProvider>().loadNewInvoiceDraft(estimate: _estimate);
+    if (!mounted || json == null || _dirty) return;
+    _applyingDraft = true;
+    try {
+      final clientRaw = json['client'];
+      final itemsRaw = json['items'];
+      final items = <InvoiceItem>[];
+      if (itemsRaw is List) {
+        for (final e in itemsRaw) {
+          if (e is Map) {
+            items.add(InvoiceItem.fromJson(Map<String, dynamic>.from(e)));
+          }
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        if (clientRaw is Map) {
+          _client = Client.fromJson(Map<String, dynamic>.from(clientRaw));
+        }
+        _items
+          ..clear()
+          ..addAll(items);
+        _currency = json['currency'] as String? ?? _currency;
+        _template = InvoiceTemplateIdStorage.fromStorage(json['templateId'] as String?);
+        final due = json['dueDate'] as String?;
+        _dueDate = due == null ? DateTime.now().add(const Duration(days: 7)) : DateTime.tryParse(due) ?? DateTime.now().add(const Duration(days: 7));
+        final tax = json['taxRate'];
+        if (tax is num && tax > 0) {
+          _taxRateController.text = tax.toString();
+        }
+        _discountController.text = json['discountValue']?.toString() ?? '';
+        _shippingController.text = json['shipping']?.toString() ?? '';
+        _depositController.text = json['deposit']?.toString() ?? '';
+        _notesController.text = json['notes'] as String? ?? '';
+        _discountIsPercent = json['discountIsPercent'] as bool? ?? true;
+        _taxInclusive = json['taxInclusive'] as bool? ?? _taxInclusive;
+        _repeat = json['repeat'] as bool? ?? false;
+        _recurrence = Recurrence.values.firstWhere(
+          (value) => value.name == json['recurrence'],
+          orElse: () => Recurrence.monthly,
+        );
+      });
+    } catch (_) {
+    } finally {
+      _applyingDraft = false;
+    }
+  }
+
+  Future<void> _persistDraft() async {
+    if (!mounted) return;
+    final hasContent = _client != null ||
+        _items.isNotEmpty ||
+        _dueDate != null ||
+        _taxRateController.text.trim().isNotEmpty ||
+        _template != InvoiceTemplateId.classic ||
+        _currency != 'USD';
+    final provider = context.read<InvoiceProvider>();
+    if (!hasContent) {
+      await provider.clearNewInvoiceDraft();
+      return;
+    }
+    await provider.saveNewInvoiceDraft({
+      'client': _client?.toJson(),
+      'items': _items.map((e) => e.toJson()).toList(),
+      'currency': _currency,
+      'templateId': _template.name,
+      'dueDate': _dueDate?.toIso8601String(),
+      'taxRate': _taxRate,
+      'discountValue': _money(_discountController),
+      'discountIsPercent': _discountIsPercent,
+      'shipping': _money(_shippingController),
+      'deposit': _money(_depositController),
+      'taxInclusive': _taxInclusive,
+      'notes': _notesController.text,
+      'repeat': _repeat,
+      'recurrence': _recurrence.name,
+    }, estimate: _estimate);
   }
 
   @override
   void dispose() {
+    _taxRateController.removeListener(_enqueueDraft);
+    _discountController.removeListener(_enqueueDraft);
+    _shippingController.removeListener(_enqueueDraft);
+    _depositController.removeListener(_enqueueDraft);
+    _notesController.removeListener(_enqueueDraft);
     _taxRateController.dispose();
+    _discountController.dispose();
+    _shippingController.dispose();
+    _depositController.dispose();
+    _notesController.dispose();
+    _everyDaysController.dispose();
     super.dispose();
   }
 
-  double get _subtotal => _items.fold(0, (sum, i) => sum + i.total);
-
   double get _taxRate => double.tryParse(_taxRateController.text.trim()) ?? 0;
 
-  double get _total => _subtotal + _subtotal * (_taxRate / 100);
+  double _money(TextEditingController controller) => double.tryParse(controller.text.trim()) ?? 0;
+
+  Invoice _moneyPreview() {
+    return Invoice(
+      id: 'preview',
+      number: _estimate ? 'EST-0000' : '#PREVIEW',
+      client: _client ?? Client(id: 'preview', name: ' '),
+      items: _items,
+      date: DateTime.now(),
+      dueDate: _dueDate,
+      currency: _currency,
+      taxRate: _taxRate,
+      templateId: _template.name,
+      discountValue: _money(_discountController),
+      discountIsPercent: _discountIsPercent,
+      shipping: _money(_shippingController),
+      deposit: _money(_depositController),
+      taxInclusive: _taxInclusive,
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      kind: widget.documentKind,
+    );
+  }
+
+  double get _total => _moneyPreview().total;
 
   // ---------------------------------------------------------------------------
   // Logic (unchanged, sheets only wrapped in the blue theme)
@@ -167,8 +362,22 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
     if (selected.id == '__new__') {
       await _addOrEditClient();
     } else {
-      setState(() => _client = selected);
+      _useClient(selected);
     }
+  }
+
+  void _useClient(Client client) {
+    final memory = context.read<InvoiceProvider>().memoryForClient(client.id);
+    setState(() {
+      _client = client;
+      if (memory != null) {
+        _taxRateController.text = memory.taxRate == 0 ? '' : memory.taxRate.toString();
+        _notesController.text = memory.notes;
+        _dueDate = DateTime.now().add(Duration(days: memory.dueDays));
+        _taxInclusive = memory.taxInclusive;
+      }
+    });
+    _enqueueDraft();
   }
 
   Future<void> _addOrEditClient({Client? existing}) async {
@@ -184,6 +393,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         taxId: result.taxId,
       );
       setState(() => _client = created);
+      _enqueueDraft();
     } else {
       final updated = existing.copyWith(
         name: result.name,
@@ -194,7 +404,18 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
       );
       provider.updateClient(updated);
       setState(() => _client = updated);
+      _enqueueDraft();
     }
+  }
+
+  Future<void> _suggestDueAndNotes(BuildContext context) async {
+    final suggestion = await AiHelpers.suggestDueAndNotes(context, _client?.id);
+    if (suggestion == null || !mounted) return;
+    setState(() {
+      _dueDate = DateTime.now().add(Duration(days: suggestion.dueDays));
+      if (suggestion.notes.isNotEmpty) _notesController.text = suggestion.notes;
+    });
+    _enqueueDraft();
   }
 
   Future<void> _addItem() async {
@@ -314,13 +535,17 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         selected.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString()),
       );
     });
+    _enqueueDraft();
   }
 
   Future<void> _addCustomItem() async {
     final result = await showItemFormSheet(
       context,
       currencyCode: _currency,
-      onCurrencyChanged: (c) => setState(() => _currency = c),
+      onCurrencyChanged: (c) {
+        setState(() => _currency = c);
+        _enqueueDraft();
+      },
     );
     if (!mounted || result == null) return;
     context.read<InvoiceProvider>().addCatalogItem(
@@ -335,6 +560,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         result.copyWith(id: DateTime.now().microsecondsSinceEpoch.toString()),
       );
     });
+    _enqueueDraft();
   }
 
   Future<void> _editItem(int index) async {
@@ -346,6 +572,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
     );
     if (!mounted || result == null) return;
     setState(() => _items[index] = result);
+    _enqueueDraft();
   }
 
   Invoice _buildPreviewInvoice() {
@@ -367,7 +594,7 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         : List<InvoiceItem>.of(_items);
     return Invoice(
       id: 'preview',
-      number: '#PREVIEW',
+      number: _estimate ? 'EST-0000' : '#PREVIEW',
       client: client,
       items: items,
       date: DateTime.now(),
@@ -375,12 +602,25 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
       currency: _currency,
       taxRate: _taxRate,
       templateId: _template.name,
+      kind: widget.documentKind,
+      discountValue: _money(_discountController),
+      discountIsPercent: _discountIsPercent,
+      shipping: _money(_shippingController),
+      deposit: _money(_depositController),
+      taxInclusive: _taxInclusive,
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
     );
   }
 
   Future<void> _saveInvoice() async {
     if (_saving) return;
-    if (!await ensureInvoiceQuotaOrPrompt(context)) return;
+    final provider = context.read<InvoiceProvider>();
+    if (_repeat && !_estimate && !provider.canAddRecurring(pro: provider.isPro)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.recurringLimit)));
+      await openPaywallIfFree(context, source: PaywallSource.other);
+      return;
+    }
+    if (!_estimate && !await ensureInvoiceQuotaOrPrompt(context)) return;
     if (!mounted) return;
     if (!await confirmProTemplateUse(context, _template)) return;
     if (!mounted) return;
@@ -393,16 +633,39 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
     }
     setState(() => _saving = true);
     try {
+      final repeating = _repeat && !_estimate;
       final invoice = await context.read<InvoiceProvider>().createInvoice(
         client: _client!,
         items: List<InvoiceItem>.from(_items),
         currency: _currency,
         dueDate: _dueDate,
         taxRate: _taxRate,
+        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         templateId: _template.name,
+        kind: widget.documentKind,
+        discountValue: _money(_discountController),
+        discountIsPercent: _discountIsPercent,
+        shipping: _money(_shippingController),
+        deposit: _money(_depositController),
+        taxInclusive: _taxInclusive,
+        recurrence: repeating ? _recurrence : Recurrence.none,
+        recurrenceEveryDays: int.tryParse(_everyDaysController.text.trim()) ?? 30,
+        recurrenceStart: repeating ? _repeatStart : null,
+        recurrenceEnd: repeating ? _repeatEnd : null,
+        nextOccurrence: repeating ? _repeatStart : null,
+        recurrenceActive: repeating,
+        serviceStart: _serviceStart,
+        serviceEnd: _serviceEnd,
+        countTowardQuota: !_estimate,
       );
       if (!mounted) return;
-      await afterGenerationAd(context, AdPlacement.interstitialCustomInvoice);
+      await context.read<InvoiceProvider>().clearNewInvoiceDraft(estimate: _estimate);
+      if (!mounted) return;
+      await afterGenerationAd(
+        context,
+        AdPlacement.interstitialSaveInvoice,
+        invoiceId: invoice.id,
+      );
       if (!mounted) return;
       await navigateAfterInvoiceCreated(context, invoice.id);
     } finally {
@@ -417,7 +680,10 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
-    if (picked != null) setState(() => _dueDate = picked);
+    if (picked != null) {
+      setState(() => _dueDate = picked);
+      _enqueueDraft();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -478,7 +744,10 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
           final clientSection = _buildClientSection(ctx, strings, theme);
           final templateSection = TemplatePicker(
             selected: _template,
-            onChanged: (v) => setState(() => _template = v),
+            onChanged: (v) {
+              setState(() => _template = v);
+              _enqueueDraft();
+            },
             buildPreviewInvoice: _buildPreviewInvoice,
           );
           final detailsSection = _buildDetailsSection(ctx, strings, twoCol: isTablet);
@@ -546,14 +815,20 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
             );
           }
 
-          return Scaffold(
+          return PopScope(
+            canPop: _canLeave,
+            onPopInvokedWithResult: (didPop, result) {
+              if (didPop) return;
+              _leaveCreateScreen();
+            },
+            child: Scaffold(
             appBar: AppBar(
-              title: Text(strings.newInvoice),
+              title: Text(_estimate ? strings.newEstimate : strings.newInvoice),
               leading: Padding(
                 padding: const EdgeInsets.all(6),
                 child: IconButton(
                   icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: _leaveCreateScreen,
                   style: IconButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.08),
                     foregroundColor: theme.colorScheme.primary,
@@ -585,11 +860,14 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                       onPressed: _saving ? null : _saveInvoice,
                       loading: _saving,
                       icon: Icons.check_circle_outline_rounded,
-                      label: _saving ? strings.creatingInvoice : strings.saveInvoice,
+                      label: _saving
+                          ? strings.creatingInvoice
+                          : (_estimate ? strings.saveEstimate : strings.saveInvoice),
                     ),
                   ),
                 ),
               ),
+            ),
             ),
           );
         },
@@ -729,7 +1007,183 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         children: [taxField, const SizedBox(height: 12), dueTile],
       );
     }
-    return _BlueCard(child: row);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _BlueCard(child: row),
+        const SizedBox(height: 12),
+        _moneyCard(ctx, strings),
+        if (!_estimate) ...[
+          const SizedBox(height: 12),
+          _repeatCard(ctx, strings),
+        ],
+      ],
+    );
+  }
+
+  Widget _moneyCard(BuildContext ctx, dynamic strings) {
+    return _BlueCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(strings.taxInclusive),
+            value: _taxInclusive,
+            onChanged: (value) {
+              setState(() => _taxInclusive = value);
+              _enqueueDraft();
+            },
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: _blueField(
+                  ctx,
+                  controller: _discountController,
+                  label: strings.discount,
+                  icon: Icons.sell_outlined,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 8),
+              DropdownButton<bool>(
+                value: _discountIsPercent,
+                items: [
+                  DropdownMenuItem(value: true, child: Text(strings.percent)),
+                  DropdownMenuItem(value: false, child: Text(strings.amount)),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _discountIsPercent = value);
+                  _enqueueDraft();
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _blueField(
+            ctx,
+            controller: _shippingController,
+            label: strings.shipping,
+            icon: Icons.local_shipping_outlined,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 8),
+          _blueField(
+            ctx,
+            controller: _depositController,
+            label: strings.deposit,
+            icon: Icons.savings_outlined,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 8),
+          _blueField(
+            ctx,
+            controller: _notesController,
+            label: strings.notes,
+            icon: Icons.notes_rounded,
+            keyboardType: TextInputType.text,
+            onChanged: (_) => setState(() {}),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _suggestDueAndNotes(ctx),
+              icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+              label: Text(strings.suggestDueNotes),
+            ),
+          ),
+          if (_repeat)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(strings.monthTokenHint, style: Theme.of(ctx).textTheme.bodySmall),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _repeatCard(BuildContext ctx, dynamic strings) {
+    return _BlueCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(strings.repeatInvoice),
+            value: _repeat,
+            onChanged: (value) {
+              setState(() => _repeat = value);
+              _enqueueDraft();
+            },
+          ),
+          if (_repeat) ...[
+            DropdownButton<Recurrence>(
+              value: _recurrence,
+              isExpanded: true,
+              items: [
+                DropdownMenuItem(value: Recurrence.weekly, child: Text(strings.repeatWeekly)),
+                DropdownMenuItem(value: Recurrence.monthly, child: Text(strings.repeatMonthly)),
+                DropdownMenuItem(value: Recurrence.custom, child: Text(strings.repeatCustom)),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _recurrence = value);
+                _enqueueDraft();
+              },
+            ),
+            if (_recurrence == Recurrence.custom)
+              _blueField(
+                ctx,
+                controller: _everyDaysController,
+                label: strings.repeatEveryDays,
+                icon: Icons.timelapse_rounded,
+                keyboardType: TextInputType.number,
+              ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(strings.repeatStart),
+              subtitle: Text(DateFormat.yMMMd().format(_repeatStart)),
+              onTap: () => _pickNamedDate((date) => _repeatStart = date),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(strings.repeatUntil),
+              subtitle: Text(_repeatEnd == null ? '—' : DateFormat.yMMMd().format(_repeatEnd!)),
+              onTap: () => _pickNamedDate((date) => _repeatEnd = date),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(strings.serviceFrom),
+              subtitle: Text(_serviceStart == null ? '—' : DateFormat.yMMMd().format(_serviceStart!)),
+              onTap: () => _pickNamedDate((date) => _serviceStart = date),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(strings.serviceTo),
+              subtitle: Text(_serviceEnd == null ? '—' : DateFormat.yMMMd().format(_serviceEnd!)),
+              onTap: () => _pickNamedDate((date) => _serviceEnd = date),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickNamedDate(void Function(DateTime date) apply) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null) return;
+    setState(() => apply(picked));
+    _enqueueDraft();
   }
 
   Widget _currencyDropdown() {
@@ -741,7 +1195,10 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         items: CurrencyFormat.supportedCodes
             .map((c) => DropdownMenuItem(value: c, child: Text(c)))
             .toList(),
-        onChanged: (v) => setState(() => _currency = v ?? 'USD'),
+        onChanged: (v) {
+          setState(() => _currency = v ?? 'USD');
+          _enqueueDraft();
+        },
       ),
     );
   }
@@ -783,7 +1240,8 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
         ..._items.asMap().entries.map((entry) {
           final item = entry.value;
           final details = [
-            '${item.quantity} × ${CurrencyFormat.format(_currency, item.unitCost)}',
+            '${item.quantity} × ${CurrencyFormat.format(_currency, item.unitCost)}'
+                '${item.taxRate > 0 ? ' · ${item.taxRate.toStringAsFixed(0)}%' : ''}',
             if (item.notes?.isNotEmpty == true) item.notes!,
           ].join('\n');
           return Padding(
@@ -834,7 +1292,10 @@ class _NewInvoiceScreenState extends State<NewInvoiceScreen> {
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
                     color: cs.error,
-                    onPressed: () => setState(() => _items.removeAt(entry.key)),
+                    onPressed: () {
+                      setState(() => _items.removeAt(entry.key));
+                      _enqueueDraft();
+                    },
                   ),
                 ],
               ),
@@ -905,7 +1366,7 @@ Widget _blueField(
       required String label,
       required IconData icon,
       required TextInputType keyboardType,
-      required TextInputAction textInputAction,
+      TextInputAction textInputAction = TextInputAction.next,
       String? hint,
       String? suffixText,
       int maxLines = 1,

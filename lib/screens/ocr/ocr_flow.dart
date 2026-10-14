@@ -53,7 +53,7 @@ Future<void> startOcrScan(BuildContext context) async {
     if (!context.mounted) return;
     if (AdService.instance.takeMediaReturn()) {
       await AdService.instance.showAppOpenOnDemand(
-        tier: context.read<InvoiceProvider>().subscriptionTier,
+        tier: context.read<InvoiceProvider>().featureTier,
         placement: AdPlacement.appOpenMediaReturn,
         ignoreInterval: true,
       );

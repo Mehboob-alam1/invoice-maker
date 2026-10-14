@@ -1,16 +1,25 @@
 package com.invoice.maker.estimate.billing.ocr.appomatrix
 
 import android.Manifest
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.gms.ads.AdView
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
+    private var launchAction: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Drop Android 12+'s system splash immediately. The Flutter splash is the only one.
@@ -20,10 +29,42 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         super.onCreate(savedInstanceState)
+        captureIntent(intent)
+        window.decorView.viewTreeObserver.addOnGlobalLayoutListener {
+            clearBannerBackground(window.decorView)
+        }
+    }
+
+    private fun clearBannerBackground(view: View) {
+        if (view is AdView) {
+            view.setBackgroundColor(Color.TRANSPARENT)
+        }
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                clearBannerBackground(view.getChildAt(i))
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        captureIntent(intent)
+    }
+
+    private fun captureIntent(intent: android.content.Intent?) {
+        val data = intent?.data?.toString() ?: return
+        val prefix = "invoicego://shortcut/"
+        if (!data.startsWith(prefix)) return
+        val action = data.removePrefix(prefix)
+        if (action == "home") return
+        launchAction = action
     }
 
     private val channelName =
         "com.invoice.maker.estimate.billing.ocr.appomatrix/notifications"
+    private val shortcutChannelName =
+        "com.invoice.maker.estimate.billing.ocr.appomatrix/shortcuts"
     private var pendingPermissionResult: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -57,6 +98,26 @@ class MainActivity : FlutterFragmentActivity() {
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, shortcutChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "takeLaunchAction" -> {
+                        val action = launchAction
+                        launchAction = null
+                        result.success(action)
+                    }
+                    "refreshWidget" -> {
+                        val manager = AppWidgetManager.getInstance(this)
+                        val ids = manager.getAppWidgetIds(ComponentName(this, UnpaidWidgetProvider::class.java))
+                        for (id in ids) {
+                            UnpaidWidgetProvider.update(this, manager, id)
+                        }
+                        result.success(null)
+                    }
+                    "isOnWifi" -> result.success(isOnWifi())
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     override fun onRequestPermissionsResult(
@@ -82,6 +143,13 @@ class MainActivity : FlutterFragmentActivity() {
             this,
             Manifest.permission.POST_NOTIFICATIONS,
         ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun isOnWifi(): Boolean {
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return false
+        val network = manager.activeNetwork ?: return false
+        val caps = manager.getNetworkCapabilities(network) ?: return false
+        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
     companion object {

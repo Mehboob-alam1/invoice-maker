@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../core/theme/blue_theme.dart';
 import '../core/utils/currency_format.dart';
 import '../l10n/app_strings.dart';
 import '../models/invoice_item.dart';
+import '../providers/invoice_provider.dart';
+import '../services/ai_helpers.dart';
 
 Future<InvoiceItem?> showItemFormSheet(
   BuildContext context, {
@@ -49,6 +52,7 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
   late final TextEditingController _notes;
   late final TextEditingController _price;
   late final TextEditingController _quantity;
+  late final TextEditingController _tax;
   late String _currency;
 
   bool get _showCurrency => widget.onCurrencyChanged != null;
@@ -60,11 +64,17 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
     final code = widget.currencyCode ?? 'USD';
     _currency = CurrencyFormat.supportedCodes.contains(code) ? code : 'USD';
     _name = TextEditingController(text: item?.description ?? '');
+    _name.addListener(() {
+      if (mounted) setState(() {});
+    });
     _notes = TextEditingController(text: item?.notes ?? '');
     _price = TextEditingController(
       text: item == null || item.unitCost == 0 ? '' : item.unitCost.toStringAsFixed(2),
     );
     _quantity = TextEditingController(text: '${item?.quantity ?? 1}');
+    _tax = TextEditingController(
+      text: item == null || item.taxRate == 0 ? '' : item.taxRate.toString(),
+    );
   }
 
   @override
@@ -73,6 +83,7 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
     _notes.dispose();
     _price.dispose();
     _quantity.dispose();
+    _tax.dispose();
     super.dispose();
   }
 
@@ -87,6 +98,7 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
         notes: notes.isEmpty ? null : notes,
         unitCost: double.tryParse(_price.text.trim()) ?? 0,
         quantity: int.tryParse(_quantity.text.trim()) ?? 1,
+        taxRate: double.tryParse(_tax.text.trim()) ?? 0,
       ),
     );
   }
@@ -104,6 +116,7 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
     final isEdit = widget.item != null;
     final strings = context.l10n;
     final pricePrefix = CurrencyFormat.symbol(_currency).trim();
+    final suggestions = context.read<InvoiceProvider>().itemSuggestions(_name.text);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottom),
@@ -163,6 +176,33 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
                   return null;
                 },
               ),
+              if (suggestions.isNotEmpty)
+                ...suggestions.map(
+                  (item) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(item.description),
+                    subtitle: Text(CurrencyFormat.format(_currency, item.unitCost)),
+                    onTap: () {
+                      _name.text = item.description;
+                      _notes.text = item.notes ?? '';
+                      _price.text = item.unitCost == 0 ? '' : item.unitCost.toStringAsFixed(2);
+                      _quantity.text = '${item.quantity}';
+                      _tax.text = item.taxRate == 0 ? '' : item.taxRate.toString();
+                    },
+                  ),
+                ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    final next = await AiHelpers.improveDescription(context, _name.text);
+                    if (next != null && mounted) setState(() => _name.text = next);
+                  },
+                  icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                  label: Text(strings.improveDescription),
+                ),
+              ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _notes,
@@ -194,6 +234,16 @@ class _ItemFormSheetState extends State<ItemFormSheet> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _tax,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: strings.itemTax,
+                  prefixIcon: const Icon(Icons.percent_rounded),
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(

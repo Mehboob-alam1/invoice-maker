@@ -202,6 +202,108 @@ class AppStrings {
   String get cannotBeUndone => t('cannotBeUndone');
   String get markAsPaid => t('markAsPaid');
   String get markAsUnpaid => t('markAsUnpaid');
+  String get partiallyPaid => t('partiallyPaid');
+  String get overdueOnly => t('overdueOnly');
+  String get createEstimate => t('createEstimate');
+  String get estimateSubtitle => t('estimateSubtitle');
+  String get estimates => t('estimates');
+  String get estimateDraft => t('estimateDraft');
+  String get estimateSent => t('estimateSent');
+  String get estimateAccepted => t('estimateAccepted');
+  String get estimateDeclined => t('estimateDeclined');
+  String get convertToInvoice => t('convertToInvoice');
+  String get newEstimate => t('newEstimate');
+  String get saveEstimate => t('saveEstimate');
+  String get noEstimatesYet => t('noEstimatesYet');
+  String get discount => t('discount');
+  String get shipping => t('shipping');
+  String get deposit => t('deposit');
+  String get taxInclusive => t('taxInclusive');
+  String get taxName => t('taxName');
+  String get defaultCurrency => t('defaultCurrency');
+  String get itemTax => t('itemTax');
+  String get percent => t('percent');
+  String get amount => t('amount');
+  String get notes => t('notes');
+  String get monthTokenHint => t('monthTokenHint');
+  String get repeatInvoice => t('repeatInvoice');
+  String get repeatWeekly => t('repeatWeekly');
+  String get repeatMonthly => t('repeatMonthly');
+  String get repeatCustom => t('repeatCustom');
+  String get repeatEveryDays => t('repeatEveryDays');
+  String get repeatUntil => t('repeatUntil');
+  String get repeatStart => t('repeatStart');
+  String get serviceFrom => t('serviceFrom');
+  String get serviceTo => t('serviceTo');
+  String get recurringLimit => t('recurringLimit');
+  String get recurringReady => t('recurringReady');
+  String get unpaidTotal => t('unpaidTotal');
+  String get overdueAmount => t('overdueAmount');
+  String get paidThisMonth => t('paidThisMonth');
+  String get topClients => t('topClients');
+  String get exportCsv => t('exportCsv');
+  String get thisMonth => t('thisMonth');
+  String get allTime => t('allTime');
+  String get logo => t('logo');
+  String get signature => t('signature');
+  String get stamp => t('stamp');
+  String get stampPro => t('stampPro');
+  String get clearSignature => t('clearSignature');
+  String get usePhoto => t('usePhoto');
+  String get cropLogo => t('cropLogo');
+  String get recordPayment => t('recordPayment');
+  String get amountPaid => t('amountPaid');
+  String get balanceDue => t('balanceDue');
+  String get paymentMethod => t('paymentMethod');
+  String get paymentAmount => t('paymentAmount');
+  String get howToPay => t('howToPay');
+  String get bankName => t('bankName');
+  String get accountHolder => t('accountHolder');
+  String get ibanOrAccount => t('ibanOrAccount');
+  String get mobileWallet => t('mobileWallet');
+  String get paymentLink => t('paymentLink');
+  String get paymentNote => t('paymentNote');
+  String get sendWhatsApp => t('sendWhatsApp');
+  String get sendEmail => t('sendEmail');
+  String get sendSms => t('sendSms');
+  String get pdfExportFailed => t('pdfExportFailed');
+  String get inviteFriends => t('inviteFriends');
+  String get referralHeadline => t('referralHeadline');
+  String get copyCode => t('copyCode');
+  String get codeCopied => t('codeCopied');
+  String get shareInvite => t('shareInvite');
+  String get haveACode => t('haveACode');
+  String get referralCode => t('referralCode');
+  String referralProgress(int qualified, int pending) => t('referralProgress', {
+        'qualified': '$qualified',
+        'pending': '$pending',
+      });
+  String referralNextMilestone(int count) => t('referralNextMilestone', {'count': '$count'});
+  String get referralMilestonesDone => t('referralMilestonesDone');
+  String get referralRewardsList => t('referralRewardsList');
+  String get referralTerms => t('referralTerms');
+  String referralProUntil(String date) => t('referralProUntil', {'date': date});
+  String get useTemplateToken => t('useTemplateToken');
+  String get referralCodeSaved => t('referralCodeSaved');
+  String get paymentReminders => t('paymentReminders');
+  String get reminderTime => t('reminderTime');
+  String get reminderMessage => t('reminderMessage');
+  String get reminderFreeHint => t('reminderFreeHint');
+  String get reminderProHint => t('reminderProHint');
+  String invoiceReminderBody({
+    required String client,
+    required String number,
+    required String amount,
+    required String due,
+    required String pay,
+  }) =>
+      t('invoiceReminderBody', {
+        'client': client,
+        'number': number,
+        'amount': amount,
+        'due': due,
+        'pay': pay,
+      });
   String get date => t('date');
   String get status => t('status');
   String invoiceShare(String number) => t('invoiceShare', {'number': number});
@@ -234,6 +336,7 @@ class AppStrings {
   String get feedbackHint => t('feedbackHint');
   String get thanksFeedback => t('thanksFeedback');
   String get privacyPolicy => t('privacyPolicy');
+  String get privacyOptions => t('privacyOptions');
   String get privacyBody => t('privacyBody');
   String get restorePurchases => t('restorePurchases');
   String get proAlreadyActive => t('proAlreadyActive');
@@ -309,6 +412,9 @@ class AppStrings {
   String get trialDisclaimer => t('trialDisclaimer');
 
   String dailyInvoiceLimitBody(int limit) => t('dailyInvoiceLimitBody', {'limit': '$limit'});
+  String get watchAdForInvoice => t('watchAdForInvoice');
+  String get watchAdForAiCredit => t('watchAdForAiCredit');
+  String get goPro => t('goPro');
 
   String invoicesRemainingToday(int remaining, int limit, int created) => t(
         'invoicesRemainingToday',
@@ -405,6 +511,69 @@ class AppStrings {
   String get growBusiness => t('growBusiness');
   String get sponsored => t('sponsored');
   String get open => t('open');
+  String get updateReadyTitle => t('updateReadyTitle');
+  String get updateReadyBody => t('updateReadyBody');
+  String get restartApp => t('restartApp');
+  String get checklistTitle => t('checklistTitle');
+  String get checklistLogo => t('checklistLogo');
+  String get checklistPayment => t('checklistPayment');
+  String get checklistInvoice => t('checklistInvoice');
+  String get checklistShare => t('checklistShare');
+  String get checklistInvite => t('checklistInvite');
+  String get checklistReward => t('checklistReward');
+  String streakSent(int count) => t('streakSent', {'count': '$count'});
+  String milestoneToast(int count) => t('milestoneToast', {'count': '$count'});
+  String get shareInviteSnack => t('shareInviteSnack');
+  String get watermarkFooter => t('watermarkFooter');
+  String get removeWatermark => t('removeWatermark');
+  String get watermarkRemoved => t('watermarkRemoved');
+  String get channelReminders => t('channelReminders');
+  String get channelAccount => t('channelAccount');
+  String get channelTips => t('channelTips');
+  String get channelPromos => t('channelPromos');
+  String get notificationChannelsHint => t('notificationChannelsHint');
+  String get winBackGranted => t('winBackGranted');
+  String get announcementDismiss => t('announcementDismiss');
+  String get backupTitle => t('backupTitle');
+  String get backupNow => t('backupNow');
+  String get backupRestore => t('backupRestore');
+  String backupLast(String when) => t('backupLast', {'when': when});
+  String get backupNever => t('backupNever');
+  String get backupDone => t('backupDone');
+  String get backupRestored => t('backupRestored');
+  String get backupFreeHint => t('backupFreeHint');
+  String get backupProHint => t('backupProHint');
+  String get backupSignInTitle => t('backupSignInTitle');
+  String get backupSignInBody => t('backupSignInBody');
+  String get backupSaving => t('backupSaving');
+  String get backupRestoring => t('backupRestoring');
+  String get backupEmpty => t('backupEmpty');
+  String get backupOffline => t('backupOffline');
+  String get backupFailed => t('backupFailed');
+  String get backupSignInAgain => t('backupSignInAgain');
+  String get backupSignInCancelled => t('backupSignInCancelled');
+  String get backupNone => t('backupNone');
+  String get backupDamaged => t('backupDamaged');
+  String get backupRestoreTitle => t('backupRestoreTitle');
+  String get backupRestoreBody => t('backupRestoreBody');
+  String get backupRestoreFailed => t('backupRestoreFailed');
+  String get backupImagesSkipped => t('backupImagesSkipped');
+  String get backupTooLarge => t('backupTooLarge');
+  String get duplicateInvoice => t('duplicateInvoice');
+  String get createAgain => t('createAgain');
+  String get shareImage => t('shareImage');
+  String get writeReminder => t('writeReminder');
+  String politeReminder({
+    required String client,
+    required String number,
+    required String amount,
+    required String due,
+  }) =>
+      t('politeReminder', {'client': client, 'number': number, 'amount': amount, 'due': due});
+  String get improveDescription => t('improveDescription');
+  String get suggestDueNotes => t('suggestDueNotes');
+  String get suggestedNotes => t('suggestedNotes');
+  String get voiceInvoice => t('voiceInvoice');
   String get onboardingTitle1 => t('onboardingTitle1');
   String get onboardingSubtitle1 => t('onboardingSubtitle1');
   String get onboardingTitle2 => t('onboardingTitle2');

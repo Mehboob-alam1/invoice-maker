@@ -6,8 +6,9 @@ import 'package:http/http.dart' as http;
 
 import '../core/constants/production_ad_units.dart';
 import '../core/remote_config/invoice_limits_remote_config.dart';
-import '../models/subscription_tier.dart';
+import '../core/remote_config/remote_config_repository.dart';
 import 'ad_config.dart';
+import 'ad_consent.dart';
 import 'ad_placement.dart';
 
 /// AdMob unit IDs + global toggles from Firebase Remote Config (with HTTP + local fallbacks).
@@ -28,8 +29,11 @@ class AdRemoteConfig {
   String _androidRewarded = AdConfig.defaultAndroidRewarded;
 
   final Map<String, bool> _placementEnabled = {
-    for (final placement in AdPlacement.all) placement.remoteKey: true,
+    for (final placement in AdPlacement.all) placement.remoteKey: placement.defaultEnabled,
   };
+
+  /// Bumps when Remote Config is applied so on-screen ads can hide.
+  final ValueNotifier<int> revision = ValueNotifier<int>(0);
 
   int _paywallCloseDelaySeconds = 5;
 
@@ -39,71 +43,62 @@ class AdRemoteConfig {
   /// Optional kill switch for prompting notification permission.
   bool get pushNotificationsEnabled => _pushNotificationsEnabled;
 
-  String get nativeAdUnitId => _androidNative;
+  String get nativeAdUnitId =>
+      AdConfig.useTestAdUnits ? AdConfig.testAndroidNative : _androidNative;
 
-  String get interstitialAdUnitId => _androidInterstitial;
+  String get interstitialAdUnitId =>
+      AdConfig.useTestAdUnits ? AdConfig.testAndroidInterstitial : _androidInterstitial;
 
-  String get appOpenAdUnitId => _androidAppOpen;
+  String get appOpenAdUnitId =>
+      AdConfig.useTestAdUnits ? AdConfig.testAndroidAppOpen : _androidAppOpen;
 
-  String get bannerAdUnitId =>
-      ProductionAdUnits.isValidUnit(_androidBanner) ? _androidBanner : AdConfig.defaultAndroidBanner;
+  String get bannerAdUnitId {
+    if (AdConfig.useTestAdUnits) return AdConfig.testAndroidBanner;
+    return ProductionAdUnits.isValidUnit(_androidBanner) ? _androidBanner : AdConfig.defaultAndroidBanner;
+  }
 
-  String get rewardedAdUnitId => ProductionAdUnits.isValidUnit(_androidRewarded)
-      ? _androidRewarded
-      : AdConfig.defaultAndroidRewarded;
+  /// Debug uses Google's collapsible sample. Release uses the live banner unit.
+  String get collapsibleBannerAdUnitId {
+    if (AdConfig.useTestAdUnits) return AdConfig.testAndroidCollapsibleBanner;
+    return bannerAdUnitId;
+  }
 
-  /// Master switch and the per-screen switch must both be on.
+  String get rewardedAdUnitId {
+    if (AdConfig.useTestAdUnits) return AdConfig.testAndroidRewarded;
+    return ProductionAdUnits.isValidUnit(_androidRewarded)
+        ? _androidRewarded
+        : AdConfig.defaultAndroidRewarded;
+  }
+
+  /// Master switch, the per-screen switch, and consent must all allow the ad.
   bool isPlacementEnabled(AdPlacement placement) =>
-      _adsEnabled && (_placementEnabled[placement.remoteKey] ?? true);
+      _adsEnabled &&
+      (_placementEnabled[placement.remoteKey] ?? placement.defaultEnabled) &&
+      AdConsent.instance.canRequestAds;
 
   int get paywallCloseDelaySeconds => _paywallCloseDelaySeconds;
 
   Future<void> load() async {
     if (_loaded) return;
-
-    await _loadFromFirebaseRemoteConfig();
+    RemoteConfigRepository.instance.onApplied = applyActive;
+    await RemoteConfigRepository.instance.ensureReady();
+    applyActive();
     await _loadFromHttpUrlIfConfigured();
-
     _loaded = true;
   }
 
-  /// Re-fetch Remote Config (e.g. on app resume).
   Future<void> refresh() async {
     try {
-      final remoteConfig = FirebaseRemoteConfig.instance;
-      await remoteConfig.fetch();
-      await remoteConfig.activate();
-      _applyRemoteConfigValues(remoteConfig);
+      await RemoteConfigRepository.instance.refresh();
+      applyActive();
     } catch (e) {
       debugPrint('AdRemoteConfig.refresh: $e');
     }
   }
 
-  Future<void> _loadFromFirebaseRemoteConfig() async {
-    try {
-      final remoteConfig = FirebaseRemoteConfig.instance;
-      await remoteConfig.setConfigSettings(RemoteConfigSettings(
-        fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval: kDebugMode ? Duration.zero : const Duration(hours: 1),
-      ));
-      await remoteConfig.setDefaults(<String, dynamic>{
-        'ads_enabled': true,
-        'push_notifications_enabled': true,
-        'ad_native_android': AdConfig.defaultAndroidNative,
-        'ad_interstitial_android': AdConfig.defaultAndroidInterstitial,
-        'ad_app_open_android': AdConfig.defaultAndroidAppOpen,
-        'ad_banner_android': AdConfig.defaultAndroidBanner,
-        'ad_rewarded_android': AdConfig.defaultAndroidRewarded,
-        'paywall_close_delay_seconds': 5,
-        for (final placement in AdPlacement.all) placement.remoteKey: true,
-        InvoiceLimitsRemoteConfig.remoteKeyFree: SubscriptionTier.free.dailyInvoiceLimit,
-        InvoiceLimitsRemoteConfig.remoteKeyPremium: SubscriptionTier.premium.dailyInvoiceLimit,
-      });
-      await remoteConfig.fetchAndActivate();
-      _applyRemoteConfigValues(remoteConfig);
-    } catch (e) {
-      debugPrint('AdRemoteConfig: Firebase Remote Config failed ($e), using defaults.');
-    }
+  void applyActive() {
+    _applyRemoteConfigValues(FirebaseRemoteConfig.instance);
+    revision.value++;
   }
 
   void _applyRemoteConfigValues(FirebaseRemoteConfig remoteConfig) {

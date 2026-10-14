@@ -1,5 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+
+import '../../ads/ad_flows.dart';
+import '../../services/engagement_service.dart';
+import '../../services/paywall_analytics.dart';
+import '../../core/utils/currency_format.dart';
+import '../../widgets/logo_crop_dialog.dart';
+import '../../widgets/signature_pad_dialog.dart';
 
 import '../../core/constants/app_texts.dart';
 import '../../l10n/app_strings.dart';
@@ -24,6 +35,16 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
   late final TextEditingController _phone;
   late final TextEditingController _address;
   late final TextEditingController _taxId;
+  late final TextEditingController _bankName;
+  late final TextEditingController _accountHolder;
+  late final TextEditingController _iban;
+  late final TextEditingController _wallet;
+  late final TextEditingController _paymentLink;
+  late final TextEditingController _paymentNote;
+  late final TextEditingController _taxLabel;
+  late final TextEditingController _taxRate;
+  late String _currency;
+  late bool _taxInclusive;
 
   @override
   void initState() {
@@ -34,6 +55,18 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
     _phone = TextEditingController(text: provider.businessPhone);
     _address = TextEditingController(text: provider.businessAddress);
     _taxId = TextEditingController(text: provider.businessTaxId);
+    _bankName = TextEditingController(text: provider.bankName);
+    _accountHolder = TextEditingController(text: provider.accountHolder);
+    _iban = TextEditingController(text: provider.iban);
+    _wallet = TextEditingController(text: provider.wallet);
+    _paymentLink = TextEditingController(text: provider.paymentLink);
+    _paymentNote = TextEditingController(text: provider.paymentNote);
+    _taxLabel = TextEditingController(text: provider.defaultTaxLabel);
+    _taxRate = TextEditingController(
+      text: provider.defaultTaxRate == 0 ? '' : provider.defaultTaxRate.toString(),
+    );
+    _currency = provider.defaultCurrency.isEmpty ? 'USD' : provider.defaultCurrency;
+    _taxInclusive = provider.defaultTaxInclusive;
   }
 
   @override
@@ -43,7 +76,52 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
     _phone.dispose();
     _address.dispose();
     _taxId.dispose();
+    _bankName.dispose();
+    _accountHolder.dispose();
+    _iban.dispose();
+    _wallet.dispose();
+    _paymentLink.dispose();
+    _paymentNote.dispose();
+    _taxLabel.dispose();
+    _taxRate.dispose();
     super.dispose();
+  }
+
+  Future<void> _storeBytes(List<int> bytes, String name, {required bool logo, bool signature = false, bool stamp = false}) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/$name');
+    await file.writeAsBytes(bytes, flush: true);
+    if (!mounted) return;
+    context.read<InvoiceProvider>().setBusinessProfile(
+      businessLogoPath: logo ? file.path : null,
+      signaturePath: signature ? file.path : null,
+      stampPath: stamp ? file.path : null,
+    );
+  }
+
+  Future<void> _pickLogo({required bool stamp}) async {
+    if (stamp && !context.read<InvoiceProvider>().isPro) {
+      await openPaywallIfFree(context, source: PaywallSource.other);
+      return;
+    }
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null || !mounted) return;
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    final cropped = await LogoCropDialog.show(context, bytes);
+    if (cropped == null) return;
+    await _storeBytes(
+      cropped,
+      stamp ? 'business_stamp.png' : 'business_logo.png',
+      logo: !stamp,
+      stamp: stamp,
+    );
+  }
+
+  Future<void> _drawSignature() async {
+    final bytes = await SignaturePadDialog.show(context);
+    if (bytes == null) return;
+    await _storeBytes(bytes, 'business_signature.png', logo: false, signature: true);
   }
 
   void _save() {
@@ -55,6 +133,16 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
       phone: _phone.text,
       address: _address.text,
       taxId: _taxId.text,
+      bankName: _bankName.text,
+      accountHolder: _accountHolder.text,
+      iban: _iban.text,
+      wallet: _wallet.text,
+      paymentLink: _paymentLink.text,
+      paymentNote: _paymentNote.text,
+      defaultCurrency: _currency,
+      defaultTaxLabel: _taxLabel.text,
+      defaultTaxRate: double.tryParse(_taxRate.text.trim()) ?? 0,
+      defaultTaxInclusive: _taxInclusive,
     );
     Navigator.pop(context);
   }
@@ -69,6 +157,9 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
         builder: (context) {
           final theme = Theme.of(context);
           final scheme = theme.colorScheme;
+          final hints = EngagementService.instance.paymentHints(
+            context.read<InvoiceProvider>().languageCode,
+          );
 
           final nameField = TextField(
             controller: _name,
@@ -149,7 +240,60 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
                         children: [
                           _LogoHeader(
                             nameController: _name,
-                            note: strings.companyLogoComingSoon,
+                            note: strings.logo,
+                            logoPath: context.watch<InvoiceProvider>().businessLogoPath,
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () => _pickLogo(stamp: false),
+                                icon: const Icon(Icons.image_outlined),
+                                label: Text(strings.logo),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: _drawSignature,
+                                icon: const Icon(Icons.draw_outlined),
+                                label: Text(strings.signature),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () => _pickLogo(stamp: true),
+                                icon: const Icon(Icons.approval_outlined),
+                                label: Text(strings.stamp),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(strings.stampPro, style: theme.textTheme.bodySmall),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _taxLabel,
+                            decoration: InputDecoration(labelText: strings.taxName),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _taxRate,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(labelText: strings.taxRate),
+                          ),
+                          const SizedBox(height: 12),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(strings.taxInclusive),
+                            value: _taxInclusive,
+                            onChanged: (value) => setState(() => _taxInclusive = value),
+                          ),
+                          DropdownButtonFormField<String>(
+                            initialValue: _currency,
+                            decoration: InputDecoration(labelText: strings.defaultCurrency),
+                            items: CurrencyFormat.supportedCodes
+                                .map((code) => DropdownMenuItem(value: code, child: Text(code)))
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) setState(() => _currency = value);
+                            },
                           ),
                           const SizedBox(height: 24),
                           Container(
@@ -195,6 +339,45 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
                               ],
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          Text(strings.howToPay, style: theme.textTheme.titleMedium),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _bankName,
+                            decoration: InputDecoration(
+                              labelText: strings.bankName,
+                              hintText: hints.bank,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _accountHolder,
+                            decoration: InputDecoration(labelText: strings.accountHolder),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _iban,
+                            decoration: InputDecoration(labelText: strings.ibanOrAccount),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _wallet,
+                            decoration: InputDecoration(
+                              labelText: strings.mobileWallet,
+                              hintText: hints.wallet,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _paymentLink,
+                            decoration: InputDecoration(labelText: strings.paymentLink),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _paymentNote,
+                            maxLines: 3,
+                            decoration: InputDecoration(labelText: strings.paymentNote),
+                          ),
                           const SizedBox(height: 24),
                           BlueGradientButton(
                             label: strings.save,
@@ -217,10 +400,11 @@ class _EditBusinessScreenState extends State<EditBusinessScreen> {
 
 /// Logo placeholder that shows the business initial and updates as you type.
 class _LogoHeader extends StatelessWidget {
-  const _LogoHeader({required this.nameController, required this.note});
+  const _LogoHeader({required this.nameController, required this.note, required this.logoPath});
 
   final TextEditingController nameController;
   final String note;
+  final String logoPath;
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +432,18 @@ class _LogoHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: ValueListenableBuilder<TextEditingValue>(
+          child: logoPath.isNotEmpty
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: Image.file(
+                    File(logoPath),
+                    width: 92,
+                    height: 92,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const Icon(Icons.storefront_rounded, size: 42, color: Colors.white),
+                  ),
+                )
+              : ValueListenableBuilder<TextEditingValue>(
             valueListenable: nameController,
             builder: (context, value, _) {
               final trimmed = value.text.trim();

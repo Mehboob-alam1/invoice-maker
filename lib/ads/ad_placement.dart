@@ -22,11 +22,30 @@ enum AdPlacement {
   nativeSettings('ad_native_settings'),
   rewardedTemplate('ad_rewarded_template'),
   nativeSplash('ad_native_splash'),
-  bannerScreen('ad_banner_screen');
+  nativeOnboarding('ad_native_onboarding'),
+  nativeGoogle('ad_native_google'),
+  nativeBusinessName('ad_native_business_name'),
+  bannerScreen('ad_banner_screen'),
+  interstitialSaveInvoice('ad_interstitial_save_invoice'),
+  interstitialPreviewBack('ad_interstitial_preview_back'),
+  rewardedAiCredit('ad_rewarded_ai_credit'),
+  rewardedExtraInvoice('ad_rewarded_extra_invoice'),
+  rewardedWatermark('ad_rewarded_watermark'),
+  nativeHomeList('ad_native_home_list');
 
   const AdPlacement(this.remoteKey);
 
   final String remoteKey;
+
+  /// In-app default before Remote Config arrives. Google sign-in and business
+  /// name stay off because those steps lose the most people.
+  bool get defaultEnabled => switch (this) {
+        AdPlacement.nativeGoogle || AdPlacement.nativeBusinessName => false,
+        _ => true,
+      };
+
+  bool get isFullScreen =>
+      name.startsWith('appOpen') || name.startsWith('interstitial');
 
   static const List<AdPlacement> all = AdPlacement.values;
 }

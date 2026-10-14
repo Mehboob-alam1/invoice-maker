@@ -1,35 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../ads/ad_config.dart';
+import '../ads/ad_placement.dart';
+import '../ads/ad_remote_config.dart';
+import '../ads/ad_service.dart';
 import '../l10n/app_strings.dart';
-import '../navigation/app_page_route.dart';
+import '../ads/ad_flows.dart';
+import '../services/paywall_analytics.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
-import '../screens/subscription/subscription_plans_screen.dart';
-import 'premium_upsell_service.dart';
-
 /// Returns `true` if the user may create another invoice today.
 Future<bool> ensureInvoiceQuotaOrPrompt(BuildContext context) async {
   final provider = context.read<InvoiceProvider>();
   if (provider.canCreateInvoiceToday) return true;
 
   final strings = AppStrings.read(context);
-  final upgrade = await showDialog<bool>(
+  final watchOn = provider.featureTier == SubscriptionTier.free &&
+      _rewardedPlacementOn(AdPlacement.rewardedExtraInvoice);
+  final choice = await showDialog<_CapChoice>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(strings.dailyInvoiceLimitTitle),
       content: Text(strings.dailyInvoiceLimitBody(provider.dailyInvoiceLimit)),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(strings.viewPlans)),
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.cancel)),
+        if (watchOn)
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
+            child: Text(strings.watchAdForInvoice),
+          ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, _CapChoice.upgrade),
+          child: Text(watchOn ? strings.goPro : strings.viewPlans),
+        ),
       ],
     ),
   );
-  if (upgrade == true && context.mounted) {
-    await Navigator.of(context).push(appPageRoute(const SubscriptionPlansScreen()));
-  } else if (context.mounted) {
-    await PremiumUpsellService.maybeShow(context, forceIfLowQuota: true);
+  if (!context.mounted || choice == null) return false;
+  if (choice == _CapChoice.watch) {
+    final earned = await _watchRewarded(context, AdPlacement.rewardedExtraInvoice);
+    if (!context.mounted || !earned) return false;
+    context.read<InvoiceProvider>().grantExtraInvoiceToday();
+    return context.read<InvoiceProvider>().canCreateInvoiceToday;
   }
+  await openPaywall(context, source: PaywallSource.invoiceCap);
   return false;
 }
 
@@ -39,8 +54,9 @@ Future<bool> ensurePaidAiAccessOrPrompt(BuildContext context) async {
   if (provider.canOpenCreateWithAi) return true;
 
   final strings = AppStrings.read(context);
-  final isFree = provider.subscriptionTier == SubscriptionTier.free;
-  final upgrade = await showDialog<bool>(
+  final isFree = provider.featureTier == SubscriptionTier.free;
+  final watchOn = isFree && _rewardedPlacementOn(AdPlacement.rewardedAiCredit);
+  final choice = await showDialog<_CapChoice>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(isFree ? strings.aiMonthlyLimitTitle : strings.aiPaidRequiredTitle),
@@ -50,14 +66,27 @@ Future<bool> ensurePaidAiAccessOrPrompt(BuildContext context) async {
             : strings.aiPaidRequiredBody,
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(strings.viewPlans)),
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.cancel)),
+        if (watchOn)
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
+            child: Text(strings.watchAdForAiCredit),
+          ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, _CapChoice.upgrade),
+          child: Text(watchOn ? strings.goPro : strings.viewPlans),
+        ),
       ],
     ),
   );
-  if (upgrade == true && context.mounted) {
-    await Navigator.of(context).push(appPageRoute(const SubscriptionPlansScreen()));
+  if (!context.mounted || choice == null) return false;
+  if (choice == _CapChoice.watch) {
+    final earned = await _watchRewarded(context, AdPlacement.rewardedAiCredit);
+    if (!context.mounted || !earned) return false;
+    context.read<InvoiceProvider>().grantBonusAiCredit();
+    return context.read<InvoiceProvider>().canOpenCreateWithAi;
   }
+  await openPaywall(context, source: PaywallSource.aiCap);
   return false;
 }
 
@@ -84,7 +113,9 @@ Future<bool> ensureAiGenerationAllowed(BuildContext context, {required String in
   final estimated = InvoiceProvider.estimateAiTokensForInput(inputText);
   if (provider.canAffordAiGeneration(estimated)) return true;
 
-  final upgrade = await showDialog<bool>(
+  final watchOn = provider.featureTier == SubscriptionTier.free &&
+      _rewardedPlacementOn(AdPlacement.rewardedAiCredit);
+  final choice = await showDialog<_CapChoice>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: Text(strings.aiMonthlyLimitTitle),
@@ -96,13 +127,54 @@ Future<bool> ensureAiGenerationAllowed(BuildContext context, {required String in
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(strings.viewPlans)),
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.cancel)),
+        if (watchOn)
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
+            child: Text(strings.watchAdForAiCredit),
+          ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, _CapChoice.upgrade),
+          child: Text(watchOn ? strings.goPro : strings.viewPlans),
+        ),
       ],
     ),
   );
-  if (upgrade == true && context.mounted) {
-    await Navigator.of(context).push(appPageRoute(const SubscriptionPlansScreen()));
+  if (!context.mounted || choice == null) return false;
+  if (choice == _CapChoice.watch) {
+    final earned = await _watchRewarded(context, AdPlacement.rewardedAiCredit);
+    if (!context.mounted || !earned) return false;
+    final invoices = context.read<InvoiceProvider>();
+    invoices.grantBonusAiCredit();
+    return invoices.canAffordAiGeneration(estimated);
   }
+  await openPaywall(context, source: PaywallSource.aiCap);
+  return false;
+}
+
+enum _CapChoice { watch, upgrade }
+
+bool _rewardedPlacementOn(AdPlacement placement) {
+  return AdConfig.isSupported && AdRemoteConfig.instance.isPlacementEnabled(placement);
+}
+
+Future<bool> _watchRewarded(BuildContext context, AdPlacement placement) async {
+  final earned = await AdService.instance.showRewarded(
+    adUnitId: AdRemoteConfig.instance.rewardedAdUnitId,
+    placement: placement,
+  );
+  if (!context.mounted) return false;
+  if (earned) return true;
+  final strings = AppStrings.read(context);
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(strings.t('rewardedAdNotReadyTitle')),
+      content: Text(strings.t('rewardedAdNotReady')),
+      actions: [
+        FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.ok)),
+      ],
+    ),
+  );
   return false;
 }

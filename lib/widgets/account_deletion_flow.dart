@@ -1,43 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../core/constants/app_config.dart';
 import '../l10n/app_strings.dart';
 import '../providers/invoice_provider.dart';
 import '../services/account_deletion_service.dart';
 import '../services/auth_service.dart';
 
-Future<void> openAccountDeletionWebPage() async {
-  final uri = Uri.parse(AppConfig.accountDeletionWebUrl);
-  if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-    await launchUrl(uri, mode: LaunchMode.platformDefault);
-  }
-}
-
 Future<void> showDeleteAccountDialog(BuildContext context) async {
   final strings = context.l10n;
   final auth = context.read<AuthService>();
-  if (!auth.isSignedIn) {
+  if (!auth.isSignedIn || auth.currentUser?.isAnonymous == true) {
     if (!context.mounted) return;
-    await showDialog<void>(
+    final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(strings.deleteAccountTitle),
         content: Text(strings.deleteAccountSignInRequired),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.cancel)),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
           FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              openAccountDeletionWebPage();
-            },
-            child: Text(strings.deleteAccountWeb),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(strings.signInWithGoogle),
           ),
         ],
       ),
     );
-    return;
+    if (go != true || !context.mounted) return;
+    final signedIn = await auth.signInWithGoogle();
+    if (!context.mounted) return;
+    if (!signedIn || auth.currentUser == null || auth.currentUser!.isAnonymous) {
+      final detail = auth.lastError;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(detail ?? strings.backupSignInCancelled)),
+      );
+      return;
+    }
   }
 
   final uid = auth.currentUser?.uid ?? '';

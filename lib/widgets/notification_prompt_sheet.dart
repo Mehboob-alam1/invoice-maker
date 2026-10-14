@@ -25,9 +25,8 @@ class NotificationPrompt {
     await prefs.setInt(_opensKey, opens);
     if (!context.mounted) return;
 
-    final invoiceCount = context.read<InvoiceProvider>().unpaidInvoices.length +
-        context.read<InvoiceProvider>().paidInvoices.length;
-    final ready = opens >= 3 || (opens >= 2 && invoiceCount > 0);
+    final created = context.read<InvoiceProvider>().hasCreatedFirstInvoice;
+    final ready = opens >= 2 && created;
     if (!ready) return;
 
     final allow = await showDialog<bool>(

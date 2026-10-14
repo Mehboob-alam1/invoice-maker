@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_invoice"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_invoice"
+        android:shortcutLongLabel="@string/shortcut_new_invoice">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.invoice.maker.estimate.billing.ocr.appomatrix"
+            android:targetClass="com.invoice.maker.estimate.billing.ocr.appomatrix.MainActivity"
+            android:data="invoicego://shortcut/new" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="scan"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_scan"
+        android:shortcutLongLabel="@string/shortcut_scan">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.invoice.maker.estimate.billing.ocr.appomatrix"
+            android:targetClass="com.invoice.maker.estimate.billing.ocr.appomatrix.MainActivity"
+            android:data="invoicego://shortcut/scan" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="ai_invoice"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_ai"
+        android:shortcutLongLabel="@string/shortcut_ai">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.invoice.maker.estimate.billing.ocr.appomatrix"
+            android:targetClass="com.invoice.maker.estimate.billing.ocr.appomatrix.MainActivity"
+            android:data="invoicego://shortcut/ai" />
+    </shortcut>
+</shortcuts>

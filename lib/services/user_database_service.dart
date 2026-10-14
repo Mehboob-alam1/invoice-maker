@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
@@ -6,7 +8,7 @@ import '../core/constants/supabase_config.dart';
 import '../models/subscription_tier.dart';
 import '../models/user_account.dart';
 
-/// Supabase tables `users`, `subscription_events`, and `app_feedback`.
+/// Supabase tables for profile, subscription, feedback, and referrals.
 ///
 /// Sign-in stays on Firebase Auth. Each request sends the Firebase ID token,
 /// and row access is limited to that Firebase uid.
@@ -178,9 +180,14 @@ class UserDatabaseService {
     });
   }
 
-  /// Removes the user row. Subscription events cascade with it.
+  /// Removes the profile. Related rows cascade, including the backup snapshot.
   Future<void> deleteAllUserData(String uid) async {
     if (!_ready) return;
+    try {
+      await _db.from('app_feedback').delete().eq('uid', uid);
+    } catch (e) {
+      debugPrint('UserDatabaseService.deleteFeedback: $e');
+    }
     await _db.from('users').delete().eq('id', uid);
   }
 
@@ -204,4 +211,86 @@ class UserDatabaseService {
   }
 
   String _now() => DateTime.now().toUtc().toIso8601String();
+
+  bool get isReady => _ready;
+
+  Future<void> saveBackup({
+    required String uid,
+    required String? email,
+    required Map<String, dynamic> payload,
+  }) async {
+    if (!_ready) {
+      throw StateError('Backup database is not ready.');
+    }
+    await _db.from('users').upsert(
+      {
+        'id': uid,
+        if (email != null && email.isNotEmpty) 'email': email,
+        'auth_provider': 'google',
+        'last_sign_in_at': _now(),
+      },
+      onConflict: 'id',
+    );
+    await _db.from('user_backups').upsert(
+      {
+        'user_id': uid,
+        'payload': payload,
+        'updated_at': _now(),
+      },
+      onConflict: 'user_id',
+    );
+  }
+
+  Future<Map<String, dynamic>?> fetchBackup(String uid) async {
+    if (!_ready) {
+      throw StateError('Backup database is not ready.');
+    }
+    final row = await _db.from('user_backups').select('payload').eq('user_id', uid).maybeSingle();
+    final payload = row?['payload'];
+    if (payload is Map) return Map<String, dynamic>.from(payload);
+    if (payload is String && payload.isNotEmpty) {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> ensureReferralProfile({
+    required String installationId,
+    required String fcmToken,
+  }) {
+    return _referralRpc('ensure_referral_profile', {
+      'p_installation_id': installationId,
+      'p_fcm_token': fcmToken,
+    });
+  }
+
+  Future<Map<String, dynamic>?> applyReferralCode({
+    required String code,
+    required String installationId,
+  }) {
+    return _referralRpc('apply_referral_code', {
+      'p_code': code,
+      'p_installation_id': installationId,
+    });
+  }
+
+  Future<Map<String, dynamic>?> qualifyReferral() {
+    return _referralRpc('qualify_referral', {});
+  }
+
+  Future<Map<String, dynamic>?> spendReferralCredits(int amount) {
+    return _referralRpc('spend_ai_credits', {'p_amount': amount});
+  }
+
+  Future<Map<String, dynamic>?> spendReferralTemplateToken(String templateId) {
+    return _referralRpc('spend_template_token', {'p_template_id': templateId});
+  }
+
+  Future<Map<String, dynamic>?> _referralRpc(String name, Map<String, dynamic> params) async {
+    if (!_ready) return null;
+    final raw = await _db.rpc(name, params: params);
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return null;
+  }
 }

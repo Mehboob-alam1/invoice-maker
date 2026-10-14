@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../ads/ad_remote_config.dart';
 import '../ads/ad_service.dart';
+import '../ads/ad_manager.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
 import '../services/subscription_service.dart';
@@ -39,6 +40,7 @@ class _AppOpenLifecycleState extends State<AppOpenLifecycle> with WidgetsBinding
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _hasPaused = true;
+      AdManager.instance.notePaused();
     }
     if (state == AppLifecycleState.resumed && _hasPaused) {
       unawaited(() async {
@@ -56,7 +58,7 @@ class _AppOpenLifecycleState extends State<AppOpenLifecycle> with WidgetsBinding
 
   @override
   Widget build(BuildContext context) {
-    _tier = context.watch<InvoiceProvider>().subscriptionTier;
+    _tier = context.watch<InvoiceProvider>().featureTier;
     return widget.child;
   }
 }

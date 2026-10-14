@@ -24,7 +24,7 @@ class AccountDeletionService {
     final user = _auth.currentUser;
     if (user == null) {
       return AccountDeletionResult.failure(
-        'Sign in with Google first, or use the account deletion web form.',
+        'Sign in with Google first, then delete the account from Settings.',
       );
     }
 

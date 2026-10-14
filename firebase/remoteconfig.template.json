@@ -17,28 +17,28 @@
     },
     "ad_native_android": {
       "defaultValue": {
-        "value": "ca-app-pub-3940256099942544/2247696110"
+        "value": "ca-app-pub-3843970042444074/7828329563"
       },
       "description": "AdMob native ad unit ID (Android). Replace with production ID before release.",
       "valueType": "STRING"
     },
     "ad_interstitial_android": {
       "defaultValue": {
-        "value": "ca-app-pub-3940256099942544/1033173712"
+        "value": "ca-app-pub-3843970042444074/5132316791"
       },
       "description": "AdMob interstitial unit ID (Android).",
       "valueType": "STRING"
     },
     "ad_app_open_android": {
       "defaultValue": {
-        "value": "ca-app-pub-3940256099942544/9257395921"
+        "value": "ca-app-pub-3843970042444074/6773621390"
       },
       "description": "AdMob app open unit ID (Android).",
       "valueType": "STRING"
     },
     "ad_banner_android": {
       "defaultValue": {
-        "value": "ca-app-pub-3940256099942544/6300978111"
+        "value": "ca-app-pub-3843970042444074/4156954508"
       },
       "description": "AdMob banner unit ID (Android), including the collapsible main-screen banner.",
       "valueType": "STRING"
@@ -152,11 +152,11 @@
     },
     "ad_rewarded_template": {
       "defaultValue": { "value": "true" },
-      "description": "Rewarded ad that unlocks one premium template for a single use.",
+      "description": "Rewarded ad that unlocks one premium template for the current app session.",
       "valueType": "BOOLEAN"
     },
     "ad_rewarded_android": {
-      "defaultValue": { "value": "ca-app-pub-3940256099942544/5224354917" },
+      "defaultValue": { "value": "ca-app-pub-3843970042444074/3962705354" },
       "description": "AdMob rewarded unit ID (Android).",
       "valueType": "STRING"
     },
@@ -164,6 +164,96 @@
       "defaultValue": { "value": "true" },
       "description": "Large native ad on the splash screen.",
       "valueType": "BOOLEAN"
+    },
+    "ad_native_onboarding": {
+      "defaultValue": { "value": "true" },
+      "description": "Large native ad on the how-to-use screens.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_native_google": {
+      "defaultValue": { "value": "false" },
+      "description": "Large native ad on the Google sign-in screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_native_business_name": {
+      "defaultValue": { "value": "false" },
+      "description": "Large native ad on the business name screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_nav_screens": {
+      "defaultValue": { "value": "false" },
+      "description": "Interstitial when opening Clients, Items, or Language. Keep off.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_save_invoice": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial after saving a new invoice.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_interstitial_preview_back": {
+      "defaultValue": { "value": "true" },
+      "description": "Interstitial when leaving preview for Home.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_rewarded_ai_credit": {
+      "defaultValue": { "value": "true" },
+      "description": "Rewarded ad that grants one extra AI credit.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_rewarded_extra_invoice": {
+      "defaultValue": { "value": "true" },
+      "description": "Rewarded ad that grants one extra invoice today.",
+      "valueType": "BOOLEAN"
+    },
+    "ad_native_home_list": {
+      "defaultValue": { "value": "true" },
+      "description": "Native card in the home invoice list.",
+      "valueType": "BOOLEAN"
+    },
+    "interstitial_min_interval_sec": {
+      "defaultValue": { "value": "90" },
+      "description": "Minimum seconds between any two interstitials.",
+      "valueType": "NUMBER"
+    },
+    "interstitial_max_per_session": {
+      "defaultValue": { "value": "4" },
+      "description": "Interstitial cap for one app session.",
+      "valueType": "NUMBER"
+    },
+    "interstitial_max_per_day": {
+      "defaultValue": { "value": "12" },
+      "description": "Interstitial cap per calendar day.",
+      "valueType": "NUMBER"
+    },
+    "app_open_min_interval_min": {
+      "defaultValue": { "value": "240" },
+      "description": "Minimum minutes between app-open ads.",
+      "valueType": "NUMBER"
+    },
+    "app_open_max_per_day": {
+      "defaultValue": { "value": "4" },
+      "description": "App-open cap per calendar day.",
+      "valueType": "NUMBER"
+    },
+    "app_open_min_background_sec": {
+      "defaultValue": { "value": "30" },
+      "description": "Ignore resume app-open ads unless the app was backgrounded at least this long.",
+      "valueType": "NUMBER"
+    },
+    "ads_grace_until_first_invoice": {
+      "defaultValue": { "value": "true" },
+      "description": "No interstitial or app-open ad until the user saves their first invoice.",
+      "valueType": "BOOLEAN"
+    },
+    "paywall_after_settings_mode": {
+      "defaultValue": { "value": "once_per_day" },
+      "description": "always, once_per_session, once_per_day, or never.",
+      "valueType": "STRING"
+    },
+    "ad_config_version": {
+      "defaultValue": { "value": "1" },
+      "description": "Logged as an Analytics user property when this config is active.",
+      "valueType": "STRING"
     },
     "ad_banner_screen": {
       "defaultValue": { "value": "true" },

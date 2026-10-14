@@ -1,13 +1,15 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../ads/ad_config.dart';
+import '../ads/ad_consent.dart';
+import '../ads/ad_manager.dart';
 import '../ads/ad_remote_config.dart';
 import '../ads/ad_service.dart';
 import '../firebase_options.dart';
+import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
 import '../providers/theme_provider.dart';
 import '../screens/business_setup/business_name_screen.dart';
@@ -16,7 +18,10 @@ import '../screens/onboarding/google_login_screen.dart';
 import '../screens/onboarding/language_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
 import '../services/auth_service.dart';
+import '../services/engagement_service.dart';
 import '../services/push_notification_service.dart';
+import '../services/invoice_reminder_service.dart';
+import '../services/referral_service.dart';
 import '../services/subscription_service.dart';
 import '../services/user_database_service.dart';
 import '../services/user_profile_sync.dart';
@@ -70,6 +75,17 @@ Future<AppBootstrapResult> runAppBootstrap({
   await UserDatabaseService.initialize();
 
   final invoiceProvider = InvoiceProvider();
+  InvoiceReminderService.instance.afterSync =
+      () => EngagementService.instance.reschedule(invoiceProvider);
+  InvoiceProvider.onLocalDataWiped = () => EngagementService.instance.clearLocal();
+  invoiceProvider.onLanguageChanged = () async {
+    final channels = await EngagementService.instance.enabledChannels();
+    await PushNotificationService.instance.syncTopics(
+      languageCode: invoiceProvider.languageCode,
+      pro: invoiceProvider.featureTier == SubscriptionTier.pro,
+      channels: channels,
+    );
+  };
   invoiceProvider.onCloudSyncRequested = () => UserProfileSync.pushFromProvider(invoiceProvider);
   final themeProvider = ThemeProvider();
   final subscriptionService = SubscriptionService(invoiceProvider);
@@ -83,6 +99,7 @@ Future<AppBootstrapResult> runAppBootstrap({
     invoiceProvider.load(),
     themeProvider.load(),
   ]);
+  EngagementService.instance.applyDeviceLanguage(invoiceProvider);
 
   status('Checking subscription…');
   await subscriptionService.initialize();
@@ -90,33 +107,38 @@ Future<AppBootstrapResult> runAppBootstrap({
 
   status('Loading configuration…');
   await AdRemoteConfig.instance.load();
+  AdManager.instance.hasCreatedInvoice = () => invoiceProvider.hasCreatedFirstInvoice;
 
   if (AdConfig.isSupported) {
     status('Preparing ads…');
-    await MobileAds.instance.initialize();
-    if (kDebugMode) {
+    await AdConsent.instance.gather();
+    if (!AdConsent.instance.canRequestAds) {
+      debugPrint('Ads skipped until consent allows requests.');
+    } else {
+      await MobileAds.instance.initialize();
       await MobileAds.instance.updateRequestConfiguration(
         RequestConfiguration(
-          testDeviceIds: const <String>[],
-          tagForChildDirectedTreatment: TagForChildDirectedTreatment.unspecified,
+          tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
+          tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
         ),
       );
-    }
-    if (!kDebugMode && AdConfig.releaseShouldUseRemoteConfigUnits) {
-      debugPrint(
-        'AdConfig: Release build using Firebase Remote Config ad unit IDs. '
-        'Publish production units in Remote Config or production_ad_units.dart.',
+      await AdService.instance.initialize();
+      await AdService.instance.waitForStartupPreloads(
+        tier: invoiceProvider.featureTier,
+        timeout: adPreloadTimeout,
       );
     }
-    await AdService.instance.initialize();
-    await AdService.instance.waitForStartupPreloads(
-      tier: invoiceProvider.subscriptionTier,
-      timeout: adPreloadTimeout,
-    );
   }
 
   status('Almost ready…');
   await PushNotificationService.instance.prepare();
+  await PushNotificationService.instance.syncTopics(
+    languageCode: invoiceProvider.languageCode,
+    pro: invoiceProvider.featureTier == SubscriptionTier.pro,
+    channels: await EngagementService.instance.enabledChannels(),
+  );
+  await ReferralService.instance.start(invoiceProvider);
+  await InvoiceReminderService.instance.prepare();
 
   final elapsed = DateTime.now().difference(started);
   if (elapsed < minSplashDuration) {

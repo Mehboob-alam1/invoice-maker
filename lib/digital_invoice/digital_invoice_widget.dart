@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../core/utils/invoice_layout_scale.dart';
+import '../widgets/invoice_brand_images.dart';
 import 'digital_invoice_model.dart';
 import 'invoice_gradient_theme.dart';
 
@@ -60,6 +61,13 @@ class DigitalInvoiceWidget extends StatelessWidget {
                   _NoteBlock(title: 'Terms & Conditions', body: invoice.termsAndConditions),
                 ],
                 SizedBox(height: layout.sp(18)),
+                InvoiceBrandImages(
+                  logoBytes: invoice.logoBytes,
+                  signatureBytes: invoice.signatureBytes,
+                  stampBytes: invoice.stampBytes,
+                  showStamp: invoice.stampBytes != null && invoice.stampBytes!.isNotEmpty,
+                ),
+                SizedBox(height: layout.sp(8)),
                 _FooterSignature(layout: layout),
               ],
             ),

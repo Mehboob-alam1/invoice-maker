@@ -2,57 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/invoice_provider.dart';
-import '../widgets/loading_ad_dialog.dart';
+import '../core/remote_config/remote_config_repository.dart';
 import 'ad_service.dart';
 
 /// After a major user action (save, share, navigate, etc.) on Free tier.
 Future<void> afterMajorAction(BuildContext context) =>
     showInterstitialWithLoadingIfEligible(context);
 
-/// Loads if needed, shows loading UI only while fetching, then presents interstitial when ready.
-Future<void> showInterstitialWithLoadingIfEligible(BuildContext context) async {
-  if (!context.mounted) return;
-  final tier = context.read<InvoiceProvider>().subscriptionTier;
+/// Presents a preloaded interstitial. If none is cached yet, the action continues
+/// and the next one keeps loading in the background.
+Future<bool> showInterstitialWithLoadingIfEligible(BuildContext context) async {
+  if (!context.mounted) return false;
+  final tier = context.read<InvoiceProvider>().featureTier;
   final ads = AdService.instance;
 
-  if (!ads.shouldAttemptInterstitial(tier)) {
+  if (!ads.shouldAttemptInterstitial(tier) || !ads.interstitialReady) {
     ads.preloadInterstitial();
-    return;
+    return false;
   }
 
-  final alreadyReady = ads.interstitialReady;
-  var loadingDialogVisible = false;
-
-  try {
-    if (!alreadyReady) {
-      if (!context.mounted) return;
-      loadingDialogVisible = true;
-      showLoadingAdDialog(context);
-      await WidgetsBinding.instance.endOfFrame;
-    }
-
-    final loaded = alreadyReady || await ads.ensureInterstitialLoaded();
-
-    if (loadingDialogVisible && context.mounted) {
-      dismissLoadingAdDialog(context);
-      loadingDialogVisible = false;
-    }
-
-    if (!context.mounted) return;
-    if (!loaded || !ads.interstitialReady) {
-      ads.preloadInterstitial();
-      return;
-    }
-
-    await ads.showInterstitialIfEligible(tier: tier);
-  } finally {
-    if (loadingDialogVisible && context.mounted) {
-      dismissLoadingAdDialog(context);
-    }
-  }
+  return ads.showInterstitialIfEligible(tier: tier);
 }
 
-/// Runs [action], then shows an interstitial for non‑Pro users (Pro skips interstitial only).
+/// Opens a settings list. An interstitial runs only when
+/// `ad_interstitial_nav_screens` is on.
+Future<void> runSettingsNavigation(BuildContext context, VoidCallback action) async {
+  action();
+  if (!RemoteConfigRepository.instance.interstitialNavScreens) return;
+  await showInterstitialWithLoadingIfEligible(context);
+}
+
+/// Runs [action], then shows an interstitial for non-Pro users.
 Future<void> runWithInterstitial(BuildContext context, VoidCallback action) async {
   action();
   await showInterstitialWithLoadingIfEligible(context);
@@ -60,6 +40,7 @@ Future<void> runWithInterstitial(BuildContext context, VoidCallback action) asyn
 
 Future<void> runWithInterstitialAsync(BuildContext context, Future<void> Function() action) async {
   await action();
+  if (!context.mounted) return;
   await showInterstitialWithLoadingIfEligible(context);
 }
 

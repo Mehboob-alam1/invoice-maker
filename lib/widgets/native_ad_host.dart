@@ -5,7 +5,7 @@ import '../ads/ad_remote_config.dart';
 import '../providers/invoice_provider.dart';
 import 'native_ad_widget.dart';
 
-/// Full-width bottom native ad; [child] scrolls in the space above (not under the ad).
+/// Native ad under the page. [child] scrolls in the space above the ad.
 class NativeAdHost extends StatelessWidget {
   final Widget? child;
   final String adScopeKey;
@@ -20,9 +20,8 @@ class NativeAdHost extends StatelessWidget {
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final rc = AdRemoteConfig.instance;
-    final showNative =
-        rc.adsEnabled && context.watch<InvoiceProvider>().subscriptionTier.showNativeAds;
-    final showBar = !keyboardOpen && showNative;
+    final invoices = context.watch<InvoiceProvider>();
+    final showNative = rc.adsEnabled && !invoices.adsHeld && invoices.featureTier.showNativeAds;
 
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -31,24 +30,19 @@ class NativeAdHost extends StatelessWidget {
           Expanded(
             // Keep this wrapper in place when the keyboard opens. Swapping it
             // out remounts the page and the focused field loses the keyboard.
-            child: MediaQuery.removePadding(
-              context: context,
-              removeBottom: showBar,
-              child: child ?? const SizedBox.shrink(),
-            ),
+            child: child ?? const SizedBox.shrink(),
           ),
-          if (showBar)
-            MediaQuery.removePadding(
-              context: context,
-              removeLeft: true,
-              removeRight: true,
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                widthFactor: 1,
-                child: SizedBox(
-                  width: MediaQuery.sizeOf(context).width,
-                  child: NativeAdWidget(key: ValueKey('native_ad_$adScopeKey')),
+          if (showNative)
+            Offstage(
+              offstage: keyboardOpen,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  10,
+                  8,
+                  10,
+                  MediaQuery.paddingOf(context).bottom + 8,
                 ),
+                child: NativeAdWidget(key: ValueKey('native_ad_$adScopeKey')),
               ),
             ),
         ],

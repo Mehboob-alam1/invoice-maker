@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice_item.dart';
 import '../../models/subscription_tier.dart';
@@ -23,13 +25,18 @@ class CreateWithAiScreen extends StatefulWidget {
 class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
   final _clientController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final SpeechToText _speech = SpeechToText();
   bool _generating = false;
+  bool _listening = false;
   String? _clientError;
   String? _detailError;
 
   @override
   void initState() {
     super.initState();
+    _restoreDraft();
+    _clientController.addListener(_persistDraft);
+    _descriptionController.addListener(_persistDraft);
     _clientController.addListener(() {
       if (_clientError != null && _clientController.text.trim().isNotEmpty) {
         setState(() => _clientError = null);
@@ -42,8 +49,32 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
     });
   }
 
+  Future<void> _restoreDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final client = prefs.getString('invoice_ai_draft_client');
+    final detail = prefs.getString('invoice_ai_draft_detail');
+    if (client != null && client.isNotEmpty) _clientController.text = client;
+    if (detail != null && detail.isNotEmpty) _descriptionController.text = detail;
+  }
+
+  void _persistDraft() {
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('invoice_ai_draft_client', _clientController.text);
+      prefs.setString('invoice_ai_draft_detail', _descriptionController.text);
+    });
+  }
+
+  Future<void> _clearDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('invoice_ai_draft_client');
+    await prefs.remove('invoice_ai_draft_detail');
+  }
+
   @override
   void dispose() {
+    _clientController.removeListener(_persistDraft);
+    _descriptionController.removeListener(_persistDraft);
     _clientController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -92,6 +123,26 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
     return items;
   }
 
+  Future<void> _toggleVoice() async {
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    final ready = await _speech.initialize();
+    if (!ready || !mounted) return;
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (result) {
+        if (!mounted) return;
+        setState(() {
+          _descriptionController.text = result.recognizedWords;
+          if (result.finalResult) _listening = false;
+        });
+      },
+    );
+  }
+
   Future<void> _generate() async {
     final strings = AppStrings.read(context);
     if (!_validate(strings)) return;
@@ -114,8 +165,14 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
     );
 
     if (!mounted) return;
+    await _clearDraft();
+    if (!mounted) return;
     setState(() => _generating = false);
-    await afterGenerationAd(context, AdPlacement.interstitialGenerateAi);
+    await afterGenerationAd(
+      context,
+      AdPlacement.interstitialGenerateAi,
+      invoiceId: invoice.id,
+    );
     if (!mounted) return;
     await navigateAfterInvoiceCreated(context, invoice.id);
   }
@@ -156,7 +213,7 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
                                 children: [
                                   _AiHeroCard(
                                     intro: strings.aiIntro,
-                                    tokens: provider.subscriptionTier ==
+                                    tokens: provider.featureTier ==
                                             SubscriptionTier.free
                                         ? strings.aiFreeCreditsRemainingHint(
                                             provider.aiCreditsRemaining,
@@ -200,6 +257,14 @@ class _CreateWithAiScreenState extends State<CreateWithAiScreen> {
                                         ),
                                         const SizedBox(height: 22),
                                         _FieldLabel(strings.writeInvoiceDetail),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: IconButton(
+                                            tooltip: strings.voiceInvoice,
+                                            onPressed: _toggleVoice,
+                                            icon: Icon(_listening ? Icons.mic_rounded : Icons.mic_none_rounded),
+                                          ),
+                                        ),
                                         TextField(
                                           controller: _descriptionController,
                                           minLines: 4,

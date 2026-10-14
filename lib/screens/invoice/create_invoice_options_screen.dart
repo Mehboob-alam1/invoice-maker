@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../navigation/invoice_flow.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
+import '../../models/invoice.dart';
 import '../../models/subscription_tier.dart';
 import '../../providers/invoice_provider.dart';
 import '../../services/invoice_create_gate.dart';
@@ -29,7 +30,7 @@ class CreateInvoiceOptionsScreen extends StatelessWidget {
     final strings = context.l10n;
     final invoiceProvider = context.watch<InvoiceProvider>();
     final aiUnlocked = invoiceProvider.canOpenCreateWithAi;
-    final showFreeCredits = invoiceProvider.subscriptionTier == SubscriptionTier.free;
+    final showFreeCredits = invoiceProvider.featureTier == SubscriptionTier.free;
 
     return Theme(
       data: buildBlueTheme(Theme.of(context)),
@@ -58,6 +59,21 @@ class CreateInvoiceOptionsScreen extends StatelessWidget {
               title: strings.scanWithOcr,
               subtitle: strings.scanOcrOptionSubtitle,
               onTap: () => startOcrScan(context),
+            ),
+            _OptionTile(
+              vertical: vertical,
+              icon: Icons.request_quote_rounded,
+              colors: const [Color(0xFF0F766E), Color(0xFF2DD4BF)],
+              title: strings.createEstimate,
+              subtitle: strings.estimateSubtitle,
+              onTap: () {
+                Navigator.of(context).push(
+                  appInvoiceFlowRoute(
+                    const NewInvoiceScreen(documentKind: DocumentKind.estimate),
+                    adScopeKey: 'new_estimate',
+                  ),
+                );
+              },
             ),
             _OptionTile(
               vertical: vertical,

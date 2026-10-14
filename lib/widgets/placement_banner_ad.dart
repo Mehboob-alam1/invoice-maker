@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../ads/ad_config.dart';
 import '../ads/ad_placement.dart';
 import '../ads/ad_remote_config.dart';
+import '../ads/ad_service.dart';
 import '../core/constants/production_ad_units.dart';
 import '../providers/invoice_provider.dart';
 
@@ -20,6 +21,8 @@ class PlacementBannerAd extends StatefulWidget {
     required this.placement,
     this.collapsible = false,
     this.framed = false,
+    this.anchorTop = false,
+    this.onHeight,
   });
 
   final AdPlacement placement;
@@ -27,6 +30,12 @@ class PlacementBannerAd extends StatefulWidget {
 
   /// Draws the banner in its own card, separate from the page.
   final bool framed;
+
+  /// Sits above the page, with margin on every side.
+  final bool anchorTop;
+
+  /// Reports the loaded creative height, or 0 when the bar is empty.
+  final ValueChanged<double>? onHeight;
 
   @override
   State<PlacementBannerAd> createState() => _PlacementBannerAdState();
@@ -40,24 +49,38 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
   bool _loading = false;
   int _attempts = 0;
   int? _scheduledWidth;
+  VoidCallback? _whenSdkReady;
 
   void _schedule(int width) {
     if (width < 1 || _loaded || _loading || _attempts >= _maxAttempts) return;
     if (_scheduledWidth == width) return;
     _scheduledWidth = width;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _load(width);
-    });
+    _load(width);
   }
 
   Future<void> _load(int width) async {
     if (_loading || _loaded || !mounted || !AdConfig.isSupported) return;
+    if (!AdService.instance.isSdkReady) {
+      if (_whenSdkReady != null) return;
+      void onReady() {
+        if (!AdService.instance.isSdkReady) return;
+        AdService.instance.sdkReady.removeListener(onReady);
+        _whenSdkReady = null;
+        if (mounted) _load(width);
+      }
+
+      _whenSdkReady = onReady;
+      AdService.instance.sdkReady.addListener(onReady);
+      return;
+    }
     if (_attempts >= _maxAttempts || width < 1) return;
     if (!AdRemoteConfig.instance.isPlacementEnabled(widget.placement)) return;
-    final tier = context.read<InvoiceProvider>().subscriptionTier;
-    if (!tier.showNativeAds) return;
+    final tier = context.read<InvoiceProvider>().featureTier;
+    if (!tier.showNativeAds || context.read<InvoiceProvider>().adsHeld) return;
 
-    final unitId = AdRemoteConfig.instance.bannerAdUnitId;
+    final unitId = widget.collapsible
+        ? AdRemoteConfig.instance.collapsibleBannerAdUnitId
+        : AdRemoteConfig.instance.bannerAdUnitId;
     if (!ProductionAdUnits.isValidUnit(unitId)) return;
 
     _loading = true;
@@ -73,7 +96,9 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
       adUnitId: unitId,
       size: adaptive ?? AdSize.banner,
       request: AdRequest(
-        extras: widget.collapsible ? const {'collapsible': 'bottom'} : null,
+        extras: widget.collapsible
+            ? {'collapsible': widget.anchorTop ? 'top' : 'bottom'}
+            : null,
       ),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
@@ -85,6 +110,7 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
             _loaded = true;
             _loading = false;
           });
+          widget.onHeight?.call((ad as BannerAd).size.height.toDouble());
         },
         onAdFailedToLoad: (ad, error) {
           debugPrint('Banner ${widget.placement.remoteKey} failed: $error');
@@ -107,40 +133,76 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
 
   @override
   void dispose() {
+    final wait = _whenSdkReady;
+    if (wait != null) AdService.instance.sdkReady.removeListener(wait);
     _ad?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
+    return ValueListenableBuilder<int>(
+      valueListenable: AdRemoteConfig.instance.revision,
+      builder: (context, _, _) {
+        if (!AdRemoteConfig.instance.isPlacementEnabled(widget.placement)) {
+          if (_ad != null || _loaded) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _releaseAd();
+            });
+          }
+          return const SizedBox.shrink();
+        }
+        return LayoutBuilder(
       builder: (context, constraints) {
         final screen = MediaQuery.sizeOf(context).width;
+        final safe = MediaQuery.paddingOf(context);
         final available = constraints.maxWidth.isFinite && constraints.maxWidth > 0
             ? constraints.maxWidth
             : screen;
-        final sideInset = widget.framed ? 24 + MediaQuery.paddingOf(context).horizontal : 0.0;
-        final requestWidth = math.max(1, (available - sideInset).truncate());
-        _schedule(requestWidth);
+        final edgeToEdge = widget.collapsible && !widget.framed;
+        final horizontalPad = edgeToEdge || !widget.framed ? 0.0 : 10.0;
+        final sideInset = horizontalPad * 2 + (widget.framed ? safe.horizontal : 0);
+        final requestWidth = edgeToEdge
+            ? math.max(1, screen.truncate())
+            : math.max(1, (available - sideInset).truncate());
+        if (_ad == null) _schedule(requestWidth);
 
         final ad = _ad;
-        if (!_loaded || ad == null) return const SizedBox.shrink();
+        if (!_loaded || ad == null) {
+          return widget.framed
+              ? const SizedBox(width: double.infinity, height: 0)
+              : const SizedBox.shrink();
+        }
 
         final creative = SizedBox(
           width: ad.size.width.toDouble(),
           height: ad.size.height.toDouble(),
           child: AdWidget(ad: ad),
         );
+        final align = widget.anchorTop ? Alignment.topCenter : Alignment.bottomCenter;
+        final margin = edgeToEdge
+            ? EdgeInsets.zero
+            : widget.anchorTop
+            ? EdgeInsets.fromLTRB(10 + safe.left, 8 + safe.top, 10 + safe.right, 8)
+            : EdgeInsets.fromLTRB(10 + safe.left, 8, 10 + safe.right, 8 + safe.bottom);
         if (!widget.framed) {
-          return SafeArea(top: false, child: Center(child: creative));
+          return Align(
+            alignment: align,
+            child: Padding(
+              padding: margin,
+              child: creative,
+            ),
+          );
         }
 
         final theme = Theme.of(context);
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-          child: SafeArea(
-            top: false,
-            child: DecoratedBox(
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          alignment: align,
+          child: Padding(
+          padding: margin,
+          child: DecoratedBox(
               decoration: BoxDecoration(
                 color: theme.cardColor,
                 borderRadius: BorderRadius.circular(16),
@@ -165,5 +227,16 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
         );
       },
     );
+      },
+    );
+  }
+
+  void _releaseAd() {
+    final ad = _ad;
+    _ad = null;
+    _loaded = false;
+    _loading = false;
+    ad?.dispose();
+    widget.onHeight?.call(0);
   }
 }

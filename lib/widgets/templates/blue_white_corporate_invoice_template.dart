@@ -10,6 +10,7 @@ import '../../l10n/app_strings.dart';
 import '../../models/client.dart';
 import '../../models/invoice.dart';
 import '../../providers/invoice_provider.dart';
+import '../invoice_brand_images.dart';
 
 const Color kCorpNavy = Color(0xFF14304F);
 const Color kCorpTeal = Color(0xFF9FD8D6);
@@ -169,6 +170,13 @@ class BlueWhiteCorporateInvoiceTemplate extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
+                SizedBox(height: 16 * s),
+                InvoiceBrandImages(
+                  logoPath: provider.businessLogoPath,
+                  signaturePath: provider.signaturePath,
+                  stampPath: provider.stampPath,
+                  showStamp: provider.isPro,
                 ),
               ],
             ),

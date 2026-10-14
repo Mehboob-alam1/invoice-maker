@@ -10,6 +10,5 @@
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 
-# Google Mobile Ads & Play Billing (release / R8)
--keep class com.google.android.gms.ads.** { *; }
--keep class com.android.vending.billing.** { *; }
+# Ads and Play Billing ship their own consumer rules. A package-wide -keep
+# blocks R8 from renaming those classes and drops Play's obfuscation score.

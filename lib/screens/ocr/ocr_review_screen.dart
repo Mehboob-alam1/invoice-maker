@@ -217,7 +217,11 @@ class _OcrReviewScreenState extends State<OcrReviewScreen> {
     );
     if (!mounted) return;
     try {
-      await afterGenerationAd(context, AdPlacement.interstitialOcrCreate);
+      await afterGenerationAd(
+        context,
+        AdPlacement.interstitialOcrCreate,
+        invoiceId: invoice.id,
+      );
       if (!mounted) return;
       await navigateAfterInvoiceCreated(context, invoice.id);
     } finally {

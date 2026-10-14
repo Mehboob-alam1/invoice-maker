@@ -7,6 +7,7 @@ import '../../core/utils/invoice_layout_scale.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/invoice.dart';
 import '../../providers/invoice_provider.dart';
+import '../invoice_brand_images.dart';
 
 const Color kReceiptNavy = Color(0xFF1F2937);
 const Color kReceiptOrange = Color(0xFFE0872A);
@@ -38,6 +39,8 @@ class OrangeBlackReceiptTemplate extends StatelessWidget {
         return strings.paid.toUpperCase();
       case InvoiceStatus.overdue:
         return strings.overdue.toUpperCase();
+      case InvoiceStatus.partiallyPaid:
+        return strings.partiallyPaid.toUpperCase();
       case InvoiceStatus.unpaid:
         return strings.unpaid.toUpperCase();
     }
@@ -126,6 +129,13 @@ class OrangeBlackReceiptTemplate extends StatelessWidget {
                 ),
                 SizedBox(height: 12 * s),
                 _NotesBox(notes: _notesText, strings: strings, scale: s),
+                SizedBox(height: 16 * s),
+                InvoiceBrandImages(
+                  logoPath: provider.businessLogoPath,
+                  signaturePath: provider.signaturePath,
+                  stampPath: provider.stampPath,
+                  showStamp: provider.isPro,
+                ),
                 SizedBox(height: 18 * s),
               ],
             ),

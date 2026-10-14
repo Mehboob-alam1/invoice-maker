@@ -10,6 +10,11 @@ class AdConfig {
 
   static const androidAppId = 'ca-app-pub-3843970042444074~9694723819';
 
+  /// Debug builds always request Google's test units. Release builds use the
+  /// unit IDs from Firebase Remote Config, with the in-app fallback only when
+  /// a fetch has not landed yet. Do not click your own live ads.
+  static bool get useTestAdUnits => kDebugMode;
+
   /// Optional HTTP override (CDN). Primary source is Firebase Remote Config.
   static const String? remoteAdConfigUrl = null;
 
@@ -18,6 +23,10 @@ class AdConfig {
   static const testAndroidInterstitial = 'ca-app-pub-3940256099942544/1033173712';
   static const testAndroidAppOpen = 'ca-app-pub-3940256099942544/9257395921';
   static const testAndroidBanner = 'ca-app-pub-3940256099942544/6300978111';
+
+  /// Google's sample unit that actually returns a collapsible banner.
+  /// The normal banner sample ignores the collapsible request.
+  static const testAndroidCollapsibleBanner = 'ca-app-pub-3940256099942544/2014213617';
   static const testAndroidRewarded = 'ca-app-pub-3940256099942544/5224354917';
 
   static const _testPublisherId = '3940256099942544';
@@ -48,7 +57,6 @@ class AdConfig {
       );
 
   static String _pick({required String production, required String test}) {
-    if (kDebugMode) return test;
     if (ProductionAdUnits.isValidUnit(production)) return production;
     return test;
   }

@@ -20,16 +20,6 @@ class BusinessProfileRecord {
   bool get hasAnyField =>
       name.isNotEmpty || email.isNotEmpty || phone.isNotEmpty || address.isNotEmpty || taxId.isNotEmpty;
 
-  Map<String, dynamic> toFirestore() => {
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'address': address,
-        'taxId': taxId,
-        'logoUrl': logoUrl,
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      };
-
   factory BusinessProfileRecord.fromMap(Map<String, dynamic>? map) {
     if (map == null) return const BusinessProfileRecord();
     return BusinessProfileRecord(

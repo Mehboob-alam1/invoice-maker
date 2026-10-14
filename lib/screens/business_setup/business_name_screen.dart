@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../ads/ad_placement.dart';
 import '../../navigation/app_page_route.dart';
-import '../../core/constants/app_texts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/app_strings.dart';
 import '../../providers/invoice_provider.dart';
+import '../../widgets/bottom_banner_host.dart';
+import '../../widgets/placement_native_ad.dart';
 import '../../widgets/ui/app_page_shell.dart';
 import '../home/invoices_home_screen.dart';
+import '../../services/referral_service.dart';
 
 /// Blue palette used by this screen.
 class _Blue {
@@ -22,7 +25,7 @@ class _Blue {
 const double _kWideBreakpoint = 900; // tablets landscape / desktop / web
 const double _kFormMaxWidth = 440;
 
-class BusinessNameScreen extends StatefulWidget {
+class BusinessNameScreen extends StatefulWidget with NoBottomBanner {
   const BusinessNameScreen({super.key});
 
   @override
@@ -31,19 +34,29 @@ class BusinessNameScreen extends StatefulWidget {
 
 class _BusinessNameScreenState extends State<BusinessNameScreen> {
   final _controller = TextEditingController();
+  final _referralController = TextEditingController();
+  String? _nameError;
 
   @override
   void dispose() {
     _controller.dispose();
+    _referralController.dispose();
     super.dispose();
   }
 
   void _continue() {
+    final name = _controller.text.trim();
+    if (name.isEmpty) {
+      setState(() => _nameError = context.l10n.t('businessNameRequired'));
+      return;
+    }
+    setState(() => _nameError = null);
     final provider = context.read<InvoiceProvider>();
-    final name = _controller.text.trim().isEmpty
-        ? AppTexts.defaultBusinessName
-        : _controller.text.trim();
     provider.setBusinessName(name);
+    final code = _referralController.text.trim();
+    if (code.isNotEmpty) {
+      ReferralService.instance.applyCode(code, source: 'manual');
+    }
     Navigator.of(context).pushReplacement(
       appPageRoute(const InvoicesHomeScreen(), adScopeKey: 'home'),
     );
@@ -119,16 +132,21 @@ class _BusinessNameScreenState extends State<BusinessNameScreen> {
 
           return Scaffold(
             body: AppPageShell(
-              child: LayoutBuilder(
+              child: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth >= _kWideBreakpoint;
 
                   final form = _FormPanel(
                     controller: _controller,
+                    referralController: _referralController,
                     onContinue: _continue,
                     strings: strings,
                     muted: muted,
                     showBadge: !isWide,
+                    errorText: _nameError,
                   );
 
                   if (!isWide) {
@@ -149,6 +167,16 @@ class _BusinessNameScreenState extends State<BusinessNameScreen> {
                     ],
                   );
                 },
+              ),
+                  ),
+                  const ScreenBottomAdSlot(
+                    child: PlacementNativeAd(
+                      placement: AdPlacement.nativeBusinessName,
+                      large: true,
+                    ),
+                  ),
+                ],
+              ),
               ),
             ),
           );
@@ -190,17 +218,21 @@ class _Scrollable extends StatelessWidget {
 class _FormPanel extends StatelessWidget {
   const _FormPanel({
     required this.controller,
+    required this.referralController,
     required this.onContinue,
     required this.strings,
     required this.muted,
     required this.showBadge,
+    this.errorText,
   });
 
   final TextEditingController controller;
+  final TextEditingController referralController;
   final VoidCallback onContinue;
   final AppStrings strings;
   final Color muted;
   final bool showBadge;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +276,19 @@ class _FormPanel extends StatelessWidget {
             ),
             decoration: InputDecoration(
               labelText: strings.businessNameHint,
+              errorText: errorText,
               prefixIcon: const Icon(Icons.business_rounded),
+            ),
+            textInputAction: TextInputAction.next,
+            onSubmitted: (_) {},
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: referralController,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(
+              labelText: strings.referralCode,
+              prefixIcon: const Icon(Icons.card_giftcard_outlined),
             ),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => onContinue(),

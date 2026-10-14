@@ -11,6 +11,7 @@ import '../core/constants/subscription_products.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
 import 'user_database_service.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart';
 
 /// Google Play / App Store auto-renewing subscriptions (Premium & Pro).
 class SubscriptionService extends ChangeNotifier {
@@ -35,6 +36,9 @@ class SubscriptionService extends ChangeNotifier {
 
   /// Set when Play restore finds no active subscription (prompt renew on home).
   static const pendingRenewPromptKey = 'pending_subscription_renew_prompt';
+
+  /// Shown once on the paywall after a paid plan ends.
+  static const winBackEligibleKey = 'paywall_winback_eligible';
 
   SubscriptionTier get currentTier => _invoiceProvider.subscriptionTier;
 
@@ -140,7 +144,28 @@ class SubscriptionService extends ChangeNotifier {
 
   String? priceForProduct(String productId) => _products[productId]?.price;
 
-  Future<bool> purchaseProductId(String productId) async {
+  /// Play offer tagged winback, or whose offer id contains "win". Null when Play has no discount.
+  ({String token, String price})? get winBackOffer {
+    final product = _products[SubscriptionProducts.weekly];
+    if (product is! GooglePlayProductDetails) return null;
+    final offers = product.productDetails.subscriptionOfferDetails;
+    if (offers == null) return null;
+    SubscriptionOfferDetailsWrapper? match;
+    for (final offer in offers) {
+      if (offer.offerId == null) continue;
+      final id = offer.offerId!.toLowerCase();
+      final tags = offer.offerTags.map((tag) => tag.toLowerCase());
+      if (id.contains('win') || tags.any((tag) => tag.contains('win'))) {
+        match = offer;
+        break;
+      }
+    }
+    if (match == null) return null;
+    final price = match.pricingPhases.isEmpty ? product.price : match.pricingPhases.first.formattedPrice;
+    return (token: match.offerIdToken, price: price);
+  }
+
+  Future<bool> purchaseProductId(String productId, {String? offerToken}) async {
     final product = _products[productId];
     if (!storeAvailable || product == null) {
       lastError = 'Store or product unavailable. Check Play Console product IDs.';
@@ -148,21 +173,33 @@ class SubscriptionService extends ChangeNotifier {
       return false;
     }
     purchasePending = true;
+    _syncAdsHeld(pending: true);
     lastError = null;
     notifyListeners();
 
     final PurchaseParam param = Platform.isAndroid
-        ? GooglePlayPurchaseParam(productDetails: product)
+        ? GooglePlayPurchaseParam(productDetails: product, offerToken: offerToken)
         : PurchaseParam(productDetails: product);
 
     try {
-      return await _iap.buyNonConsumable(purchaseParam: param);
+      final started = await _iap.buyNonConsumable(purchaseParam: param);
+      if (!started) {
+        purchasePending = false;
+        _syncAdsHeld(pending: false);
+        notifyListeners();
+      }
+      return started;
     } catch (e) {
       lastError = e.toString();
       purchasePending = false;
+      _syncAdsHeld(pending: false);
       notifyListeners();
       return false;
     }
+  }
+
+  void _syncAdsHeld({required bool pending, bool grace = false}) {
+    _invoiceProvider.setAdsHeld(pending || grace || purchasePending);
   }
 
   String priceLabel(SubscriptionTier tier, {required bool yearly, String fallback = '—'}) {
@@ -208,8 +245,16 @@ class SubscriptionService extends ChangeNotifier {
 
   void _onPurchaseUpdates(List<PurchaseDetails> purchases) {
     SubscriptionTier bestFromBatch = SubscriptionTier.free;
+    var grace = false;
 
     for (final purchase in purchases) {
+      if (purchase is GooglePlayPurchaseDetails) {
+        final raw = purchase.billingClientPurchase.originalJson.toLowerCase();
+        if (raw.contains('grace')) grace = true;
+        if (purchase.billingClientPurchase.pendingPurchaseUpdate != null) {
+          purchasePending = true;
+        }
+      }
       switch (purchase.status) {
         case PurchaseStatus.pending:
           purchasePending = true;
@@ -244,6 +289,7 @@ class SubscriptionService extends ChangeNotifier {
     if (bestFromBatch != SubscriptionTier.free) {
       _invoiceProvider.setSubscriptionTier(bestFromBatch);
     }
+    _syncAdsHeld(pending: purchasePending, grace: grace);
     _completeRestoreBatch();
     notifyListeners();
   }
@@ -262,6 +308,7 @@ class SubscriptionService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(pendingRenewPromptKey, true);
+      await prefs.setBool(winBackEligibleKey, true);
     } catch (_) {}
   }
 

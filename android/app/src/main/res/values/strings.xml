@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_new_invoice">New invoice</string>
+    <string name="shortcut_scan">Scan</string>
+    <string name="shortcut_ai">AI invoice</string>
+    <string name="widget_unpaid_title">Unpaid</string>
+    <string name="widget_description">Unpaid invoices and a button to create one</string>
+</resources>

@@ -114,9 +114,12 @@ class _TemplatePickerSheet extends StatelessWidget {
   }
 
   Future<void> _useTemplate(BuildContext context, InvoiceTemplateId id) async {
+    final already = context.read<InvoiceProvider>().canUseTemplate(id);
     final ok = await confirmProTemplateUse(context, id);
     if (!ok || !context.mounted) return;
-    await showPlacementInterstitial(context, AdPlacement.interstitialUseTemplate);
+    if (already) {
+      await showPlacementInterstitial(context, AdPlacement.interstitialUseTemplate);
+    }
     if (!context.mounted) return;
     onChanged(id);
     Navigator.pop(context);
@@ -126,7 +129,7 @@ class _TemplatePickerSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = context.l10n;
     final theme = Theme.of(context);
-    final tier = context.watch<InvoiceProvider>().subscriptionTier;
+    final tier = context.watch<InvoiceProvider>().featureTier;
     final hasPremiumTemplates = tier.canUsePremiumTemplates;
 
     return ListView(
@@ -298,8 +301,8 @@ class _TemplateGridCard extends StatelessWidget {
                 ),
                 if (template.proOnly)
                   Icon(
-                    context.watch<InvoiceProvider>().subscriptionTier.canUsePremiumTemplates
-                        ? Icons.workspace_premium_rounded
+                    context.watch<InvoiceProvider>().canUseTemplate(template.id)
+                        ? Icons.check_circle_rounded
                         : Icons.lock_rounded,
                     size: 14,
                     color: theme.colorScheme.primary,
@@ -313,8 +316,7 @@ class _TemplateGridCard extends StatelessWidget {
                 onPressed: onUse,
                 style: OutlinedButton.styleFrom(padding: EdgeInsets.zero, textStyle: const TextStyle(fontSize: 11)),
                 child: Text(
-                  template.proOnly &&
-                          !context.watch<InvoiceProvider>().subscriptionTier.canUsePremiumTemplates
+                  template.proOnly && !context.watch<InvoiceProvider>().canUseTemplate(template.id)
                       ? strings.t('watchAdToUse')
                       : strings.useThisTemplate,
                 ),

@@ -1,10 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../models/subscription_tier.dart';
+import '../providers/invoice_provider.dart';
 import 'ad_config.dart';
+import 'ad_manager.dart';
 import 'ad_placement.dart';
 import 'ad_remote_config.dart';
 
@@ -17,21 +19,25 @@ class AdService {
   bool _isShowingFullScreenAd = false;
   bool _interstitialLoading = false;
   bool _appOpenLoading = false;
-  DateTime? _lastAppOpenShown;
-  DateTime? _lastInterstitialShown;
 
   Future<bool>? _interstitialLoadFuture;
   Future<bool>? _appOpenLoadFuture;
   bool _awaitingMediaReturn = false;
   DateTime _suppressForegroundUntil = DateTime.fromMillisecondsSinceEpoch(0);
 
-  static const _minAppOpenInterval = Duration(minutes: 8);
-  static const _minAppOpenIntervalPremium = Duration(minutes: 15);
-  static const _minInterstitialInterval = Duration(seconds: 90);
+  RewardedAd? _rewarded;
+  bool _rewardedLoading = false;
+
+  /// Bumped after [MobileAds.initialize] so on-screen slots can request.
+  final ValueNotifier<int> sdkReady = ValueNotifier<int>(0);
+
+  bool get isSdkReady => sdkReady.value > 0;
 
   Future<void> initialize() async {
     if (!AdConfig.isSupported) return;
     await AdRemoteConfig.instance.load();
+    await AdManager.instance.loadCounters();
+    sdkReady.value++;
   }
 
   /// Camera or gallery is about to cover the app. The next resume shows an app-open ad.
@@ -48,11 +54,19 @@ class AdService {
 
   bool get appOpenReady => _appOpenAd != null;
 
-  /// Interstitials and app-open ads load on demand, so splash does not prefetch them.
+  /// Starts rewarded and interstitial loads in the background.
+  ///
+  /// The bottom banner is requested when its slot is on screen so the
+  /// collapsible overlay can open over the page. This does not wait for a fill.
   Future<void> waitForStartupPreloads({
     required SubscriptionTier tier,
-    Duration timeout = const Duration(seconds: 14),
-  }) async {}
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (timeout < Duration.zero) return;
+    if (InvoiceProvider.adsHeldStatic || tier == SubscriptionTier.pro) return;
+    if (tier.showInterstitialAds) preloadInterstitial();
+    preloadRewarded();
+  }
 
   bool get isShowingFullScreenAd => _isShowingFullScreenAd;
 
@@ -62,42 +76,13 @@ class AdService {
 
   /// Whether an interstitial may be shown (tier, cooldown, not already showing).
   bool shouldAttemptInterstitial(SubscriptionTier tier) {
-    if (!AdConfig.isSupported ||
-        !AdRemoteConfig.instance.adsEnabled ||
-        !tier.showInterstitialAds ||
-        _isShowingFullScreenAd) {
-      return false;
+    if (!AdConfig.isSupported || _isShowingFullScreenAd) return false;
+    if (!tier.showInterstitialAds) return false;
+    final decision = AdManager.instance.decideInterstitial(tier: tier);
+    if (!decision.allow) {
+      debugPrint('Interstitial skipped: ${decision.reason}');
     }
-    final now = DateTime.now();
-    if (_lastInterstitialShown != null &&
-        now.difference(_lastInterstitialShown!) < _minInterstitialInterval) {
-      return false;
-    }
-    return true;
-  }
-
-  /// Loads an interstitial if needed; returns `true` only when [interstitialReady].
-  Future<bool> ensureInterstitialLoaded({Duration timeout = const Duration(seconds: 5)}) async {
-    if (!AdConfig.isSupported) return false;
-    if (_interstitial != null) return true;
-
-    _interstitialLoadFuture ??= _loadInterstitialOnce();
-    try {
-      return await _interstitialLoadFuture!.timeout(
-        timeout,
-        onTimeout: () {
-          debugPrint('Interstitial load timed out');
-          return false;
-        },
-      );
-    } catch (e) {
-      debugPrint('Interstitial load error: $e');
-      return false;
-    } finally {
-      if (_interstitial == null) {
-        _interstitialLoadFuture = null;
-      }
-    }
+    return decision.allow;
   }
 
   Future<bool> _loadInterstitialOnce() async {
@@ -126,6 +111,9 @@ class AdService {
           _interstitialLoading = false;
           debugPrint('Interstitial load failed: $error');
           if (!completer.isCompleted) completer.complete(false);
+          Future<void>.delayed(const Duration(seconds: 20), () {
+            if (_interstitial == null && !_interstitialLoading) preloadInterstitial();
+          });
         },
       ),
     );
@@ -133,8 +121,43 @@ class AdService {
     return completer.future;
   }
 
+  /// Fills the interstitial cache. Showing never waits on a new request.
   void preloadInterstitial() {
-    // On demand: the next show loads a fresh interstitial.
+    if (!AdConfig.isSupported) return;
+    if (_interstitial != null || _interstitialLoading || _interstitialLoadFuture != null) return;
+    if (InvoiceProvider.adsHeldStatic || !_placementWanted(_interstitialPlacements)) return;
+    _interstitialLoadFuture = _loadInterstitialOnce().whenComplete(() {
+      _interstitialLoadFuture = null;
+    });
+  }
+
+  static const _interstitialPlacements = [
+    AdPlacement.interstitialMain,
+    AdPlacement.interstitialUseTemplate,
+    AdPlacement.interstitialOpenInvoice,
+    AdPlacement.interstitialSharePdf,
+    AdPlacement.interstitialPrint,
+    AdPlacement.interstitialPdf,
+    AdPlacement.interstitialCustomInvoice,
+    AdPlacement.interstitialGenerateAi,
+    AdPlacement.interstitialOcrCreate,
+    AdPlacement.interstitialSaveInvoice,
+    AdPlacement.interstitialPreviewBack,
+  ];
+
+  static const _rewardedPlacements = [
+    AdPlacement.rewardedTemplate,
+    AdPlacement.rewardedAiCredit,
+    AdPlacement.rewardedExtraInvoice,
+    AdPlacement.rewardedWatermark,
+  ];
+
+  bool _placementWanted(List<AdPlacement> placements) {
+    final config = AdRemoteConfig.instance;
+    for (final placement in placements) {
+      if (config.isPlacementEnabled(placement)) return true;
+    }
+    return false;
   }
 
   /// Shows a loaded interstitial. Returns whether the ad was presented.
@@ -160,7 +183,7 @@ class AdService {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _isShowingFullScreenAd = false;
-        _lastInterstitialShown = DateTime.now();
+        AdManager.instance.recordInterstitialShown();
         preloadInterstitial();
         if (!shown.isCompleted) shown.complete(true);
       },
@@ -257,6 +280,7 @@ class AdService {
       return;
     }
     if (DateTime.now().isBefore(_suppressForegroundUntil) || _isShowingFullScreenAd) return;
+    if (!AdManager.instance.leftBackgroundLongEnough()) return;
     await showAppOpenOnDemand(
       tier: tier,
       placement: AdPlacement.appOpenForeground,
@@ -269,17 +293,15 @@ class AdService {
     required AdPlacement placement,
     bool ignoreInterval = false,
   }) async {
-    if (!AdConfig.isSupported ||
-        !AdRemoteConfig.instance.isPlacementEnabled(placement) ||
-        !tier.showAppOpenAds ||
-        _isShowingFullScreenAd) {
-      return false;
-    }
-    final now = DateTime.now();
-    final minGap = tier.reducedAppOpenAds ? _minAppOpenIntervalPremium : _minAppOpenInterval;
-    if (!ignoreInterval &&
-        _lastAppOpenShown != null &&
-        now.difference(_lastAppOpenShown!) < minGap) {
+    if (!AdConfig.isSupported || _isShowingFullScreenAd) return false;
+    if (!tier.showAppOpenAds) return false;
+    final decision = AdManager.instance.decideAppOpen(
+      placement: placement,
+      tier: tier,
+      ignoreInterval: ignoreInterval,
+    );
+    if (!decision.allow) {
+      debugPrint('App open ${placement.remoteKey} skipped: ${decision.reason}');
       return false;
     }
     _suppressForegroundUntil = DateTime.now().add(const Duration(seconds: 8));
@@ -296,7 +318,7 @@ class AdService {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _isShowingFullScreenAd = false;
-        _lastAppOpenShown = DateTime.now();
+        AdManager.instance.recordAppOpenShown();
         _suppressForegroundUntil = DateTime.now().add(const Duration(seconds: 3));
         if (!closed.isCompleted) closed.complete(true);
       },
@@ -318,17 +340,11 @@ class AdService {
   }
 
   Future<void> showAppOpenIfAvailable({SubscriptionTier tier = SubscriptionTier.free}) async {
-    if (!AdConfig.isSupported ||
-        !AdRemoteConfig.instance.adsEnabled ||
-        !tier.showAppOpenAds ||
-        _isShowingFullScreenAd) {
-      return;
-    }
-    final now = DateTime.now();
-    final minGap = tier.reducedAppOpenAds ? _minAppOpenIntervalPremium : _minAppOpenInterval;
-    if (_lastAppOpenShown != null && now.difference(_lastAppOpenShown!) < minGap) {
-      return;
-    }
+    final decision = AdManager.instance.decideAppOpen(
+      placement: AdPlacement.appOpenForeground,
+      tier: tier,
+    );
+    if (!AdConfig.isSupported || _isShowingFullScreenAd || !decision.allow) return;
     final ad = _appOpenAd;
     if (ad == null) {
       preloadAppOpen();
@@ -340,7 +356,7 @@ class AdService {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _isShowingFullScreenAd = false;
-        _lastAppOpenShown = DateTime.now();
+        AdManager.instance.recordAppOpenShown();
         preloadAppOpen();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
@@ -357,30 +373,56 @@ class AdService {
     await showAppOpenIfAvailable(tier: tier);
   }
 
-  /// Loads and shows a rewarded ad. True only when the user earns the reward.
-  Future<bool> showRewarded({required String adUnitId}) async {
-    if (!AdConfig.isSupported || _isShowingFullScreenAd) return false;
+  /// Fills the rewarded cache. The reward button only shows an ad that is already loaded.
+  void preloadRewarded() {
+    if (!AdConfig.isSupported || _rewarded != null || _rewardedLoading) return;
+    if (InvoiceProvider.adsHeldStatic || !_placementWanted(_rewardedPlacements)) return;
+    if (!AdManager.instance.canShowRewarded()) return;
 
-    final loaded = Completer<RewardedAd?>();
+    _rewardedLoading = true;
     RewardedAd.load(
-      adUnitId: adUnitId,
+      adUnitId: AdRemoteConfig.instance.rewardedAdUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
-          if (!loaded.isCompleted) loaded.complete(ad);
+          _rewardedLoading = false;
+          _rewarded = ad;
         },
         onAdFailedToLoad: (error) {
+          _rewardedLoading = false;
           debugPrint('Rewarded load failed: $error');
-          if (!loaded.isCompleted) loaded.complete(null);
+          Future<void>.delayed(const Duration(seconds: 20), () {
+            if (_rewarded == null && !_rewardedLoading) preloadRewarded();
+          });
         },
       ),
     );
+  }
 
-    final ad = await loaded.future.timeout(
-      const Duration(seconds: 8),
-      onTimeout: () => null,
-    );
-    if (ad == null) return false;
+  /// Shows the preloaded rewarded ad. True only when the user earns the reward.
+  ///
+  /// A missing ad returns immediately and keeps loading in the background.
+  Future<bool> showRewarded({
+    required String adUnitId,
+    AdPlacement placement = AdPlacement.rewardedTemplate,
+  }) async {
+    if (!AdConfig.isSupported ||
+        !AdRemoteConfig.instance.isPlacementEnabled(placement) ||
+        !AdManager.instance.canShowRewarded() ||
+        _isShowingFullScreenAd) {
+      return false;
+    }
+
+    final ad = _rewarded;
+    if (ad == null || ad.adUnitId != adUnitId) {
+      if (ad != null) {
+        ad.dispose();
+        _rewarded = null;
+      }
+      preloadRewarded();
+      return false;
+    }
+    _rewarded = null;
 
     final finished = Completer<bool>();
     var earned = false;
@@ -389,20 +431,31 @@ class AdService {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _isShowingFullScreenAd = false;
+        preloadRewarded();
         if (!finished.isCompleted) finished.complete(earned);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
         _isShowingFullScreenAd = false;
         debugPrint('Rewarded show failed: $error');
+        preloadRewarded();
         if (!finished.isCompleted) finished.complete(false);
       },
     );
-    await ad.show(
-      onUserEarnedReward: (_, _) {
-        earned = true;
-      },
-    );
-    return finished.future.timeout(const Duration(minutes: 2), onTimeout: () => earned);
+    try {
+      await ad.show(
+        onUserEarnedReward: (_, _) {
+          earned = true;
+        },
+      );
+    } catch (e) {
+      debugPrint('Rewarded show exception: $e');
+      _isShowingFullScreenAd = false;
+      preloadRewarded();
+      return false;
+    }
+    final granted = await finished.future.timeout(const Duration(minutes: 2), onTimeout: () => earned);
+    if (granted) await AdManager.instance.recordRewardedShown();
+    return granted;
   }
 }

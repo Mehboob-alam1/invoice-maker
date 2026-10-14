@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -244,7 +246,11 @@ class _HeaderRow extends StatelessWidget {
     final right = Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        InvoiceText(strings.invoice, style: titleStyle?.copyWith(color: accent), maxLines: 1),
+        InvoiceText(
+          invoice.isEstimate ? strings.estimates : strings.invoice,
+          style: titleStyle?.copyWith(color: accent),
+          maxLines: 1,
+        ),
         InvoiceText(invoice.number, style: TextStyle(fontWeight: FontWeight.w700, fontSize: layout.sp(12)), maxLines: 2, textAlign: TextAlign.end),
         if (invoice.poNumber?.isNotEmpty == true)
           InvoiceText('${strings.poNumber}: ${invoice.poNumber}', style: subStyle, maxLines: 2, textAlign: TextAlign.end),
@@ -254,6 +260,15 @@ class _HeaderRow extends StatelessWidget {
     final left = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (provider.businessLogoPath.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Image.file(
+              File(provider.businessLogoPath),
+              height: 48,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+          ),
         InvoiceText(
           provider.businessName.isEmpty ? strings.defaultBusinessName : provider.businessName,
           style: titleStyle,
@@ -262,6 +277,29 @@ class _HeaderRow extends StatelessWidget {
         if (provider.businessTaxId.isNotEmpty) InvoiceText('${strings.taxId}: ${provider.businessTaxId}', style: subStyle, maxLines: 2),
         if (provider.businessEmail.isNotEmpty) InvoiceText(provider.businessEmail, style: subStyle, maxLines: 2),
         if (provider.businessPhone.isNotEmpty) InvoiceText(provider.businessPhone, style: subStyle, maxLines: 2),
+        if (provider.signaturePath.isNotEmpty || (provider.isPro && provider.stampPath.isNotEmpty))
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                if (provider.signaturePath.isNotEmpty)
+                  Image.file(
+                    File(provider.signaturePath),
+                    height: 36,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                if (provider.isPro && provider.stampPath.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Image.file(
+                      File(provider.stampPath),
+                      height: 36,
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                    ),
+                  ),
+              ],
+            ),
+          ),
       ],
     );
 
@@ -462,9 +500,15 @@ class _TotalsBlock extends StatelessWidget {
     final layout = InvoiceLayoutScale.of(context);
     final rows = <MapEntry<String, String>>[
       MapEntry(strings.subtotal, CurrencyFormat.format(invoice.currency, invoice.subtotal)),
-      if (invoice.taxRate > 0)
+      if (invoice.discountAmount > 0.005)
+        MapEntry(strings.discount, CurrencyFormat.format(invoice.currency, invoice.discountAmount)),
+      if (invoice.taxAmount > 0.005 || invoice.taxRate > 0)
         MapEntry('${strings.tax} (${invoice.taxRate.toStringAsFixed(invoice.taxRate % 1 == 0 ? 0 : 1)}%)',
             CurrencyFormat.format(invoice.currency, invoice.taxAmount)),
+      if (invoice.shipping > 0.005)
+        MapEntry(strings.shipping, CurrencyFormat.format(invoice.currency, invoice.shipping)),
+      if (invoice.deposit > 0.005)
+        MapEntry(strings.deposit, CurrencyFormat.format(invoice.currency, invoice.deposit)),
       MapEntry(strings.grandTotal, CurrencyFormat.format(invoice.currency, invoice.total)),
     ];
     final child = Column(

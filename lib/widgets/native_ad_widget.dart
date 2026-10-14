@@ -1,20 +1,20 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../ads/ad_config.dart';
 import '../ads/ad_remote_config.dart';
+import '../ads/ad_service.dart';
 import '../core/constants/app_colors.dart';
 import '../core/theme/app_theme.dart';
-import '../l10n/app_strings.dart';
+import 'ad_creative_frame.dart';
 
 /// Edge-to-edge bottom native ad (AdMob small template).
 class NativeAdWidget extends StatefulWidget {
   const NativeAdWidget({super.key, this.inline = false, this.large = false});
 
-  /// In-list ad. Hidden until it loads, and shorter than the bottom bar.
+  /// In-list ad. Uses the full small-template height so every asset stays inside the view.
   final bool inline;
 
   /// AdMob medium template, the larger built-in native layout.
@@ -75,13 +75,30 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   bool _loadStarted = false;
   int _loadAttempts = 0;
   static const _maxLoadAttempts = 3;
+  VoidCallback? _sdkListener;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loadStarted) return;
     _loadStarted = true;
-    _loadAd();
+    _loadWhenSdkReady();
+  }
+
+  void _loadWhenSdkReady() {
+    if (AdService.instance.isSdkReady) {
+      _loadAd();
+      return;
+    }
+    void onReady() {
+      if (!AdService.instance.isSdkReady) return;
+      AdService.instance.sdkReady.removeListener(onReady);
+      _sdkListener = null;
+      if (mounted) _loadAd();
+    }
+
+    _sdkListener = onReady;
+    AdService.instance.sdkReady.addListener(onReady);
   }
 
   Future<void> _loadAd() async {
@@ -112,6 +129,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
           });
         },
         onAdFailedToLoad: (ad, error) {
+          debugPrint('Native ad failed: $error');
           ad.dispose();
           if (!mounted) return;
           setState(() => _isAdLoaded = false);
@@ -149,6 +167,8 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
   @override
   void dispose() {
+    final listener = _sdkListener;
+    if (listener != null) AdService.instance.sdkReady.removeListener(listener);
     _nativeAd?.dispose();
     super.dispose();
   }
@@ -165,19 +185,14 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
         child: SizedBox(
           width: layoutWidth,
           height: contentHeight,
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.noScaling,
-            ),
-            child: FittedBox(
-              fit: BoxFit.fitWidth,
-              alignment: Alignment.center,
-              clipBehavior: Clip.hardEdge,
-              child: SizedBox(
-                width: layoutWidth,
-                height: contentHeight,
-                child: AdWidget(ad: ad),
-              ),
+          child: FittedBox(
+            fit: BoxFit.fitWidth,
+            alignment: Alignment.center,
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: layoutWidth,
+              height: contentHeight,
+              child: AdWidget(ad: ad),
             ),
           ),
         ),
@@ -189,10 +204,10 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final showRealAd = _isAdLoaded && _nativeAd != null;
-    if ((widget.inline || widget.large) && !showRealAd) return const SizedBox.shrink();
+    if (!showRealAd) return const SizedBox.shrink();
     final borderColor = theme.colorScheme.primary.withValues(alpha: 0.12);
     final framed = widget.inline || widget.large;
-    final bottomInset = framed ? 0.0 : MediaQuery.paddingOf(context).bottom;
+    final bottomInset = 0.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -200,158 +215,48 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
         final contentH = widget.large
-            ? 350.0
+            ? 250.0
             : widget.inline
-                ? 72.0
+                ? 140.0
                 : NativeAdWidget.contentHeight(context, layoutWidth: layoutWidth);
+        final adView = widget.inline
+            ? SizedBox(
+                width: layoutWidth,
+                height: contentH,
+                child: AdWidget(ad: _nativeAd!),
+              )
+            : _clippedAdView(
+                layoutWidth: layoutWidth,
+                contentHeight: contentH,
+                ad: _nativeAd!,
+              );
 
-        return SizedBox(
+        return AdCreativeFrame(
+          child: SizedBox(
           width: layoutWidth,
           child: Material(
           color: theme.cardColor,
           elevation: 0,
-          borderRadius: framed ? BorderRadius.circular(14) : null,
-          clipBehavior: framed ? Clip.antiAlias : Clip.none,
+          borderRadius: BorderRadius.zero,
+          clipBehavior: widget.inline ? Clip.none : Clip.hardEdge,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (!framed) Divider(height: 1, thickness: 1, color: borderColor),
               RepaintBoundary(
-                child: ClipRect(
-                  clipBehavior: Clip.hardEdge,
-                  child: SizedBox(
-                    width: layoutWidth,
-                    height: contentH,
-                    child: Stack(
-                      clipBehavior: Clip.hardEdge,
-                      fit: StackFit.expand,
-                      children: [
-                        NativeAdPlaceholder(contentHeight: contentH),
-                        if (showRealAd)
-                          _clippedAdView(
-                            layoutWidth: layoutWidth,
-                            contentHeight: contentH,
-                            ad: _nativeAd!,
-                          ),
-                      ],
-                    ),
-                  ),
+                child: SizedBox(
+                  width: layoutWidth,
+                  height: contentH,
+                  child: adView,
                 ),
               ),
               if (bottomInset > 0) SizedBox(height: bottomInset),
             ],
           ),
         ),
+        ),
         );
       },
-    );
-  }
-}
-
-class NativeAdPlaceholder extends StatefulWidget {
-  const NativeAdPlaceholder({super.key, this.contentHeight = NativeAdWidget.minContentHeight});
-
-  final double contentHeight;
-
-  @override
-  State<NativeAdPlaceholder> createState() => _NativeAdPlaceholderState();
-}
-
-class _NativeAdPlaceholderState extends State<NativeAdPlaceholder> with SingleTickerProviderStateMixin {
-  late final AnimationController _shimmer = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _shimmer.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.extension<AppSemanticColors>()?.textMuted;
-    final scheme = theme.colorScheme;
-    final strings = context.l10n;
-    final pulse = Tween<double>(begin: 0.45, end: 0.85).animate(
-      CurvedAnimation(parent: _shimmer, curve: Curves.easeInOut),
-    );
-    final h = widget.contentHeight;
-    final iconSize = math.min(48.0, h - 16).clamp(36.0, 48.0);
-    final vPad = math.max(6.0, (h - iconSize) / 2 - 2).toDouble();
-
-    return AnimatedBuilder(
-      animation: _shimmer,
-      builder: (context, child) {
-        return Opacity(opacity: 0.55 + pulse.value * 0.35, child: child);
-      },
-      child: ColoredBox(
-        color: theme.cardColor,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(12, vPad, 12, vPad),
-          child: Row(
-            children: [
-              Container(
-                width: iconSize,
-                height: iconSize,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      scheme.primary.withValues(alpha: 0.18),
-                      AppColors.primaryDark.withValues(alpha: 0.12),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      height: math.min(10.0, h * 0.12),
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: muted?.withValues(alpha: 0.25) ?? scheme.outlineVariant,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                    SizedBox(height: math.max(4.0, h * 0.05)),
-                    Container(
-                      height: math.min(8.0, h * 0.09),
-                      width: 120,
-                      decoration: BoxDecoration(
-                        color: muted?.withValues(alpha: 0.18) ?? scheme.outlineVariant.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: math.min(64.0, MediaQuery.sizeOf(context).width * 0.18),
-                height: math.min(34.0, h - 12),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  strings.adLabel,
-                  style: TextStyle(color: scheme.primary, fontSize: 9, fontWeight: FontWeight.w700),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

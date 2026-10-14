@@ -35,6 +35,13 @@ class AuthService extends ChangeNotifier {
   bool get isSignedIn => currentUser != null;
 
   Future<void> initialize() async {
+    if (_auth.currentUser == null) {
+      try {
+        await _auth.signInAnonymously();
+      } catch (error) {
+        debugPrint('Anonymous sign-in skipped: $error');
+      }
+    }
     _authSub ??= _auth.authStateChanges().listen(_onAuthUserChanged);
   }
 
@@ -46,6 +53,8 @@ class AuthService extends ChangeNotifier {
   Future<void> _onAuthUserChanged(User? user) async {
     notifyListeners();
     if (user == null) return;
+
+    if (user.isAnonymous) return;
 
     await UserDatabaseService.instance.upsertGoogleAccount(user);
     final account = await UserDatabaseService.instance.fetchAccount(user.uid);
@@ -100,7 +109,20 @@ class AuthService extends ChangeNotifier {
         accessToken: googleAuth.accessToken,
         idToken: idToken,
       );
-      await _auth.signInWithCredential(credential);
+      final current = _auth.currentUser;
+      if (current != null && current.isAnonymous) {
+        try {
+          await current.linkWithCredential(credential);
+        } on FirebaseAuthException catch (error) {
+          if (error.code == 'credential-already-in-use' || error.code == 'email-already-in-use') {
+            await _auth.signInWithCredential(credential);
+          } else {
+            rethrow;
+          }
+        }
+      } else {
+        await _auth.signInWithCredential(credential);
+      }
       signingIn = false;
       notifyListeners();
       return true;

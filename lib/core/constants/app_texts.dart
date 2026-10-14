@@ -181,9 +181,9 @@ class AppTexts {
   static const browseAllTemplates = 'Browse all templates';
   static const chooseTemplate = 'Choose template';
   static const templatesSheetSubtitle =
-      'Preview any design free. Watch a short ad to use one premium template once, or unlock them all with Pro.';
+      'Preview any design free. Watch a short ad to use one premium template for this session, or unlock them all with Pro.';
   static const previewAnyTemplateHint =
-      'Tap preview to see your invoice. A rewarded ad unlocks that template for one use.';
+      'Tap preview to see your invoice. A rewarded ad unlocks that template until you close the app.';
   static const useThisTemplate = 'Use this template';
   static const previewTemplate = 'Preview: {name}';
   static const proTemplateRequired = 'Pro template';
@@ -219,6 +219,98 @@ class AppTexts {
   static const cannotBeUndone = 'This cannot be undone.';
   static const markAsPaid = 'Mark as paid';
   static const markAsUnpaid = 'Mark as unpaid';
+  static const partiallyPaid = 'Partially paid';
+  static const overdueOnly = 'Overdue';
+  static const createEstimate = 'Create estimate';
+  static const estimateSubtitle = 'Quote a job, then turn it into an invoice';
+  static const estimates = 'Estimates';
+  static const estimateDraft = 'Draft';
+  static const estimateSent = 'Sent';
+  static const estimateAccepted = 'Accepted';
+  static const estimateDeclined = 'Declined';
+  static const convertToInvoice = 'Convert to invoice';
+  static const newEstimate = 'New estimate';
+  static const saveEstimate = 'Save estimate';
+  static const noEstimatesYet = 'No estimates yet';
+  static const discount = 'Discount';
+  static const shipping = 'Shipping';
+  static const deposit = 'Deposit';
+  static const taxInclusive = 'Prices include tax';
+  static const taxName = 'Tax name';
+  static const defaultCurrency = 'Default currency';
+  static const itemTax = 'Item tax %';
+  static const percent = 'Percent';
+  static const amount = 'Amount';
+  static const notes = 'Notes';
+  static const monthTokenHint = 'Type {month} in notes. A repeat fills in the month.';
+  static const repeatInvoice = 'Repeat this invoice';
+  static const repeatWeekly = 'Weekly';
+  static const repeatMonthly = 'Monthly';
+  static const repeatCustom = 'Custom';
+  static const repeatEveryDays = 'Every (days)';
+  static const repeatUntil = 'End date';
+  static const repeatStart = 'First repeat';
+  static const serviceFrom = 'Service from';
+  static const serviceTo = 'Service to';
+  static const recurringLimit = 'Free includes one repeating invoice. Go Pro for unlimited.';
+  static const recurringReady = 'Your {period} invoice for {client} is ready';
+  static const unpaidTotal = 'Unpaid';
+  static const overdueAmount = 'Overdue';
+  static const paidThisMonth = 'Paid';
+  static const topClients = 'Top clients';
+  static const exportCsv = 'Export CSV';
+  static const thisMonth = 'This month';
+  static const allTime = 'All time';
+  static const logo = 'Logo';
+  static const signature = 'Signature';
+  static const stamp = 'Stamp';
+  static const stampPro = 'A stamp is included with Pro.';
+  static const clearSignature = 'Clear';
+  static const usePhoto = 'Use photo';
+  static const cropLogo = 'Crop logo';
+  static const recordPayment = 'Record payment';
+  static const amountPaid = 'Amount paid';
+  static const balanceDue = 'Balance due';
+  static const paymentMethod = 'Payment method';
+  static const paymentAmount = 'Amount';
+  static const howToPay = 'How to pay';
+  static const bankName = 'Bank name';
+  static const accountHolder = 'Account name';
+  static const ibanOrAccount = 'IBAN / account number';
+  static const mobileWallet = 'Mobile wallet';
+  static const paymentLink = 'PayPal.me or payment link';
+  static const paymentNote = 'Payment note';
+  static const sendWhatsApp = 'WhatsApp';
+  static const sendEmail = 'Email';
+  static const sendSms = 'SMS';
+  static const pdfExportFailed = 'Could not create the PDF. Try again.';
+  static const inviteFriends = 'Invite friends and earn';
+  static const referralHeadline = 'Share Invoice GO. You both get rewards after their first invoice.';
+  static const copyCode = 'Copy code';
+  static const codeCopied = 'Code copied';
+  static const shareInvite = 'Share';
+  static const haveACode = 'Have a code? Enter it';
+  static const referralCode = 'Referral code (optional)';
+  static const referralProgress = '{qualified} friends rewarded · {pending} waiting';
+  static const referralNextMilestone = 'Next reward at {count} friends';
+  static const referralMilestonesDone = 'You reached every referral milestone.';
+  static const referralRewardsList =
+      'A friend gets 3 AI credits and 1 template token. You get 5 AI credits and 1 template token. 3 friends: 3 days of Pro. 5 friends: 10 AI credits. 10 friends: 30 days of Pro.';
+  static const referralTerms =
+      'Rewards are added after your friend creates their first invoice. Abuse can remove rewards.';
+  static const referralProUntil = 'Pro (referral) until {date}';
+  static const useTemplateToken = 'Use a template token';
+  static const referralCodeSaved =
+      'You and your friend will both get rewards after your first invoice.';
+  static const invoiceReminderBody =
+      'Hi {client}, invoice {number} for {amount} is due {due}. {pay}';
+  static const paymentReminders = 'Payment reminders';
+  static const reminderTime = 'Reminder time';
+  static const reminderMessage = 'Custom message';
+  static const reminderFreeHint =
+      'Free includes a reminder on the due date. Pro adds reminders 3 days before, on the due date, and 3 and 7 days after, plus a custom time and message.';
+  static const reminderProHint =
+      'Reminders go out 3 days before the due date, on the due date, then 3 and 7 days after.';
   static const date = 'Date';
   static const status = 'Status';
   static const invoiceShare = 'Invoice {number}';
@@ -256,6 +348,7 @@ class AppTexts {
   static const playStoreSubscriptionHint =
       'Product IDs must match Google Play → Monetize → Subscriptions. Prices load live from the store.';
   static const privacyPolicy = 'Privacy Policy';
+  static const privacyOptions = 'Privacy options';
   static const privacyBody =
       'Open Settings → Privacy Policy for the full text on permissions, sign-in, ads, subscriptions, and AI features.';
   static const restorePurchases = 'Restore Purchases';
@@ -307,7 +400,7 @@ class AppTexts {
   static const deleteAccountConfirm = 'Delete permanently';
   static const deleteAccountSuccess = 'Your account and data were deleted.';
   static const deleteAccountSignInRequired =
-      'Sign in with Google to delete your cloud account from the app, or use the web deletion form.';
+      'Sign in with Google to delete your cloud account from the app.';
   static const deleteAccountUidHint = 'Your user ID (for web requests): {uid}';
   static const googleUser = 'Google user';
   static const signInToSyncSubscription =
@@ -339,7 +432,10 @@ class AppTexts {
   static const unlimitedInvoicesToday = 'Unlimited invoices today on Pro.';
   static const dailyInvoiceLimitTitle = 'Daily invoice limit reached';
   static const dailyInvoiceLimitBody =
-      'Your plan allows {limit} invoices per day. Upgrade for more, or try again tomorrow.';
+      'Your plan allows {limit} invoices per day. Watch an ad for one more today, upgrade, or try again tomorrow.';
+  static const watchAdForInvoice = 'Watch an ad for 1 more invoice today';
+  static const watchAdForAiCredit = 'Watch an ad for 1 more AI invoice';
+  static const goPro = 'Go Pro';
   static const invoicesRemainingToday =
       '{remaining} of {limit} invoices left today ({created} created). Resets at midnight.';
   static const currentPlanLabel = 'Current plan: {plan}';
@@ -381,18 +477,29 @@ class AppTexts {
       'You have {remaining} tokens left this month (limit {limit}). This request needs about {needed} tokens. Upgrade to Pro for a higher monthly allowance, or wait until next month.';
   static const premiumTemplateRequired = 'Premium template';
   static const premiumTemplateRequiredBody =
-      'Unlock every template for good with Pro. A rewarded ad unlocks only the template you pick, and only once.';
-  static const templateUnlockTitle = 'Use this template once';
+      'Unlock every template with Pro, or watch one ad to use this template until you close the app.';
+  static const templateUnlockTitle = 'Unlock this template';
   static const templateUnlockOnceBody =
-      'Watch a short ad to use this template on one invoice. It locks again after you use it. Pro unlocks every template, with no ads.';
+      'Watch one short ad to unlock this template for this session. It locks again the next time you open the app.';
+  static const templateUnlockedTitle = 'Template unlocked';
+  static const templateUnlockedBody =
+      'You can use this template until you close the app. Next time you open it, the template is locked again.';
   static const unlockAllTemplates = 'Unlock all with Pro';
-  static const watchAdToUse = 'Watch ad to use';
-  static const rewardedAdNotReady = 'The ad is not ready yet. Try again, or unlock every template with Pro.';
+  static const watchAdToUse = 'Watch ad to unlock';
+  static const templateUnlockedBadge = 'Unlocked';
+  static const businessNameRequired = 'Enter your business name to continue.';
+  static const rewardedAdNotReadyTitle = 'Ad did not load';
+  static const rewardedAdNotReady =
+      'This template is still locked. Watch the ad to unlock it, then try again.';
   static const notificationPromptTitle = 'Stay on top of invoices';
   static const notificationPromptBody =
       'Invoice GO can remind you when an invoice is due and when a payment comes in. You can turn this off anytime in Settings.';
   static const notificationPromptAllow = 'Allow notifications';
   static const notificationPromptLater = 'Not now';
+  static const updateReadyTitle = 'Update ready';
+  static const updateReadyBody =
+      'A new version of Invoice GO is downloaded. Restart the app to finish the update.';
+  static const restartApp = 'Restart';
   static const customizeProOnly = 'Template customization is a Pro feature.';
   static const homeQuotaBanner = '{remaining}/{limit} invoices left today';
   static const premiumUpsellTitle = 'Unlock Premium';
@@ -416,6 +523,75 @@ class AppTexts {
   static const paywallFeatureTemplates = 'All invoice templates';
   static const paywallFeatureInvoices = 'Higher invoice limits';
   static const paywallAlreadyActive = 'Premium is active on this account.';
+  static const paywallHeadlineAi = 'Unlock unlimited AI invoices';
+  static const paywallHeadlineTemplates = 'Unlock all templates';
+  static const paywallHeadlineInvoices = 'Unlimited invoices';
+  static const paywallBestValue = 'Best value';
+  static const paywallThenWeekly = 'Then {price}/week. Cancel anytime in Google Play.';
+  static const paywallWinBackTitle = 'Welcome back';
+  static const paywallWinBackBody = 'Your weekly plan can include a one-time discount from Google Play.';
+  static const checklistTitle = 'Get started';
+  static const checklistLogo = 'Add your logo';
+  static const checklistPayment = 'Add payment details';
+  static const checklistInvoice = 'Create your first invoice';
+  static const checklistShare = 'Send an invoice';
+  static const checklistInvite = 'Invite a friend';
+  static const checklistReward = 'You earned 2 free AI credits';
+  static const streakSent = '{count} invoices sent this week';
+  static const milestoneToast = '{count} invoices created. You earned 1 free AI credit.';
+  static const shareInviteSnack = 'Love the app? Invite a friend and get free AI credits';
+  static const watermarkFooter = 'Created with Invoice GO';
+  static const removeWatermark = 'Remove footer';
+  static const watermarkRemoved = 'Footer removed from this invoice';
+  static const channelReminders = 'Reminders';
+  static const channelAccount = 'Account';
+  static const channelTips = 'Tips';
+  static const channelPromos = 'Promos';
+  static const notificationChannelsHint = 'Choose which notifications Invoice GO can send.';
+  static const weeklySummaryBody = 'You have {n} unpaid invoices ({amount}). Send reminders?';
+  static const draftAbandonedTitle = 'Finish your invoice';
+  static const draftAbandonedBody = 'You left an invoice unsaved. It is still on this phone.';
+  static const firstInvoiceNudgeBody = 'Create your first invoice. It only takes a minute.';
+  static const winBackBody = 'We saved an extra AI credit for you. Open Invoice GO to claim it.';
+  static const winBackGranted = 'You received 1 free AI credit';
+  static const referralNudgeBody = 'Invite a friend and you both get free AI credits.';
+  static const announcementDismiss = 'Dismiss';
+  static const backupTitle = 'Backup';
+  static const backupNow = 'Back up now';
+  static const backupRestore = 'Restore';
+  static const backupLast = 'Last backup: {when}';
+  static const backupNever = 'Never';
+  static const backupDone = 'Backup saved to your account.';
+  static const backupRestored = 'Backup restored on this phone.';
+  static const backupFreeHint = 'Free includes a manual backup. Pro also backs up every week on Wi-Fi.';
+  static const backupProHint = 'Pro backs up automatically once a week when you are on Wi-Fi.';
+  static const backupSignInTitle = 'Sign in to back up';
+  static const backupSignInBody = 'Google sign-in keeps this backup on your account so you can restore it on a new phone.';
+  static const backupSaving = 'Saving your backup…';
+  static const backupRestoring = 'Restoring your backup…';
+  static const backupEmpty = 'Nothing to back up yet. Add your business or an invoice first.';
+  static const backupOffline = 'No internet connection. Check your network and try again.';
+  static const backupFailed = 'Could not save the backup. Try again in a moment.';
+  static const backupSignInAgain = 'Could not reach your account. Sign in with Google again, then retry.';
+  static const backupSignInCancelled = 'Google sign-in was cancelled.';
+  static const backupNone = 'No backup is saved on this account yet.';
+  static const backupDamaged = 'This backup could not be read. Your phone was not changed.';
+  static const backupRestoreTitle = 'Restore this backup?';
+  static const backupRestoreBody =
+      'This replaces the invoices, clients, and business details on this phone with the saved backup.';
+  static const backupRestoreFailed = 'Could not restore the backup. Your phone was not changed.';
+  static const backupImagesSkipped =
+      'Backup saved. A large logo, signature, or stamp stayed on this phone only.';
+  static const backupTooLarge = 'This backup is too large to save. Remove a few invoices and try again.';
+  static const duplicateInvoice = 'Duplicate invoice';
+  static const createAgain = 'Create again';
+  static const shareImage = 'Share image';
+  static const writeReminder = 'Write a reminder';
+  static const politeReminder = 'Hello {client}, this is a reminder that invoice {number} for {amount} is due on {due}. Please let me know if you need anything. Thank you.';
+  static const improveDescription = 'Improve description';
+  static const suggestDueNotes = 'Suggest due date and notes';
+  static const suggestedNotes = 'Payment is due within 14 days. Thank you for your business.';
+  static const voiceInvoice = 'Speak the invoice';
 
   static const trialDisclaimer =
       'After 3 day free trial then Rs 3,350.00 will start. Cancel anytime 24 hour before renewal.';
@@ -642,6 +818,92 @@ class AppTexts {
     'cannotBeUndone': cannotBeUndone,
     'markAsPaid': markAsPaid,
     'markAsUnpaid': markAsUnpaid,
+    'partiallyPaid': partiallyPaid,
+    'overdueOnly': overdueOnly,
+    'createEstimate': createEstimate,
+    'estimateSubtitle': estimateSubtitle,
+    'estimates': estimates,
+    'estimateDraft': estimateDraft,
+    'estimateSent': estimateSent,
+    'estimateAccepted': estimateAccepted,
+    'estimateDeclined': estimateDeclined,
+    'convertToInvoice': convertToInvoice,
+    'newEstimate': newEstimate,
+    'saveEstimate': saveEstimate,
+    'noEstimatesYet': noEstimatesYet,
+    'discount': discount,
+    'shipping': shipping,
+    'deposit': deposit,
+    'taxInclusive': taxInclusive,
+    'taxName': taxName,
+    'defaultCurrency': defaultCurrency,
+    'itemTax': itemTax,
+    'percent': percent,
+    'amount': amount,
+    'notes': notes,
+    'monthTokenHint': monthTokenHint,
+    'repeatInvoice': repeatInvoice,
+    'repeatWeekly': repeatWeekly,
+    'repeatMonthly': repeatMonthly,
+    'repeatCustom': repeatCustom,
+    'repeatEveryDays': repeatEveryDays,
+    'repeatUntil': repeatUntil,
+    'repeatStart': repeatStart,
+    'serviceFrom': serviceFrom,
+    'serviceTo': serviceTo,
+    'recurringLimit': recurringLimit,
+    'recurringReady': recurringReady,
+    'unpaidTotal': unpaidTotal,
+    'overdueAmount': overdueAmount,
+    'paidThisMonth': paidThisMonth,
+    'topClients': topClients,
+    'exportCsv': exportCsv,
+    'thisMonth': thisMonth,
+    'allTime': allTime,
+    'logo': logo,
+    'signature': signature,
+    'stamp': stamp,
+    'stampPro': stampPro,
+    'clearSignature': clearSignature,
+    'usePhoto': usePhoto,
+    'cropLogo': cropLogo,
+    'recordPayment': recordPayment,
+    'amountPaid': amountPaid,
+    'balanceDue': balanceDue,
+    'paymentMethod': paymentMethod,
+    'paymentAmount': paymentAmount,
+    'howToPay': howToPay,
+    'bankName': bankName,
+    'accountHolder': accountHolder,
+    'ibanOrAccount': ibanOrAccount,
+    'mobileWallet': mobileWallet,
+    'paymentLink': paymentLink,
+    'paymentNote': paymentNote,
+    'sendWhatsApp': sendWhatsApp,
+    'sendEmail': sendEmail,
+    'sendSms': sendSms,
+    'pdfExportFailed': pdfExportFailed,
+    'inviteFriends': inviteFriends,
+    'referralHeadline': referralHeadline,
+    'copyCode': copyCode,
+    'codeCopied': codeCopied,
+    'shareInvite': shareInvite,
+    'haveACode': haveACode,
+    'referralCode': referralCode,
+    'referralProgress': referralProgress,
+    'referralNextMilestone': referralNextMilestone,
+    'referralMilestonesDone': referralMilestonesDone,
+    'referralRewardsList': referralRewardsList,
+    'referralTerms': referralTerms,
+    'referralProUntil': referralProUntil,
+    'useTemplateToken': useTemplateToken,
+    'referralCodeSaved': referralCodeSaved,
+    'invoiceReminderBody': invoiceReminderBody,
+    'paymentReminders': paymentReminders,
+    'reminderTime': reminderTime,
+    'reminderMessage': reminderMessage,
+    'reminderFreeHint': reminderFreeHint,
+    'reminderProHint': reminderProHint,
     'date': date,
     'status': status,
     'invoiceShare': invoiceShare,
@@ -674,6 +936,7 @@ class AppTexts {
     'subscriptionExpiredBody': subscriptionExpiredBody,
     'playStoreSubscriptionHint': playStoreSubscriptionHint,
     'privacyPolicy': privacyPolicy,
+    'privacyOptions': privacyOptions,
     'privacyBody': privacyBody,
     'restorePurchases': restorePurchases,
     'proAlreadyActive': proAlreadyActive,
@@ -744,6 +1007,9 @@ class AppTexts {
     'unlimitedInvoicesToday': unlimitedInvoicesToday,
     'dailyInvoiceLimitTitle': dailyInvoiceLimitTitle,
     'dailyInvoiceLimitBody': dailyInvoiceLimitBody,
+    'watchAdForInvoice': watchAdForInvoice,
+    'watchAdForAiCredit': watchAdForAiCredit,
+    'goPro': goPro,
     'invoicesRemainingToday': invoicesRemainingToday,
     'currentPlanLabel': currentPlanLabel,
     'pricePerMonthTemplate': pricePerMonthTemplate,
@@ -781,13 +1047,21 @@ class AppTexts {
     'premiumTemplateRequiredBody': premiumTemplateRequiredBody,
     'templateUnlockTitle': templateUnlockTitle,
     'templateUnlockOnceBody': templateUnlockOnceBody,
+    'templateUnlockedTitle': templateUnlockedTitle,
+    'templateUnlockedBody': templateUnlockedBody,
+    'templateUnlockedBadge': templateUnlockedBadge,
+    'businessNameRequired': businessNameRequired,
     'unlockAllTemplates': unlockAllTemplates,
     'watchAdToUse': watchAdToUse,
+    'rewardedAdNotReadyTitle': rewardedAdNotReadyTitle,
     'rewardedAdNotReady': rewardedAdNotReady,
     'notificationPromptTitle': notificationPromptTitle,
     'notificationPromptBody': notificationPromptBody,
     'notificationPromptAllow': notificationPromptAllow,
     'notificationPromptLater': notificationPromptLater,
+    'updateReadyTitle': updateReadyTitle,
+    'updateReadyBody': updateReadyBody,
+    'restartApp': restartApp,
     'customizeProOnly': customizeProOnly,
     'homeQuotaBanner': homeQuotaBanner,
     'premiumUpsellTitle': premiumUpsellTitle,
@@ -810,6 +1084,73 @@ class AppTexts {
     'paywallFeatureTemplates': paywallFeatureTemplates,
     'paywallFeatureInvoices': paywallFeatureInvoices,
     'paywallAlreadyActive': paywallAlreadyActive,
+    'paywallHeadlineAi': paywallHeadlineAi,
+    'paywallHeadlineTemplates': paywallHeadlineTemplates,
+    'paywallHeadlineInvoices': paywallHeadlineInvoices,
+    'paywallBestValue': paywallBestValue,
+    'paywallThenWeekly': paywallThenWeekly,
+    'paywallWinBackTitle': paywallWinBackTitle,
+    'paywallWinBackBody': paywallWinBackBody,
+    'checklistTitle': checklistTitle,
+    'checklistLogo': checklistLogo,
+    'checklistPayment': checklistPayment,
+    'checklistInvoice': checklistInvoice,
+    'checklistShare': checklistShare,
+    'checklistInvite': checklistInvite,
+    'checklistReward': checklistReward,
+    'streakSent': streakSent,
+    'milestoneToast': milestoneToast,
+    'shareInviteSnack': shareInviteSnack,
+    'watermarkFooter': watermarkFooter,
+    'removeWatermark': removeWatermark,
+    'watermarkRemoved': watermarkRemoved,
+    'channelReminders': channelReminders,
+    'channelAccount': channelAccount,
+    'channelTips': channelTips,
+    'channelPromos': channelPromos,
+    'notificationChannelsHint': notificationChannelsHint,
+    'weeklySummaryBody': weeklySummaryBody,
+    'draftAbandonedTitle': draftAbandonedTitle,
+    'draftAbandonedBody': draftAbandonedBody,
+    'firstInvoiceNudgeBody': firstInvoiceNudgeBody,
+    'winBackBody': winBackBody,
+    'winBackGranted': winBackGranted,
+    'referralNudgeBody': referralNudgeBody,
+    'announcementDismiss': announcementDismiss,
+    'backupTitle': backupTitle,
+    'backupNow': backupNow,
+    'backupRestore': backupRestore,
+    'backupLast': backupLast,
+    'backupNever': backupNever,
+    'backupDone': backupDone,
+    'backupRestored': backupRestored,
+    'backupFreeHint': backupFreeHint,
+    'backupProHint': backupProHint,
+    'backupSignInTitle': backupSignInTitle,
+    'backupSignInBody': backupSignInBody,
+    'backupSaving': backupSaving,
+    'backupRestoring': backupRestoring,
+    'backupEmpty': backupEmpty,
+    'backupOffline': backupOffline,
+    'backupFailed': backupFailed,
+    'backupSignInAgain': backupSignInAgain,
+    'backupSignInCancelled': backupSignInCancelled,
+    'backupNone': backupNone,
+    'backupDamaged': backupDamaged,
+    'backupRestoreTitle': backupRestoreTitle,
+    'backupRestoreBody': backupRestoreBody,
+    'backupRestoreFailed': backupRestoreFailed,
+    'backupImagesSkipped': backupImagesSkipped,
+    'backupTooLarge': backupTooLarge,
+    'duplicateInvoice': duplicateInvoice,
+    'createAgain': createAgain,
+    'shareImage': shareImage,
+    'writeReminder': writeReminder,
+    'politeReminder': politeReminder,
+    'improveDescription': improveDescription,
+    'suggestDueNotes': suggestDueNotes,
+    'suggestedNotes': suggestedNotes,
+    'voiceInvoice': voiceInvoice,
     'trialDisclaimer': trialDisclaimer,
     'noClientsYet': noClientsYet,
     'noItemsYet': noItemsYet,

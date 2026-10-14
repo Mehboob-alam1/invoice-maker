@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../ads/ad_remote_config.dart';
 import 'notification_permission_platform.dart';
@@ -18,6 +19,7 @@ class PushNotificationService {
   String? _token;
   bool _listenersAttached = false;
   bool _permissionRequestInFlight = false;
+  static const _topicsKey = 'fcm_topics';
 
   String? get token => _token;
 
@@ -145,6 +147,40 @@ class PushNotificationService {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
     await UserDatabaseService.instance.saveFcmToken(uid: uid, token: token);
+  }
+
+  /// Language, plan, and channel topics. Console campaigns can target these.
+  Future<void> syncTopics({
+    required String languageCode,
+    required bool pro,
+    required Set<String> channels,
+  }) async {
+    if (!Platform.isAndroid) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final previous = prefs.getStringList(_topicsKey) ?? const <String>[];
+      if (!AdRemoteConfig.instance.pushNotificationsEnabled) {
+        for (final topic in previous) {
+          await _messaging.unsubscribeFromTopic(topic);
+        }
+        await prefs.remove(_topicsKey);
+        return;
+      }
+      final next = <String>{
+        'lang_${languageCode.toLowerCase()}',
+        pro ? 'plan_pro' : 'plan_free',
+        for (final channel in channels) 'ch_$channel',
+      };
+      for (final topic in previous) {
+        if (!next.contains(topic)) await _messaging.unsubscribeFromTopic(topic);
+      }
+      for (final topic in next) {
+        if (!previous.contains(topic)) await _messaging.subscribeToTopic(topic);
+      }
+      await prefs.setStringList(_topicsKey, next.toList());
+    } catch (e) {
+      debugPrint('PushNotificationService.syncTopics: $e');
+    }
   }
 }
 

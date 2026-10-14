@@ -12,18 +12,18 @@ import '../../widgets/blue_screen.dart';
 import '../clients/clients_screen.dart';
 import '../items/items_screen.dart';
 import '../onboarding/language_screen.dart';
+import '../../ads/ad_consent.dart';
 import '../../ads/ad_flows.dart';
 import '../../ads/ad_placement.dart';
-import '../../widgets/placement_banner_ad.dart';
 import '../../widgets/placement_native_ad.dart';
-import '../../services/push_notification_service.dart';
+import '../../services/backup_service.dart';
+import '../../services/engagement_service.dart';
+import '../../services/invoice_reminder_service.dart';
+import '../referral/referral_screen.dart';
 import '../../services/subscription_service.dart';
 import '../../ads/ad_action.dart';
 import '../../navigation/app_page_route.dart';
 import '../../screens/legal/legal_document_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import '../../core/constants/app_config.dart';
 import '../../widgets/account_deletion_flow.dart';
 import '../../widgets/rate_feedback_sheet.dart';
 import '../../widgets/settings_profile_header.dart';
@@ -54,52 +54,62 @@ class SettingsScreen extends StatelessWidget {
     final header = const SettingsProfileHeader();
 
     final planBanner = _PlanBanner(
-      tier: provider.subscriptionTier,
+      tier: provider.featureTier,
       remaining: provider.invoicesRemainingToday,
       limit: provider.dailyInvoiceLimit,
-      onTap: () => openPaywall(context),
+      note: provider.referralProActive && provider.referralProUntil != null
+          ? strings.referralProUntil(
+              '${provider.referralProUntil!.year}-${provider.referralProUntil!.month}-${provider.referralProUntil!.day}',
+            )
+          : null,
+      onTap: () {
+        if (provider.referralProActive) {
+          Navigator.push(context, appPageRoute(const ReferralScreen()));
+          return;
+        }
+        openPaywall(context);
+      },
     );
 
     final workSection = _SettingsSection(items: [
       _SettingsItem(
         icon: Icons.groups_rounded,
         label: strings.client,
-        onTap: () => runWithInterstitial(context, () {
+        onTap: () => runSettingsNavigation(context, () {
           Navigator.push(context, appPageRoute(const ClientsScreen()));
         }),
       ),
       _SettingsItem(
         icon: Icons.menu_book_rounded,
         label: strings.catalogItems,
-        onTap: () => runWithInterstitial(context, () {
+        onTap: () => runSettingsNavigation(context, () {
           Navigator.push(context, appPageRoute(const ItemsScreen()));
         }),
+      ),
+      _SettingsItem(
+        icon: Icons.cloud_upload_outlined,
+        label: strings.backupTitle,
+        onTap: () => BackupService.instance.showSheet(context),
       ),
     ]);
 
     final generalItems = <_SettingsItem>[
+      _SettingsItem(
+        icon: Icons.card_giftcard_rounded,
+        label: strings.inviteFriends,
+        onTap: () => Navigator.push(context, appPageRoute(const ReferralScreen())),
+      ),
       if (Platform.isAndroid)
         _SettingsItem(
           icon: Icons.notifications_outlined,
           label: strings.notifications,
-          onTap: () async {
-            final before =
-                await PushNotificationService.instance.notificationsAreEnabled();
-            await PushNotificationService.instance.requestPermissionFromSettings();
-            if (!context.mounted) return;
-            final after =
-                await PushNotificationService.instance.notificationsAreEnabled();
-            if (after) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(strings.notificationsEnabledSnack)),
-              );
-            } else if (!before) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(strings.notificationsOpenSettingsSnack)),
-              );
-            }
-          },
+          onTap: () => EngagementService.instance.showChannelSettings(context),
         ),
+      _SettingsItem(
+        icon: Icons.alarm_rounded,
+        label: strings.paymentReminders,
+        onTap: () => _editPaymentReminders(context),
+      ),
       _SettingsItem(
         icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
         label: strings.darkMode,
@@ -112,7 +122,7 @@ class SettingsScreen extends StatelessWidget {
       _SettingsItem(
         icon: Icons.public_rounded,
         label: strings.language,
-        onTap: () => runWithInterstitial(context, () {
+        onTap: () => runSettingsNavigation(context, () {
           Navigator.push(context, appPageRoute(const LanguageScreen()));
         }),
       ),
@@ -129,18 +139,16 @@ class SettingsScreen extends StatelessWidget {
           appPageRoute(const LegalDocumentScreen(kind: LegalDocumentKind.privacy)),
         ),
       ),
+      if (AdConsent.instance.privacyOptionsRequired)
+        _SettingsItem(
+          icon: Icons.tune_rounded,
+          label: strings.privacyOptions,
+          onTap: () => AdConsent.instance.showPrivacyOptions(),
+        ),
       _SettingsItem(
         icon: Icons.delete_forever_outlined,
         label: strings.deleteAccount,
         onTap: () => showDeleteAccountDialog(context),
-      ),
-      _SettingsItem(
-        icon: Icons.language_outlined,
-        label: strings.deleteAccountWeb,
-        onTap: () async {
-          final uri = Uri.parse(AppConfig.accountDeletionWebUrl);
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        },
       ),
       _SettingsItem(
         icon: Icons.lock_open_rounded,
@@ -215,8 +223,6 @@ class SettingsScreen extends StatelessWidget {
                           planBanner,
                           const SizedBox(height: 16),
                           workSection,
-                          const SizedBox(height: 16),
-                          const PlacementBannerAd(placement: AdPlacement.bannerSettings),
                         ],
                       ),
                     ),
@@ -234,8 +240,6 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     workSection,
                     const SizedBox(height: 16),
-                    const PlacementBannerAd(placement: AdPlacement.bannerSettings),
-                    const SizedBox(height: 8),
                     generalSection,
                   ],
                 );
@@ -274,6 +278,7 @@ class _PlanBanner extends StatelessWidget {
   final SubscriptionTier tier;
   final int? remaining;
   final int limit;
+  final String? note;
   final VoidCallback onTap;
 
   const _PlanBanner({
@@ -281,6 +286,7 @@ class _PlanBanner extends StatelessWidget {
     required this.remaining,
     required this.limit,
     required this.onTap,
+    this.note,
   });
 
   @override
@@ -326,6 +332,15 @@ class _PlanBanner extends StatelessWidget {
                         color: isPro ? cs.onPrimary.withValues(alpha: 0.85) : cs.onSurfaceVariant,
                       ),
                     ),
+                    if (note != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        note!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: isPro ? cs.onPrimary.withValues(alpha: 0.85) : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -403,5 +418,64 @@ class _SettingsSection extends StatelessWidget {
         );
       }),
     );
+  }
+}
+
+Future<void> _editPaymentReminders(BuildContext context) async {
+  final provider = context.read<InvoiceProvider>();
+  final current = await InvoiceReminderService.instance.settings();
+  if (!context.mounted) return;
+  var time = TimeOfDay(hour: current.hour, minute: current.minute);
+  final messageCtrl = TextEditingController(text: current.message);
+  final pro = provider.isPro;
+  final saved = await showDialog<bool>(
+    context: context,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final l10n = ctx.l10n;
+          return AlertDialog(
+            title: Text(l10n.paymentReminders),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(pro ? l10n.reminderProHint : l10n.reminderFreeHint),
+                if (pro) ...[
+                  const SizedBox(height: 12),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final picked = await showTimePicker(context: ctx, initialTime: time);
+                      if (picked != null) setLocal(() => time = picked);
+                    },
+                    icon: const Icon(Icons.schedule_rounded),
+                    label: Text('${l10n.reminderTime}: ${time.format(ctx)}'),
+                  ),
+                  TextField(
+                    controller: messageCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(labelText: l10n.reminderMessage),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
+              if (pro) FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.save)),
+            ],
+          );
+        },
+      );
+    },
+  );
+  final message = messageCtrl.text;
+  messageCtrl.dispose();
+  if (saved == true) {
+    await InvoiceReminderService.instance.saveSettings(
+      hour: time.hour,
+      minute: time.minute,
+      message: message,
+    );
+    await InvoiceReminderService.instance.sync(provider.invoices, pro: true);
   }
 }
