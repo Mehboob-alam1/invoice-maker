@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../ads/ad_remote_config.dart';
 import '../l10n/app_strings.dart';
+import 'app_dialog.dart';
 import '../providers/invoice_provider.dart';
 import '../services/push_notification_service.dart';
 
@@ -33,19 +34,19 @@ class NotificationPrompt {
       context: context,
       builder: (ctx) {
         final strings = ctx.l10n;
-        final theme = Theme.of(ctx);
-        return AlertDialog(
-          icon: Icon(Icons.notifications_active_rounded, color: theme.colorScheme.primary, size: 36),
-          title: Text(strings.t('notificationPromptTitle')),
-          content: Text(strings.t('notificationPromptBody')),
+        return AppDialog(
+          icon: Icons.notifications_active_rounded,
+          title: strings.t('notificationPromptTitle'),
+          message: strings.t('notificationPromptBody'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(strings.t('notificationPromptLater')),
-            ),
-            FilledButton(
+            AppDialogAction(
+              label: strings.t('notificationPromptAllow'),
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text(strings.t('notificationPromptAllow')),
+            ),
+            AppDialogAction(
+              label: strings.t('notificationPromptLater'),
+              style: AppDialogActionStyle.text,
+              onPressed: () => Navigator.pop(ctx, false),
             ),
           ],
         );

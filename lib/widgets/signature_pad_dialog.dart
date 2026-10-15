@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../l10n/app_strings.dart';
+import 'app_dialog.dart';
 
 /// Draws a signature and returns PNG bytes.
 class SignaturePadDialog extends StatefulWidget {
@@ -43,19 +44,19 @@ class _SignaturePadDialogState extends State<SignaturePadDialog> {
   @override
   Widget build(BuildContext context) {
     final strings = context.l10n;
-    return AlertDialog(
-      title: Text(strings.signature),
-      content: SizedBox(
-        width: 320,
+    return AppDialog(
+      icon: Icons.draw_rounded,
+      title: strings.signature,
+      body: SizedBox(
         height: 180,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             child: GestureDetector(
               onPanStart: (details) => _start(details.localPosition),
               onPanUpdate: (details) => _move(details.localPosition),
@@ -71,12 +72,20 @@ class _SignaturePadDialogState extends State<SignaturePadDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => setState(_lines.clear),
-          child: Text(strings.clearSignature),
+        AppDialogAction(
+          label: strings.save,
+          onPressed: _lines.isEmpty ? null : _save,
         ),
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(strings.cancel)),
-        FilledButton(onPressed: _lines.isEmpty ? null : _save, child: Text(strings.save)),
+        AppDialogAction(
+          label: strings.clearSignature,
+          style: AppDialogActionStyle.outlined,
+          onPressed: () => setState(_lines.clear),
+        ),
+        AppDialogAction(
+          label: strings.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(context),
+        ),
       ],
     );
   }

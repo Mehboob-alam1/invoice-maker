@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../l10n/app_strings.dart';
 import '../../providers/invoice_provider.dart';
 import '../../services/referral_service.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/blue_screen.dart';
 
 class ReferralScreen extends StatefulWidget {
@@ -54,23 +55,10 @@ class _ReferralScreenState extends State<ReferralScreen> {
   }
 
   Future<void> _enterCode() async {
-    final controller = TextEditingController();
     final code = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(ctx.l10n.haveACode),
-        content: TextField(
-          controller: controller,
-          textCapitalization: TextCapitalization.characters,
-          decoration: InputDecoration(labelText: ctx.l10n.referralCode),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.l10n.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text), child: Text(ctx.l10n.save)),
-        ],
-      ),
+      builder: (ctx) => const _ReferralCodeDialog(),
     );
-    controller.dispose();
     if (code == null || code.trim().isEmpty || !mounted) return;
     setState(() => _busy = true);
     final message = await ReferralService.instance.applyCode(code, source: 'manual');
@@ -146,13 +134,59 @@ Future<void> showReferralCelebration(BuildContext context) async {
   if (notice == null || !context.mounted) return;
   await showDialog<void>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      icon: const Icon(Icons.celebration_rounded),
-      title: Text(notice.title),
-      content: Text(notice.body),
+    builder: (ctx) => AppDialog(
+      icon: Icons.celebration_rounded,
+      tone: AppDialogTone.success,
+      title: notice.title,
+      message: notice.body,
       actions: [
-        FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.l10n.ok)),
+        AppDialogAction(label: ctx.l10n.ok, onPressed: () => Navigator.pop(ctx)),
       ],
     ),
   );
+}
+
+class _ReferralCodeDialog extends StatefulWidget {
+  const _ReferralCodeDialog();
+
+  @override
+  State<_ReferralCodeDialog> createState() => _ReferralCodeDialogState();
+}
+
+class _ReferralCodeDialogState extends State<_ReferralCodeDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = context.l10n;
+    return AppDialog(
+      icon: Icons.confirmation_number_rounded,
+      title: strings.haveACode,
+      body: TextField(
+        controller: _controller,
+        textCapitalization: TextCapitalization.characters,
+        decoration: InputDecoration(
+          labelText: strings.referralCode,
+          prefixIcon: const Icon(Icons.tag_rounded),
+        ),
+      ),
+      actions: [
+        AppDialogAction(
+          label: strings.save,
+          onPressed: () => Navigator.pop(context, _controller.text),
+        ),
+        AppDialogAction(
+          label: strings.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    );
+  }
 }

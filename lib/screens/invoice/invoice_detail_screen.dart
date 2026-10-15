@@ -24,6 +24,7 @@ import '../../services/invoice_pdf_export.dart';
 import '../../services/invoice_send.dart';
 import '../../widgets/blue_screen.dart';
 import '../../widgets/ui/app_page_shell.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/invoice_document_view.dart';
 import '../../screens/invoice/new_invoice_screen.dart';
 import 'invoice_preview_edit_screen.dart';
@@ -145,17 +146,23 @@ class InvoiceDetailScreen extends StatelessWidget {
     if (text == null || !context.mounted) return;
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(ctx.l10n.writeReminder),
-        content: Text(text),
+      builder: (ctx) => AppDialog(
+        icon: Icons.edit_note_rounded,
+        title: ctx.l10n.writeReminder,
+        message: text,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.l10n.close)),
-          FilledButton(
+          AppDialogAction(
+            label: ctx.l10n.send,
+            icon: Icons.send_rounded,
             onPressed: () {
               Navigator.pop(ctx);
               SharePlus.instance.share(ShareParams(text: text));
             },
-            child: Text(ctx.l10n.send),
+          ),
+          AppDialogAction(
+            label: ctx.l10n.close,
+            style: AppDialogActionStyle.text,
+            onPressed: () => Navigator.pop(ctx),
           ),
         ],
       ),
@@ -325,26 +332,21 @@ class InvoiceDetailScreen extends StatelessWidget {
                       context: context,
                       builder: (ctx) {
                         final l10n = ctx.l10n;
-                        final dialogScheme = Theme.of(ctx).colorScheme;
-                        return AlertDialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                          title: Text(
-                            l10n.deleteInvoice,
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          content: Text(l10n.cannotBeUndone),
+                        return AppDialog(
+                          icon: Icons.delete_outline_rounded,
+                          tone: AppDialogTone.danger,
+                          title: l10n.deleteInvoice,
+                          message: l10n.cannotBeUndone,
                           actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: Text(l10n.cancel),
-                            ),
-                            FilledButton(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: dialogScheme.error,
-                                foregroundColor: dialogScheme.onError,
-                              ),
+                            AppDialogAction(
+                              label: l10n.delete,
+                              destructive: true,
                               onPressed: () => Navigator.pop(ctx, true),
-                              child: Text(l10n.delete),
+                            ),
+                            AppDialogAction(
+                              label: l10n.cancel,
+                              style: AppDialogActionStyle.text,
+                              onPressed: () => Navigator.pop(ctx, false),
                             ),
                           ],
                         );
@@ -427,53 +429,63 @@ class InvoiceDetailScreen extends StatelessWidget {
                                         ],
                                       ),
                                     ],
-                                    const SizedBox(height: 14),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        ActionChip(
-                                          avatar: const Icon(Icons.chat_outlined, size: 18),
-                                          label: Text(strings.sendWhatsApp),
-                                          onPressed: () => InvoiceSend.sharePdfWithMessage(context, invoice),
+                                    const SizedBox(height: 16),
+                                    _SendPanel(
+                                      scheme: scheme,
+                                      title: strings.send,
+                                      tiles: [
+                                        _SendTile(
+                                          label: strings.sendWhatsApp,
+                                          icon: Icons.chat_rounded,
+                                          color: const Color(0xFF25D366),
+                                          onTap: () => InvoiceSend.sharePdfWithMessage(
+                                            context,
+                                            invoice,
+                                            withMessage: false,
+                                          ),
                                         ),
-                                        ActionChip(
-                                          avatar: const Icon(Icons.email_outlined, size: 18),
-                                          label: Text(strings.sendEmail),
-                                          onPressed: () => InvoiceSend.sharePdfWithMessage(context, invoice),
+                                        _SendTile(
+                                          label: strings.sendEmail,
+                                          icon: Icons.mail_rounded,
+                                          color: const Color(0xFF2563EB),
+                                          onTap: () => InvoiceSend.sharePdfWithMessage(context, invoice),
                                         ),
-                                        ActionChip(
-                                          avatar: const Icon(Icons.sms_outlined, size: 18),
-                                          label: Text(strings.sendSms),
-                                          onPressed: () => InvoiceSend.sms(context, invoice),
+                                        _SendTile(
+                                          label: strings.sendSms,
+                                          icon: Icons.sms_rounded,
+                                          color: const Color(0xFF7C3AED),
+                                          onTap: () => InvoiceSend.sms(context, invoice),
                                         ),
-                                        ActionChip(
-                                          avatar: const Icon(Icons.image_outlined, size: 18),
-                                          label: Text(strings.shareImage),
-                                          onPressed: () => InvoiceSend.shareImage(context, invoice),
+                                        _SendTile(
+                                          label: strings.shareImage,
+                                          icon: Icons.image_rounded,
+                                          color: const Color(0xFFD97706),
+                                          onTap: () => InvoiceSend.shareImage(context, invoice),
                                         ),
-                                        ActionChip(
-                                          avatar: const Icon(Icons.copy_rounded, size: 18),
-                                          label: Text(strings.duplicateInvoice),
-                                          onPressed: () => _duplicate(context, invoice),
+                                      ],
+                                      more: [
+                                        _MoreAction(
+                                          label: strings.duplicateInvoice,
+                                          icon: Icons.copy_rounded,
+                                          onTap: () => _duplicate(context, invoice),
                                         ),
-                                        ActionChip(
-                                          avatar: const Icon(Icons.replay_rounded, size: 18),
-                                          label: Text(strings.createAgain),
-                                          onPressed: () => _createAgain(context, invoice),
+                                        _MoreAction(
+                                          label: strings.createAgain,
+                                          icon: Icons.replay_rounded,
+                                          onTap: () => _createAgain(context, invoice),
                                         ),
-                                        ActionChip(
-                                          avatar: const Icon(Icons.auto_awesome_outlined, size: 18),
-                                          label: Text(strings.writeReminder),
-                                          onPressed: () => _writeReminder(context, invoice),
+                                        _MoreAction(
+                                          label: strings.writeReminder,
+                                          icon: Icons.auto_awesome_rounded,
+                                          onTap: () => _writeReminder(context, invoice),
                                         ),
                                         if (!provider.isPro &&
                                             RemoteConfigRepository.instance.watermarkFooterFree &&
                                             !provider.watermarkRemovedIds.contains(invoice.id))
-                                          ActionChip(
-                                            avatar: const Icon(Icons.visibility_off_outlined, size: 18),
-                                            label: Text(strings.removeWatermark),
-                                            onPressed: () => _removeWatermark(context, invoice),
+                                          _MoreAction(
+                                            label: strings.removeWatermark,
+                                            icon: Icons.visibility_off_rounded,
+                                            onTap: () => _removeWatermark(context, invoice),
                                           ),
                                       ],
                                     ),
@@ -670,49 +682,211 @@ class _RecordPaymentDialogState extends State<_RecordPaymentDialog> {
     );
   }
 
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _paidOn,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _paidOn = picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return AlertDialog(
-      title: Text(l10n.recordPayment),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _amount,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(labelText: l10n.paymentAmount),
+    final scheme = Theme.of(context).colorScheme;
+    return AppDialog(
+      icon: Icons.payments_rounded,
+      tone: AppDialogTone.success,
+      title: l10n.recordPayment,
+      body: Column(
+        children: [
+          TextField(
+            controller: _amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: l10n.paymentAmount,
+              prefixIcon: const Icon(Icons.payments_outlined),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _method,
-              decoration: InputDecoration(labelText: l10n.paymentMethod),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _method,
+            decoration: InputDecoration(
+              labelText: l10n.paymentMethod,
+              prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
             ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _paidOn,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (picked != null) setState(() => _paidOn = picked);
-                },
-                icon: const Icon(Icons.event_outlined),
-                label: Text(DateFormat.yMMMd().format(_paidOn)),
+          ),
+          const SizedBox(height: 12),
+          Material(
+            color: scheme.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              onTap: _pickDate,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month_rounded, color: scheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        DateFormat.yMMMEd().format(_paidOn),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+                  ],
+                ),
               ),
             ),
+          ),
+        ],
+      ),
+      actions: [
+        AppDialogAction(label: l10n.save, onPressed: _save),
+        AppDialogAction(
+          label: l10n.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    );
+  }
+}
+
+class _SendTile {
+  const _SendTile({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+class _MoreAction {
+  const _MoreAction({required this.label, required this.icon, required this.onTap});
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+}
+
+class _SendPanel extends StatelessWidget {
+  const _SendPanel({
+    required this.scheme,
+    required this.title,
+    required this.tiles,
+    required this.more,
+  });
+
+  final ColorScheme scheme;
+  final String title;
+  final List<_SendTile> tiles;
+  final List<_MoreAction> more;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.45)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                for (final tile in tiles)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: _SendButton(tile: tile),
+                    ),
+                  ),
+              ],
+            ),
+            if (more.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final action in more)
+                    TextButton.icon(
+                      onPressed: action.onTap,
+                      icon: Icon(action.icon, size: 18),
+                      label: Text(action.label),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        foregroundColor: scheme.onSurface,
+                        textStyle: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
-        FilledButton(onPressed: _save, child: Text(l10n.save)),
-      ],
+    );
+  }
+}
+
+class _SendButton extends StatelessWidget {
+  const _SendButton({required this.tile});
+
+  final _SendTile tile;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: tile.color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: tile.onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          child: Column(
+            children: [
+              Icon(tile.icon, color: tile.color, size: 26),
+              const SizedBox(height: 6),
+              Text(
+                tile.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

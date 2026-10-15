@@ -8,6 +8,7 @@ import '../../l10n/app_strings.dart';
 import '../../models/subscription_tier.dart';
 import '../../providers/invoice_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/app_dialog.dart';
 import '../../widgets/blue_screen.dart';
 import '../clients/clients_screen.dart';
 import '../items/items_screen.dart';
@@ -434,34 +435,60 @@ Future<void> _editPaymentReminders(BuildContext context) async {
       return StatefulBuilder(
         builder: (ctx, setLocal) {
           final l10n = ctx.l10n;
-          return AlertDialog(
-            title: Text(l10n.paymentReminders),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(pro ? l10n.reminderProHint : l10n.reminderFreeHint),
-                if (pro) ...[
-                  const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: () async {
-                      final picked = await showTimePicker(context: ctx, initialTime: time);
-                      if (picked != null) setLocal(() => time = picked);
-                    },
-                    icon: const Icon(Icons.schedule_rounded),
-                    label: Text('${l10n.reminderTime}: ${time.format(ctx)}'),
-                  ),
-                  TextField(
-                    controller: messageCtrl,
-                    maxLines: 3,
-                    decoration: InputDecoration(labelText: l10n.reminderMessage),
-                  ),
-                ],
-              ],
-            ),
+          final scheme = Theme.of(ctx).colorScheme;
+          return AppDialog(
+            icon: Icons.schedule_rounded,
+            title: l10n.paymentReminders,
+            message: pro ? l10n.reminderProHint : l10n.reminderFreeHint,
+            body: pro
+                ? Column(
+                    children: [
+                      Material(
+                        color: scheme.primary.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () async {
+                            final picked = await showTimePicker(context: ctx, initialTime: time);
+                            if (picked != null) setLocal(() => time = picked);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                            child: Row(
+                              children: [
+                                Icon(Icons.schedule_rounded, color: scheme.primary),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '${l10n.reminderTime}: ${time.format(ctx)}',
+                                    style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: messageCtrl,
+                        maxLines: 3,
+                        decoration: InputDecoration(labelText: l10n.reminderMessage),
+                      ),
+                    ],
+                  )
+                : null,
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
-              if (pro) FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.save)),
+              if (pro)
+                AppDialogAction(label: l10n.save, onPressed: () => Navigator.pop(ctx, true)),
+              AppDialogAction(
+                label: l10n.cancel,
+                style: AppDialogActionStyle.text,
+                onPressed: () => Navigator.pop(ctx, false),
+              ),
             ],
           );
         },
@@ -469,7 +496,7 @@ Future<void> _editPaymentReminders(BuildContext context) async {
     },
   );
   final message = messageCtrl.text;
-  messageCtrl.dispose();
+  WidgetsBinding.instance.addPostFrameCallback((_) => messageCtrl.dispose());
   if (saved == true) {
     await InvoiceReminderService.instance.saveSettings(
       hour: time.hour,

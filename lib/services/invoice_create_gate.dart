@@ -7,6 +7,7 @@ import '../ads/ad_remote_config.dart';
 import '../ads/ad_service.dart';
 import '../l10n/app_strings.dart';
 import '../ads/ad_flows.dart';
+import '../widgets/app_dialog.dart';
 import '../services/paywall_analytics.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
@@ -20,19 +21,28 @@ Future<bool> ensureInvoiceQuotaOrPrompt(BuildContext context) async {
       _rewardedPlacementOn(AdPlacement.rewardedExtraInvoice);
   final choice = await showDialog<_CapChoice>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(strings.dailyInvoiceLimitTitle),
-      content: Text(strings.dailyInvoiceLimitBody(provider.dailyInvoiceLimit)),
+    builder: (ctx) => AppDialog(
+      icon: Icons.receipt_long_rounded,
+      tone: AppDialogTone.warning,
+      title: strings.dailyInvoiceLimitTitle,
+      message: strings.dailyInvoiceLimitBody(provider.dailyInvoiceLimit),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.cancel)),
-        if (watchOn)
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
-            child: Text(strings.watchAdForInvoice),
-          ),
-        FilledButton(
+        AppDialogAction(
+          label: watchOn ? strings.goPro : strings.viewPlans,
+          icon: Icons.workspace_premium_rounded,
           onPressed: () => Navigator.pop(ctx, _CapChoice.upgrade),
-          child: Text(watchOn ? strings.goPro : strings.viewPlans),
+        ),
+        if (watchOn)
+          AppDialogAction(
+            label: strings.watchAdForInvoice,
+            icon: Icons.play_circle_outline_rounded,
+            style: AppDialogActionStyle.outlined,
+            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
+          ),
+        AppDialogAction(
+          label: strings.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(ctx),
         ),
       ],
     ),
@@ -58,23 +68,30 @@ Future<bool> ensurePaidAiAccessOrPrompt(BuildContext context) async {
   final watchOn = isFree && _rewardedPlacementOn(AdPlacement.rewardedAiCredit);
   final choice = await showDialog<_CapChoice>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(isFree ? strings.aiMonthlyLimitTitle : strings.aiPaidRequiredTitle),
-      content: Text(
-        isFree
-            ? strings.aiFreeCreditsUsedBody(provider.monthlyAiCredits)
-            : strings.aiPaidRequiredBody,
-      ),
+    builder: (ctx) => AppDialog(
+      icon: Icons.auto_awesome_rounded,
+      tone: AppDialogTone.warning,
+      title: isFree ? strings.aiMonthlyLimitTitle : strings.aiPaidRequiredTitle,
+      message: isFree
+          ? strings.aiFreeCreditsUsedBody(provider.monthlyAiCredits)
+          : strings.aiPaidRequiredBody,
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.cancel)),
-        if (watchOn)
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
-            child: Text(strings.watchAdForAiCredit),
-          ),
-        FilledButton(
+        AppDialogAction(
+          label: watchOn ? strings.goPro : strings.viewPlans,
+          icon: Icons.workspace_premium_rounded,
           onPressed: () => Navigator.pop(ctx, _CapChoice.upgrade),
-          child: Text(watchOn ? strings.goPro : strings.viewPlans),
+        ),
+        if (watchOn)
+          AppDialogAction(
+            label: strings.watchAdForAiCredit,
+            icon: Icons.play_circle_outline_rounded,
+            style: AppDialogActionStyle.outlined,
+            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
+          ),
+        AppDialogAction(
+          label: strings.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(ctx),
         ),
       ],
     ),
@@ -101,10 +118,14 @@ Future<bool> ensureAiGenerationAllowed(BuildContext context, {required String in
   if (inputText.trim().length > maxChars) {
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.aiInputTooLongTitle),
-        content: Text(strings.aiInputTooLongBody(maxChars, provider.maxAiTokensPerRequest)),
-        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.ok))],
+      builder: (ctx) => AppDialog(
+        icon: Icons.short_text_rounded,
+        tone: AppDialogTone.warning,
+        title: strings.aiInputTooLongTitle,
+        message: strings.aiInputTooLongBody(maxChars, provider.maxAiTokensPerRequest),
+        actions: [
+          AppDialogAction(label: strings.ok, onPressed: () => Navigator.pop(ctx)),
+        ],
       ),
     );
     return false;
@@ -117,25 +138,32 @@ Future<bool> ensureAiGenerationAllowed(BuildContext context, {required String in
       _rewardedPlacementOn(AdPlacement.rewardedAiCredit);
   final choice = await showDialog<_CapChoice>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(strings.aiMonthlyLimitTitle),
-      content: Text(
-        strings.aiMonthlyLimitBody(
-          provider.aiTokensRemainingThisMonth,
-          provider.monthlyAiTokenLimit,
-          estimated,
-        ),
+    builder: (ctx) => AppDialog(
+      icon: Icons.auto_awesome_rounded,
+      tone: AppDialogTone.warning,
+      title: strings.aiMonthlyLimitTitle,
+      message: strings.aiMonthlyLimitBody(
+        provider.aiTokensRemainingThisMonth,
+        provider.monthlyAiTokenLimit,
+        estimated,
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.cancel)),
-        if (watchOn)
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
-            child: Text(strings.watchAdForAiCredit),
-          ),
-        FilledButton(
+        AppDialogAction(
+          label: watchOn ? strings.goPro : strings.viewPlans,
+          icon: Icons.workspace_premium_rounded,
           onPressed: () => Navigator.pop(ctx, _CapChoice.upgrade),
-          child: Text(watchOn ? strings.goPro : strings.viewPlans),
+        ),
+        if (watchOn)
+          AppDialogAction(
+            label: strings.watchAdForAiCredit,
+            icon: Icons.play_circle_outline_rounded,
+            style: AppDialogActionStyle.outlined,
+            onPressed: () => Navigator.pop(ctx, _CapChoice.watch),
+          ),
+        AppDialogAction(
+          label: strings.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(ctx),
         ),
       ],
     ),
@@ -168,11 +196,13 @@ Future<bool> _watchRewarded(BuildContext context, AdPlacement placement) async {
   final strings = AppStrings.read(context);
   await showDialog<void>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(strings.t('rewardedAdNotReadyTitle')),
-      content: Text(strings.t('rewardedAdNotReady')),
+    builder: (ctx) => AppDialog(
+      icon: Icons.hourglass_empty_rounded,
+      tone: AppDialogTone.warning,
+      title: strings.t('rewardedAdNotReadyTitle'),
+      message: strings.t('rewardedAdNotReady'),
       actions: [
-        FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(strings.ok)),
+        AppDialogAction(label: strings.ok, onPressed: () => Navigator.pop(ctx)),
       ],
     ),
   );

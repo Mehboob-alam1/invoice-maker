@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -74,15 +75,36 @@ class BlueWhiteCorporateInvoiceTemplate extends StatelessWidget {
                   right: 22 * s,
                   child: CustomPaint(size: Size(56 * s, 56 * s), painter: _PinwheelPainter()),
                 ),
+                if (provider.businessLogoPath.isNotEmpty)
+                  Positioned(
+                    left: pad,
+                    top: 18 * s,
+                    child: SizedBox(
+                      width: 72 * s,
+                      height: 40 * s,
+                      child: Image.file(
+                        File(provider.businessLogoPath),
+                        fit: BoxFit.contain,
+                        alignment: Alignment.centerLeft,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
                 Positioned(
                   left: pad,
+                  right: 80 * s,
                   bottom: 48 * s,
-                  child: Text(
-                    strings.invoice.toUpperCase(),
-                    style: GoogleFonts.poppins(
-                      fontSize: 44 * s,
-                      fontWeight: FontWeight.w800,
-                      color: kCorpNavy,
+                  child: FittedBox(
+                    alignment: Alignment.centerLeft,
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      strings.invoice.toUpperCase(),
+                      maxLines: 1,
+                      style: GoogleFonts.poppins(
+                        fontSize: 44 * s,
+                        fontWeight: FontWeight.w800,
+                        color: kCorpNavy,
+                      ),
                     ),
                   ),
                 ),
@@ -173,7 +195,6 @@ class BlueWhiteCorporateInvoiceTemplate extends StatelessWidget {
                 ),
                 SizedBox(height: 16 * s),
                 InvoiceBrandImages(
-                  logoPath: provider.businessLogoPath,
                   signaturePath: provider.signaturePath,
                   stampPath: provider.stampPath,
                   showStamp: provider.isPro,
@@ -343,11 +364,11 @@ class _ItemsTable extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Expanded(flex: 4, child: Text(strings.description.toUpperCase(), style: headerStyle)),
-              Expanded(flex: 1, child: Text(strings.quantity.toUpperCase(), textAlign: TextAlign.center, style: headerStyle)),
-              Expanded(flex: 2, child: Text(strings.itemUnitLabel.toUpperCase(), textAlign: TextAlign.center, style: headerStyle)),
-              Expanded(flex: 2, child: Text(strings.unitPrice.toUpperCase(), textAlign: TextAlign.center, style: headerStyle)),
-              Expanded(flex: 2, child: Text(strings.lineTotal.toUpperCase(), textAlign: TextAlign.right, style: headerStyle)),
+              Expanded(flex: 4, child: Text(strings.description.toUpperCase(), maxLines: 2, overflow: TextOverflow.ellipsis, style: headerStyle)),
+              Expanded(flex: 1, child: Text(strings.quantity.toUpperCase(), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: headerStyle)),
+              Expanded(flex: 2, child: Text(strings.itemUnitLabel.toUpperCase(), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: headerStyle)),
+              Expanded(flex: 2, child: Text(strings.unitPrice.toUpperCase(), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: headerStyle)),
+              Expanded(flex: 2, child: Text(strings.lineTotal.toUpperCase(), textAlign: TextAlign.right, maxLines: 2, overflow: TextOverflow.ellipsis, style: headerStyle)),
             ],
           ),
         ),
@@ -359,11 +380,11 @@ class _ItemsTable extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Expanded(flex: 4, child: Text(item.description, style: cellStyle)),
-                Expanded(flex: 1, child: Text('${item.quantity}', textAlign: TextAlign.center, style: cellStyle)),
-                Expanded(flex: 2, child: Text(unitFor(item.notes), textAlign: TextAlign.center, style: cellStyle)),
-                Expanded(flex: 2, child: Text(money(item.unitCost), textAlign: TextAlign.center, style: cellStyle)),
-                Expanded(flex: 2, child: Text(money(item.total), textAlign: TextAlign.right, style: cellStyle)),
+                Expanded(flex: 4, child: Text(item.description, maxLines: 3, overflow: TextOverflow.ellipsis, style: cellStyle)),
+                Expanded(flex: 1, child: Text('${item.quantity}', textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: cellStyle)),
+                Expanded(flex: 2, child: Text(unitFor(item.notes), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: cellStyle)),
+                Expanded(flex: 2, child: Text(money(item.unitCost), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: cellStyle)),
+                Expanded(flex: 2, child: Text(money(item.total), textAlign: TextAlign.right, maxLines: 1, overflow: TextOverflow.ellipsis, style: cellStyle)),
               ],
             ),
           ),

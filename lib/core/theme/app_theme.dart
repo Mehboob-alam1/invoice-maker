@@ -84,8 +84,25 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: card,
+        surfaceTintColor: Colors.transparent,
+        elevation: 16,
+        shadowColor: Colors.black.withValues(alpha: 0.16),
+        barrierColor: Colors.black.withValues(alpha: 0.45),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        alignment: Alignment.center,
+        iconColor: scheme.primary,
+        titleTextStyle: baseTextTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.4,
+          color: isDark ? scheme.onSurface : BlueColors.navy,
+        ),
+        contentTextStyle: baseTextTheme.bodyMedium?.copyWith(
+          height: 1.45,
+          color: textMuted,
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: card,

@@ -185,24 +185,24 @@ class _TemplateChoiceDialog extends StatelessWidget {
     final muted = theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.72);
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 36, vertical: 24),
       backgroundColor: scheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 12),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: iconColors,
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
                     color: iconColors.first.withValues(alpha: 0.32),
@@ -211,13 +211,13 @@ class _TemplateChoiceDialog extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(icon, color: Colors.white, size: 34),
+              child: Icon(icon, color: Colors.white, size: 22),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge?.copyWith(
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,
               ),
@@ -228,18 +228,20 @@ class _TemplateChoiceDialog extends StatelessWidget {
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(height: 1.45, color: muted),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
             if (primaryLabel != null)
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 42,
                 child: FilledButton.icon(
                   onPressed: () => Navigator.pop(context, primaryValue),
                   icon: Icon(primaryIcon ?? Icons.play_circle_fill_rounded),
                   label: Text(primaryLabel!),
                   style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    minimumSize: const Size.fromHeight(42),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
                 ),
               ),
@@ -247,14 +249,16 @@ class _TemplateChoiceDialog extends StatelessWidget {
             if (tokenLabel != null)
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 42,
                 child: OutlinedButton.icon(
                   onPressed: () => Navigator.pop(context, 'token'),
                   icon: const Icon(Icons.confirmation_number_outlined),
                   label: Text(tokenLabel!),
                   style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                    minimumSize: const Size.fromHeight(42),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
                 ),
               ),
@@ -262,15 +266,17 @@ class _TemplateChoiceDialog extends StatelessWidget {
             if (secondaryLabel != null)
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 42,
                 child: primaryLabel == null
                     ? FilledButton.icon(
                         onPressed: () => Navigator.pop(context, secondaryValue),
                         icon: Icon(secondaryIcon ?? Icons.check_rounded),
                         label: Text(secondaryLabel!),
                         style: FilledButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                          minimumSize: const Size.fromHeight(42),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                         ),
                       )
                     : OutlinedButton.icon(
@@ -278,8 +284,10 @@ class _TemplateChoiceDialog extends StatelessWidget {
                         icon: Icon(secondaryIcon ?? Icons.workspace_premium_rounded),
                         label: Text(secondaryLabel!),
                         style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                          minimumSize: const Size.fromHeight(42),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                         ),
                       ),
               ),

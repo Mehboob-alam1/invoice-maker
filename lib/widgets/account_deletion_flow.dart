@@ -5,6 +5,7 @@ import '../l10n/app_strings.dart';
 import '../providers/invoice_provider.dart';
 import '../services/account_deletion_service.dart';
 import '../services/auth_service.dart';
+import 'app_dialog.dart';
 
 Future<void> showDeleteAccountDialog(BuildContext context) async {
   final strings = context.l10n;
@@ -13,14 +14,19 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
     if (!context.mounted) return;
     final go = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.deleteAccountTitle),
-        content: Text(strings.deleteAccountSignInRequired),
+      builder: (ctx) => AppDialog(
+        icon: Icons.login_rounded,
+        title: strings.deleteAccountTitle,
+        message: strings.deleteAccountSignInRequired,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
-          FilledButton(
+          AppDialogAction(
+            label: strings.signInWithGoogle,
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(strings.signInWithGoogle),
+          ),
+          AppDialogAction(
+            label: strings.cancel,
+            style: AppDialogActionStyle.text,
+            onPressed: () => Navigator.pop(ctx, false),
           ),
         ],
       ),
@@ -40,31 +46,30 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
   final uid = auth.currentUser?.uid ?? '';
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(strings.deleteAccountTitle),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(strings.deleteAccountBody),
-          if (uid.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
+    builder: (ctx) => AppDialog(
+      icon: Icons.person_off_rounded,
+      tone: AppDialogTone.danger,
+      title: strings.deleteAccountTitle,
+      message: strings.deleteAccountBody,
+      body: uid.isEmpty
+          ? null
+          : Text(
               strings.deleteAccountUidHint(uid),
-              style: Theme.of(ctx).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+              style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+              ),
             ),
-          ],
-        ],
-      ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(ctx).colorScheme.error,
-            foregroundColor: Theme.of(ctx).colorScheme.onError,
-          ),
+        AppDialogAction(
+          label: strings.deleteAccountConfirm,
+          destructive: true,
           onPressed: () => Navigator.pop(ctx, true),
-          child: Text(strings.deleteAccountConfirm),
+        ),
+        AppDialogAction(
+          label: strings.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(ctx, false),
         ),
       ],
     ),
@@ -75,10 +80,24 @@ Future<void> showDeleteAccountDialog(BuildContext context) async {
   showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => const PopScope(
-      canPop: false,
-      child: Center(child: CircularProgressIndicator()),
-    ),
+    builder: (ctx) {
+      final scheme = Theme.of(ctx).colorScheme;
+      return PopScope(
+        canPop: false,
+        child: Center(
+          child: Material(
+            color: scheme.surface,
+            elevation: 8,
+            shadowColor: Colors.black26,
+            borderRadius: BorderRadius.circular(28),
+            child: const Padding(
+              padding: EdgeInsets.all(28),
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+          ),
+        ),
+      );
+    },
   );
 
   final provider = context.read<InvoiceProvider>();

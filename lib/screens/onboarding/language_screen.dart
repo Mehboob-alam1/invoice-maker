@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:circle_flags/circle_flags.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -344,7 +343,7 @@ class _LanguageTile extends StatelessWidget {
                       color: cs.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: CircleFlag(language.countryCode, size: 32),
+                    child: Text(language.flag, style: const TextStyle(fontSize: 26, height: 1)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

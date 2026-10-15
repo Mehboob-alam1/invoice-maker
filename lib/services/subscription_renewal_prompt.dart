@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_strings.dart';
+import '../widgets/app_dialog.dart';
 import '../navigation/app_page_route.dart';
 import '../screens/subscription/subscription_plans_screen.dart';
 import 'subscription_service.dart';
@@ -19,13 +20,20 @@ class SubscriptionRenewalPrompt {
     final strings = context.l10n;
     final renew = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.workspace_premium_rounded),
-        title: Text(strings.subscriptionExpiredTitle),
-        content: Text(strings.subscriptionExpiredBody),
+      builder: (ctx) => AppDialog(
+        icon: Icons.workspace_premium_rounded,
+        title: strings.subscriptionExpiredTitle,
+        message: strings.subscriptionExpiredBody,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.notNow)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(strings.viewPlans)),
+          AppDialogAction(
+            label: strings.viewPlans,
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+          AppDialogAction(
+            label: strings.notNow,
+            style: AppDialogActionStyle.text,
+            onPressed: () => Navigator.pop(ctx, false),
+          ),
         ],
       ),
     );

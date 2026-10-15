@@ -581,6 +581,7 @@ class InvoicePdfService {
           child: pw.Image(
             pw.MemoryImage(Uint8List.fromList(bytes)),
             height: 48,
+            width: 90,
             fit: pw.BoxFit.contain,
           ),
         ),
@@ -606,29 +607,26 @@ class InvoicePdfService {
   }
 
   static pw.Widget? _brandImages(DigitalInvoice invoice) {
-    pw.Widget? image(List<int>? bytes, String label) {
+    pw.Widget? slot(List<int>? bytes) {
       if (bytes == null || bytes.isEmpty) return null;
-      return pw.Padding(
-        padding: const pw.EdgeInsets.only(right: 16),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Image(
-              pw.MemoryImage(Uint8List.fromList(bytes)),
-              height: 42,
-              width: 90,
-              fit: pw.BoxFit.contain,
-            ),
-            pw.Text(label, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
-          ],
+      return pw.Expanded(
+        child: pw.Container(
+          height: 48,
+          alignment: pw.Alignment.centerLeft,
+          child: pw.Image(
+            pw.MemoryImage(Uint8List.fromList(bytes)),
+            height: 48,
+            width: 110,
+            fit: pw.BoxFit.contain,
+          ),
         ),
       );
     }
 
     final marks = [
-      image(invoice.logoBytes, 'Logo'),
-      image(invoice.signatureBytes, 'Signature'),
-      image(invoice.stampBytes, 'Stamp'),
+      slot(invoice.logoBytes),
+      slot(invoice.signatureBytes),
+      slot(invoice.stampBytes),
     ].whereType<pw.Widget>().toList();
     if (marks.isEmpty) return null;
     return pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.end, children: marks);
@@ -866,6 +864,10 @@ class InvoicePdfService {
                       ],
                     ),
                     pw.Spacer(),
+                    if (invoice.notes.isNotEmpty) ...[
+                      pw.Text(invoice.notes, style: const pw.TextStyle(fontSize: 9, color: _muted)),
+                      pw.SizedBox(height: 8),
+                    ],
                     ..._brandBlock(invoice),
                     pw.Row(
                       crossAxisAlignment: pw.CrossAxisAlignment.end,
@@ -1176,6 +1178,10 @@ class InvoicePdfService {
               ),
             ),
             ..._paymentBlock(invoice, money),
+            if (invoice.notes.isNotEmpty) ...[
+              pw.SizedBox(height: 10),
+              pw.Text(invoice.notes, style: const pw.TextStyle(fontSize: 9)),
+            ],
             if (invoice.termsAndConditions.isNotEmpty) ...[
               pw.SizedBox(height: 14),
               pw.Text('TERMS AND CONDITIONS:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
@@ -1290,6 +1296,10 @@ class InvoicePdfService {
                 ),
               ],
             ),
+            if (invoice.notes.isNotEmpty) ...[
+              pw.SizedBox(height: 10),
+              pw.Text(invoice.notes, style: const pw.TextStyle(fontSize: 9)),
+            ],
             if (invoice.termsAndConditions.isNotEmpty) ...[
               pw.SizedBox(height: 12),
               pw.Text('Terms & Conditions', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),

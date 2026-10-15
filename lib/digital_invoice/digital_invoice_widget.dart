@@ -62,7 +62,6 @@ class DigitalInvoiceWidget extends StatelessWidget {
                 ],
                 SizedBox(height: layout.sp(18)),
                 InvoiceBrandImages(
-                  logoBytes: invoice.logoBytes,
                   signatureBytes: invoice.signatureBytes,
                   stampBytes: invoice.stampBytes,
                   showStamp: invoice.stampBytes != null && invoice.stampBytes!.isNotEmpty,
@@ -108,6 +107,10 @@ class _GradientHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (invoice.logoBytes != null && invoice.logoBytes!.isNotEmpty) ...[
+            InvoiceBrandImages(logoBytes: invoice.logoBytes, logoHeight: 40),
+            SizedBox(height: layout.sp(10)),
+          ],
           if (layout.stackHeader) ...[
             InvoiceText(
               invoice.seller.name,

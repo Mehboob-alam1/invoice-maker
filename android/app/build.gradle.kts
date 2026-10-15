@@ -57,6 +57,11 @@ android {
 
     buildTypes {
         release {
+            // Phones are ARM. Leave x86_64 out of the Play bundle so the file
+            // is not carrying an emulator copy of every native library.
+            ndk {
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            }
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
@@ -78,6 +83,13 @@ flutter {
     source = "../.."
 }
 
+configurations.configureEach {
+    // The plugin ships the Latin scan model inside the app. Play services
+    // downloads that model on first use instead.
+    exclude(group = "com.google.mlkit", module = "text-recognition")
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
 }

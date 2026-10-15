@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../core/utils/currency_format.dart';
 import '../core/utils/invoice_layout_scale.dart';
 import '../l10n/app_strings.dart';
+import 'invoice_brand_images.dart';
 import '../models/invoice.dart';
 import '../digital_invoice/premium_invoice_view.dart';
 import '../models/invoice_template.dart';
@@ -92,6 +93,8 @@ class _ClassicTemplate extends StatelessWidget {
             textAlign: TextAlign.right,
             style: theme.textTheme.bodySmall,
           ),
+          const SizedBox(height: 12),
+          _BrandFooter(provider: provider, showLogo: false),
         ],
       ),
     );
@@ -144,6 +147,8 @@ class _ModernTemplate extends StatelessWidget {
                   const SizedBox(height: 16),
                   _FooterNotes(invoice: invoice, strings: strings),
                 ],
+                const SizedBox(height: 12),
+                _BrandFooter(provider: provider, showLogo: false),
               ],
             ),
           ),
@@ -208,8 +213,27 @@ class _MinimalTemplate extends StatelessWidget {
             const SizedBox(height: 20),
             InvoiceText('${strings.paymentTerms}: ${invoice.paymentTerms}', style: TextStyle(fontSize: layout.sp(11)), maxLines: 4, overflow: TextOverflow.visible, softWrap: true),
           ],
+          const SizedBox(height: 16),
+          _BrandFooter(provider: provider),
         ],
       ),
+    );
+  }
+}
+
+class _BrandFooter extends StatelessWidget {
+  const _BrandFooter({required this.provider, this.showLogo = true});
+
+  final InvoiceProvider provider;
+  final bool showLogo;
+
+  @override
+  Widget build(BuildContext context) {
+    return InvoiceBrandImages(
+      logoPath: showLogo ? provider.businessLogoPath : '',
+      signaturePath: provider.signaturePath,
+      stampPath: provider.stampPath,
+      showStamp: provider.isPro,
     );
   }
 }
@@ -263,10 +287,18 @@ class _HeaderRow extends StatelessWidget {
         if (provider.businessLogoPath.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Image.file(
-              File(provider.businessLogoPath),
-              height: 48,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                height: 44,
+                width: 120,
+                child: Image.file(
+                  File(provider.businessLogoPath),
+                  fit: BoxFit.contain,
+                  alignment: Alignment.centerLeft,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
             ),
           ),
         InvoiceText(
@@ -277,29 +309,6 @@ class _HeaderRow extends StatelessWidget {
         if (provider.businessTaxId.isNotEmpty) InvoiceText('${strings.taxId}: ${provider.businessTaxId}', style: subStyle, maxLines: 2),
         if (provider.businessEmail.isNotEmpty) InvoiceText(provider.businessEmail, style: subStyle, maxLines: 2),
         if (provider.businessPhone.isNotEmpty) InvoiceText(provider.businessPhone, style: subStyle, maxLines: 2),
-        if (provider.signaturePath.isNotEmpty || (provider.isPro && provider.stampPath.isNotEmpty))
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                if (provider.signaturePath.isNotEmpty)
-                  Image.file(
-                    File(provider.signaturePath),
-                    height: 36,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                if (provider.isPro && provider.stampPath.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Image.file(
-                      File(provider.stampPath),
-                      height: 36,
-                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                    ),
-                  ),
-              ],
-            ),
-          ),
       ],
     );
 

@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-/// Logo on the left, signature (and Pro stamp) on the right.
+/// Logo on the left, signature and stamp on the right. Each image stays inside its slot.
 class InvoiceBrandImages extends StatelessWidget {
   const InvoiceBrandImages({
     super.key,
@@ -14,7 +14,7 @@ class InvoiceBrandImages extends StatelessWidget {
     this.logoBytes,
     this.signatureBytes,
     this.stampBytes,
-    this.logoHeight = 52,
+    this.logoHeight = 48,
     this.markHeight = 44,
   });
 
@@ -35,35 +35,58 @@ class InvoiceBrandImages extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!_hasLogo && !_hasSignature && !_hasStamp) return const SizedBox.shrink();
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (_hasLogo) _image(logoPath, logoBytes, logoHeight),
-        const Spacer(),
-        if (_hasSignature) _image(signaturePath, signatureBytes, markHeight),
-        if (_hasStamp)
-          Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: _image(stampPath, stampBytes, markHeight),
+        if (_hasLogo)
+          Expanded(
+            flex: 5,
+            child: _slot(logoPath, logoBytes, logoHeight, Alignment.centerLeft),
+          )
+        else
+          const Spacer(flex: 5),
+        if (_hasSignature) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: _slot(signaturePath, signatureBytes, markHeight, Alignment.centerRight),
           ),
+        ],
+        if (_hasStamp) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: _slot(stampPath, stampBytes, markHeight, Alignment.centerRight),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _image(String path, List<int>? bytes, double height) {
+  Widget _slot(String path, List<int>? bytes, double height, Alignment alignment) {
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: _image(path, bytes, alignment),
+    );
+  }
+
+  Widget _image(String path, List<int>? bytes, Alignment alignment) {
     final memory = bytes;
     if (memory != null && memory.isNotEmpty) {
       return Image.memory(
         Uint8List.fromList(memory),
-        height: height,
         fit: BoxFit.contain,
+        alignment: alignment,
         errorBuilder: (_, _, _) => const SizedBox.shrink(),
       );
     }
+    if (path.isEmpty) return const SizedBox.shrink();
     return Image.file(
       File(path),
-      height: height,
       fit: BoxFit.contain,
+      alignment: alignment,
       errorBuilder: (_, _, _) => const SizedBox.shrink(),
     );
   }

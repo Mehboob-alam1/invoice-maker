@@ -203,6 +203,8 @@ class _HeaderWithCornerFold extends StatelessWidget {
                     Flexible(
                       child: Text(
                         stringsInvoiceTitle(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 36 * scale,
                           fontWeight: FontWeight.w800,
@@ -211,14 +213,19 @@ class _HeaderWithCornerFold extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 6 * scale, left: 8),
-                      child: Text(
-                        'NO: $invoiceNo',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12 * scale,
-                          fontWeight: FontWeight.w700,
-                          color: kRedModernBlack,
+                    Flexible(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 6 * scale, left: 8),
+                        child: Text(
+                          'NO: $invoiceNo',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12 * scale,
+                            fontWeight: FontWeight.w700,
+                            color: kRedModernBlack,
+                          ),
                         ),
                       ),
                     ),
@@ -367,22 +374,31 @@ class _ItemsTable extends StatelessWidget {
                 color: kRedModernBlack,
                 padding: EdgeInsets.symmetric(vertical: 9 * scale, horizontal: 12 * scale),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      totalLabel,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12 * scale,
+                    Flexible(
+                      child: Text(
+                        totalLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12 * scale,
+                        ),
                       ),
                     ),
-                    Text(
-                      _money(totalValue),
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12 * scale,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        _money(totalValue),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12 * scale,
+                        ),
                       ),
                     ),
                   ],
@@ -400,6 +416,8 @@ class _ItemsTable extends StatelessWidget {
         child: Text(
           text,
           textAlign: align,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12 * scale),
         ),
       );
@@ -409,6 +427,8 @@ class _ItemsTable extends StatelessWidget {
         child: Text(
           text,
           textAlign: align,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.poppins(color: kRedModernBlack, fontSize: 12 * scale),
         ),
       );
@@ -452,9 +472,15 @@ class _PaymentAndThanks extends StatelessWidget {
             ],
           ),
         ),
-        Text(
-          strings.thankYou,
-          style: GoogleFonts.greatVibes(fontSize: 40 * scale, color: kRedModernBlack),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              strings.thankYou,
+              style: GoogleFonts.greatVibes(fontSize: 40 * scale, color: kRedModernBlack),
+            ),
+          ),
         ),
       ],
     );

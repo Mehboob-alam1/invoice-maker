@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -61,7 +63,12 @@ class BlueYellowGeometricInvoiceTemplate extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _LogoMark(line1: line1, line2: line2, scale: s),
+                _LogoMark(
+                  line1: line1,
+                  line2: line2,
+                  scale: s,
+                  logoPath: provider.businessLogoPath,
+                ),
                 SizedBox(height: 16 * s),
                 Text(
                   strings.invoice.toUpperCase(),
@@ -135,7 +142,6 @@ class BlueYellowGeometricInvoiceTemplate extends StatelessWidget {
                 ],
                 SizedBox(height: 16 * s),
                 InvoiceBrandImages(
-                  logoPath: provider.businessLogoPath,
                   signaturePath: provider.signaturePath,
                   stampPath: provider.stampPath,
                   showStamp: provider.isPro,
@@ -251,27 +257,60 @@ class _WavePainter extends CustomPainter {
 }
 
 class _LogoMark extends StatelessWidget {
-  const _LogoMark({required this.line1, required this.line2, required this.scale});
+  const _LogoMark({required this.line1, required this.line2, required this.scale, this.logoPath = ''});
   final String line1;
   final String line2;
   final double scale;
+  final String logoPath;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(line1,
+        if (logoPath.isNotEmpty) ...[
+          SizedBox(
+            width: 64 * scale,
+            height: 40 * scale,
+            child: Image.file(
+              File(logoPath),
+              fit: BoxFit.contain,
+              alignment: Alignment.centerLeft,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+          ),
+          SizedBox(width: 8 * scale),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                line1,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
                 style: GoogleFonts.playfairDisplay(
-                    fontSize: 18 * scale, fontWeight: FontWeight.w700, color: kGeoInk, letterSpacing: 1)),
-            if (line2.isNotEmpty)
-              Text(line2,
+                  fontSize: 18 * scale,
+                  fontWeight: FontWeight.w700,
+                  color: kGeoInk,
+                  letterSpacing: 1,
+                ),
+              ),
+              if (line2.isNotEmpty)
+                Text(
+                  line2,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
                   style: GoogleFonts.playfairDisplay(
-                      fontSize: 18 * scale, fontWeight: FontWeight.w700, color: kGeoInk, letterSpacing: 1)),
-          ],
+                    fontSize: 18 * scale,
+                    fontWeight: FontWeight.w700,
+                    color: kGeoInk,
+                    letterSpacing: 1,
+                  ),
+                ),
+            ],
+          ),
         ),
         SizedBox(width: 10 * scale),
         CustomPaint(size: Size(36 * scale, 40 * scale), painter: _DiamondMarkPainter()),
@@ -360,6 +399,8 @@ class _ItemsTable extends StatelessWidget {
         child: Text(
           text,
           textAlign: align,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.playfairDisplay(
             color: Colors.white,
             fontWeight: FontWeight.w700,
@@ -370,6 +411,12 @@ class _ItemsTable extends StatelessWidget {
 
   Widget _cell(String text, {required int flex, TextAlign align = TextAlign.left}) => Expanded(
         flex: flex,
-        child: Text(text, textAlign: align, style: GoogleFonts.lato(color: kGeoInk, fontSize: 11 * scale)),
+        child: Text(
+          text,
+          textAlign: align,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.lato(color: kGeoInk, fontSize: 11 * scale),
+        ),
       );
 }

@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -44,21 +47,28 @@ class InvoiceSend {
     return lines.join(' · ');
   }
 
-  static Future<void> sharePdfWithMessage(BuildContext context, Invoice invoice) async {
+  /// Shares the invoice PDF built from the selected template.
+  ///
+  /// [withMessage] is off for WhatsApp. That app drops the file when a text
+  /// message is attached to the same share.
+  static Future<void> sharePdfWithMessage(
+    BuildContext context,
+    Invoice invoice, {
+    bool withMessage = true,
+  }) async {
     try {
       final bytes = await InvoicePdfExport.bytes(context, invoice);
       if (!context.mounted) return;
+      final note = withMessage ? message(context, invoice) : null;
+      final name = InvoicePdfExport.filename(invoice);
+      final file = await _writeShareFile(bytes, name);
       await SharePlus.instance.share(
         ShareParams(
           files: [
-            XFile.fromData(
-              bytes,
-              mimeType: 'application/pdf',
-              name: InvoicePdfExport.filename(invoice),
-            ),
+            XFile(file.path, mimeType: 'application/pdf', name: name),
           ],
-          text: message(context, invoice),
-          subject: invoice.number,
+          text: note,
+          subject: withMessage ? invoice.number : null,
         ),
       );
       if (context.mounted) await EngagementService.instance.afterShare(context);
@@ -72,6 +82,14 @@ class InvoiceSend {
     }
   }
 
+  static Future<File> _writeShareFile(List<int> bytes, String name) async {
+    final dir = await getTemporaryDirectory();
+    final safe = name.replaceAll(RegExp(r'[^\w.\-]+'), '_');
+    final file = File('${dir.path}/$safe');
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
+
   static Future<void> shareImage(BuildContext context, Invoice invoice) async {
     try {
       final bytes = await InvoicePdfExport.bytes(context, invoice);
@@ -79,10 +97,11 @@ class InvoiceSend {
       final page = await Printing.raster(bytes, pages: const [0], dpi: 120).first;
       final png = await page.toPng();
       final name = InvoicePdfExport.filename(invoice).replaceAll(RegExp(r'\.pdf$'), '.png');
+      final file = await _writeShareFile(png, name);
       await SharePlus.instance.share(
         ShareParams(
           files: [
-            XFile.fromData(png, mimeType: 'image/png', name: name),
+            XFile(file.path, mimeType: 'image/png', name: name),
           ],
         ),
       );

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../core/theme/blue_theme.dart';
+import '../widgets/app_dialog.dart';
 import '../l10n/app_strings.dart';
 import '../models/subscription_tier.dart';
 import '../navigation/app_page_route.dart';
@@ -109,19 +109,21 @@ Future<void> runWithWatchOrPremium({
   final choice = await showDialog<_WatchChoice>(
     context: context,
     builder: (ctx) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(strings.t('watchOrPremiumTitle')),
-        content: Text(strings.t('watchOrPremiumBody')),
+      return AppDialog(
+        icon: Icons.workspace_premium_rounded,
+        title: strings.t('watchOrPremiumTitle'),
+        message: strings.t('watchOrPremiumBody'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, _WatchChoice.watch),
-            child: Text(strings.t('watchAd')),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: BlueColors.bright),
+          AppDialogAction(
+            label: strings.t('buyPremium'),
+            icon: Icons.workspace_premium_rounded,
             onPressed: () => Navigator.pop(ctx, _WatchChoice.premium),
-            child: Text(strings.t('buyPremium')),
+          ),
+          AppDialogAction(
+            label: strings.t('watchAd'),
+            icon: Icons.play_circle_outline_rounded,
+            style: AppDialogActionStyle.outlined,
+            onPressed: () => Navigator.pop(ctx, _WatchChoice.watch),
           ),
         ],
       );

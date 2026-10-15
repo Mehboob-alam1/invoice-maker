@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -71,7 +73,12 @@ class OrangeBlackReceiptTemplate extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TopWaveHeader(companyLine1: line1, companyLine2: line2, scale: s),
+          _TopWaveHeader(
+            companyLine1: line1,
+            companyLine2: line2,
+            scale: s,
+            logoPath: provider.businessLogoPath,
+          ),
           Padding(
             padding: EdgeInsets.fromLTRB(pad, 14 * s, pad, 8 * s),
             child: Column(
@@ -131,7 +138,6 @@ class OrangeBlackReceiptTemplate extends StatelessWidget {
                 _NotesBox(notes: _notesText, strings: strings, scale: s),
                 SizedBox(height: 16 * s),
                 InvoiceBrandImages(
-                  logoPath: provider.businessLogoPath,
                   signaturePath: provider.signaturePath,
                   stampPath: provider.stampPath,
                   showStamp: provider.isPro,
@@ -162,10 +168,16 @@ class OrangeBlackReceiptTemplate extends StatelessWidget {
 }
 
 class _TopWaveHeader extends StatelessWidget {
-  const _TopWaveHeader({required this.companyLine1, required this.companyLine2, required this.scale});
+  const _TopWaveHeader({
+    required this.companyLine1,
+    required this.companyLine2,
+    required this.scale,
+    this.logoPath = '',
+  });
   final String companyLine1;
   final String companyLine2;
   final double scale;
+  final String logoPath;
 
   @override
   Widget build(BuildContext context) {
@@ -176,13 +188,30 @@ class _TopWaveHeader extends StatelessWidget {
         Padding(
           padding: EdgeInsets.fromLTRB(28 * scale, 10 * scale, 28 * scale, 0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Column(
+              if (logoPath.isNotEmpty) ...[
+                SizedBox(
+                  width: 64 * scale,
+                  height: 40 * scale,
+                  child: Image.file(
+                    File(logoPath),
+                    fit: BoxFit.contain,
+                    alignment: Alignment.centerLeft,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+                SizedBox(width: 8 * scale),
+              ],
+              const Spacer(),
+              Flexible(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
                     companyLine1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
                     style: GoogleFonts.poppins(
                       fontSize: 20 * scale,
                       fontWeight: FontWeight.w800,
@@ -193,6 +222,9 @@ class _TopWaveHeader extends StatelessWidget {
                   if (companyLine2.isNotEmpty)
                     Text(
                       companyLine2,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
                       style: GoogleFonts.poppins(
                         fontSize: 12 * scale,
                         fontWeight: FontWeight.w700,
@@ -201,6 +233,7 @@ class _TopWaveHeader extends StatelessWidget {
                       ),
                     ),
                 ],
+              ),
               ),
               SizedBox(width: 8 * scale),
               CustomPaint(size: Size(32 * scale, 36 * scale), painter: _WingMarkPainter()),
@@ -369,7 +402,7 @@ class _ReceiptTable extends StatelessWidget {
             color: kReceiptOrange,
             border: Border(right: last ? BorderSide.none : borderSide, bottom: borderSide),
           ),
-          child: Text(text, textAlign: align, style: headerStyle),
+          child: Text(text, textAlign: align, maxLines: 2, overflow: TextOverflow.ellipsis, style: headerStyle),
         );
 
     Widget dataCell(String text, {TextAlign align = TextAlign.left, bool last = false}) => Container(

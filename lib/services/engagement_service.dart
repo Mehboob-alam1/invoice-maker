@@ -11,6 +11,7 @@ import '../core/remote_config/remote_config_repository.dart';
 import '../core/utils/currency_format.dart';
 import '../l10n/app_languages.dart';
 import '../l10n/app_strings.dart';
+import '../widgets/app_dialog.dart';
 import '../l10n/app_translations.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
@@ -408,13 +409,12 @@ class EngagementService {
               'tips': strings.channelTips,
               'promos': strings.channelPromos,
             };
-            return AlertDialog(
-              title: Text(strings.notifications),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
+            return AppDialog(
+              icon: Icons.notifications_rounded,
+              title: strings.notifications,
+              message: strings.notificationChannelsHint,
+              body: Column(
                 children: [
-                  Text(strings.notificationChannelsHint),
-                  const SizedBox(height: 8),
                   for (final channel in labels.keys)
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
@@ -436,16 +436,17 @@ class EngagementService {
                 ],
               ),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(strings.close),
-                ),
-                FilledButton(
+                AppDialogAction(
+                  label: strings.notifications,
                   onPressed: () async {
                     await PushNotificationService.instance.requestPermissionFromSettings();
                     if (dialogContext.mounted) Navigator.pop(dialogContext);
                   },
-                  child: Text(strings.notifications),
+                ),
+                AppDialogAction(
+                  label: strings.close,
+                  style: AppDialogActionStyle.text,
+                  onPressed: () => Navigator.pop(dialogContext),
                 ),
               ],
             );

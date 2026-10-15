@@ -6,6 +6,7 @@ import 'package:in_app_update/in_app_update.dart';
 import '../core/constants/app_config.dart';
 import '../core/remote_config/remote_config_repository.dart';
 import '../l10n/app_strings.dart';
+import '../widgets/app_dialog.dart';
 
 /// Asks for a Play in-app update after a newer version is published.
 class AppUpdateService {
@@ -61,19 +62,20 @@ class AppUpdateService {
       barrierDismissible: false,
       builder: (ctx) {
         final strings = ctx.l10n;
-        final theme = Theme.of(ctx);
-        return AlertDialog(
-          icon: Icon(Icons.system_update_rounded, color: theme.colorScheme.primary, size: 36),
-          title: Text(strings.updateReadyTitle),
-          content: Text(strings.updateReadyBody),
+        return AppDialog(
+          icon: Icons.system_update_rounded,
+          tone: AppDialogTone.success,
+          title: strings.updateReadyTitle,
+          message: strings.updateReadyBody,
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(strings.notNow),
-            ),
-            FilledButton(
+            AppDialogAction(
+              label: strings.restartApp,
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text(strings.restartApp),
+            ),
+            AppDialogAction(
+              label: strings.notNow,
+              style: AppDialogActionStyle.text,
+              onPressed: () => Navigator.pop(ctx, false),
             ),
           ],
         );

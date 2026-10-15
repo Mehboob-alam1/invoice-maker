@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../l10n/app_strings.dart';
+import 'app_dialog.dart';
 
 /// Center-crops a picked photo. The slider zooms in before the square is saved.
 class LogoCropDialog extends StatefulWidget {
@@ -62,10 +63,10 @@ class _LogoCropDialogState extends State<LogoCropDialog> {
   Widget build(BuildContext context) {
     final strings = context.l10n;
     final image = _image;
-    return AlertDialog(
-      title: Text(strings.cropLogo),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
+    return AppDialog(
+      icon: Icons.crop_rounded,
+      title: strings.cropLogo,
+      body: Column(
         children: [
           SizedBox(
             width: 220,
@@ -73,7 +74,7 @@ class _LogoCropDialogState extends State<LogoCropDialog> {
             child: image == null
                 ? const Center(child: CircularProgressIndicator())
                 : ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                     child: CustomPaint(
                       painter: _CropPainter(image, _zoom),
                       child: const SizedBox.expand(),
@@ -89,8 +90,15 @@ class _LogoCropDialogState extends State<LogoCropDialog> {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(strings.cancel)),
-        FilledButton(onPressed: image == null ? null : _save, child: Text(strings.usePhoto)),
+        AppDialogAction(
+          label: strings.usePhoto,
+          onPressed: image == null ? null : _save,
+        ),
+        AppDialogAction(
+          label: strings.cancel,
+          style: AppDialogActionStyle.text,
+          onPressed: () => Navigator.pop(context),
+        ),
       ],
     );
   }

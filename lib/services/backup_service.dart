@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_strings.dart';
+import '../widgets/app_dialog.dart';
 import '../providers/invoice_provider.dart';
 import 'auth_service.dart';
 import 'home_widget_bridge.dart';
@@ -59,12 +60,20 @@ class BackupService {
     final strings = AppStrings.read(context);
     final go = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.backupSignInTitle),
-        content: Text(strings.backupSignInBody),
+      builder: (ctx) => AppDialog(
+        icon: Icons.cloud_upload_rounded,
+        title: strings.backupSignInTitle,
+        message: strings.backupSignInBody,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(strings.signInWithGoogle)),
+          AppDialogAction(
+            label: strings.signInWithGoogle,
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+          AppDialogAction(
+            label: strings.cancel,
+            style: AppDialogActionStyle.text,
+            onPressed: () => Navigator.pop(ctx, false),
+          ),
         ],
       ),
     );
@@ -277,12 +286,20 @@ class _BackupSheetState extends State<_BackupSheet> {
     final strings = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.backupRestoreTitle),
-        content: Text(strings.backupRestoreBody),
+      builder: (ctx) => AppDialog(
+        icon: Icons.restore_rounded,
+        title: strings.backupRestoreTitle,
+        message: strings.backupRestoreBody,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(strings.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(strings.backupRestore)),
+          AppDialogAction(
+            label: strings.backupRestore,
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+          AppDialogAction(
+            label: strings.cancel,
+            style: AppDialogActionStyle.text,
+            onPressed: () => Navigator.pop(ctx, false),
+          ),
         ],
       ),
     );
