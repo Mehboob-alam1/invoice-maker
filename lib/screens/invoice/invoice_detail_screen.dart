@@ -13,9 +13,8 @@ import '../../models/invoice.dart';
 import '../../models/invoice_template.dart';
 import '../../providers/invoice_provider.dart';
 import '../../ads/ad_action.dart';
+import '../../ads/ad_flows.dart';
 import '../../ads/ad_placement.dart';
-import '../../ads/ad_remote_config.dart';
-import '../../ads/ad_service.dart';
 import '../../core/remote_config/remote_config_repository.dart';
 import '../../services/ai_helpers.dart';
 import '../../services/engagement_service.dart';
@@ -170,10 +169,7 @@ class InvoiceDetailScreen extends StatelessWidget {
   }
 
   Future<void> _removeWatermark(BuildContext context, Invoice invoice) async {
-    final earned = await AdService.instance.showRewarded(
-      adUnitId: AdRemoteConfig.instance.rewardedAdUnitId,
-      placement: AdPlacement.rewardedWatermark,
-    );
+    final earned = await showPlacementRewarded(context, AdPlacement.rewardedWatermark);
     if (!earned || !context.mounted) return;
     context.read<InvoiceProvider>().removeWatermark(invoice.id);
     ScaffoldMessenger.of(context).showSnackBar(

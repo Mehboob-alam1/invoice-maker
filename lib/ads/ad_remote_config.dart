@@ -70,11 +70,15 @@ class AdRemoteConfig {
         : AdConfig.defaultAndroidRewarded;
   }
 
-  /// Master switch, the per-screen switch, and consent must all allow the ad.
-  bool isPlacementEnabled(AdPlacement placement) =>
+  /// Remote Config only. Use this to decide whether a slot should start loading
+  /// (consent is still false until the ads SDK runs).
+  bool isPlacementWanted(AdPlacement placement) =>
       _adsEnabled &&
-      (_placementEnabled[placement.remoteKey] ?? placement.defaultEnabled) &&
-      AdConsent.instance.canRequestAds;
+      (_placementEnabled[placement.remoteKey] ?? placement.defaultEnabled);
+
+  /// Master switch, per-screen switch, and consent. Use when requesting a fill.
+  bool isPlacementEnabled(AdPlacement placement) =>
+      isPlacementWanted(placement) && AdConsent.instance.canRequestAds;
 
   int get paywallCloseDelaySeconds => _paywallCloseDelaySeconds;
 

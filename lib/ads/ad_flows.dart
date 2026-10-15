@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/app_dialog.dart';
+import '../widgets/loading_ad_dialog.dart';
 import '../l10n/app_strings.dart';
 import '../models/subscription_tier.dart';
 import '../navigation/app_page_route.dart';
@@ -15,6 +16,7 @@ import 'ad_action.dart';
 import 'ad_manager.dart';
 import 'ad_placement.dart';
 import 'ad_remote_config.dart';
+import 'ad_service.dart';
 import 'main_screen_click_counter.dart';
 
 Future<void> openPaywall(
@@ -68,10 +70,26 @@ class PaywallSettingsGate {
   }
 }
 
-/// Preloaded interstitial for one Remote Config placement.
+/// Loads a rewarded ad when the user taps watch, then shows it.
+Future<bool> showPlacementRewarded(BuildContext context, AdPlacement placement) async {
+  if (!context.mounted) return false;
+  final ads = AdService.instance;
+  final waiting = !ads.isSdkReady || !ads.rewardedReady;
+  if (waiting) showLoadingAdDialog(context);
+  try {
+    return await ads.showRewarded(
+      adUnitId: AdRemoteConfig.instance.rewardedAdUnitId,
+      placement: placement,
+    );
+  } finally {
+    if (waiting && context.mounted) dismissLoadingAdDialog(context);
+  }
+}
+
+/// Interstitial for one Remote Config placement. Loads on demand with a short wait.
 Future<bool> showPlacementInterstitial(BuildContext context, AdPlacement placement) async {
   if (!context.mounted) return false;
-  if (!AdRemoteConfig.instance.isPlacementEnabled(placement)) return false;
+  if (!AdRemoteConfig.instance.isPlacementWanted(placement)) return false;
   final invoices = context.read<InvoiceProvider>();
   if (invoices.adsHeld || !invoices.featureTier.showInterstitialAds) return false;
   return showInterstitialWithLoadingIfEligible(context);
@@ -99,7 +117,7 @@ Future<void> runWithWatchOrPremium({
   final invoices = context.read<InvoiceProvider>();
   final enabled = !invoices.adsHeld &&
       invoices.featureTier.showInterstitialAds &&
-      AdRemoteConfig.instance.isPlacementEnabled(placement);
+      AdRemoteConfig.instance.isPlacementWanted(placement);
   if (!enabled) {
     await action();
     return;

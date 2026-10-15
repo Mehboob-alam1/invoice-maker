@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../ads/ad_placement.dart';
-import '../../ads/ad_service.dart';
 import '../../ads/ad_flows.dart';
 import '../../services/paywall_analytics.dart';
 import '../../bootstrap/app_bootstrap.dart';
@@ -9,8 +7,7 @@ import '../../services/app_update_service.dart';
 import '../../widgets/bottom_banner_host.dart';
 import '../../widgets/splash_launch_view.dart';
 
-/// One splash for the whole startup. Stays on screen through bootstrap, the
-/// app-open ad, and the returning-user paywall, then opens the next screen.
+/// Brand splash only while local data loads, then the first real screen.
 class SplashShell extends StatefulWidget {
   const SplashShell({super.key, this.result});
 
@@ -45,19 +42,15 @@ class _SplashShellState extends State<SplashShell> {
   Future<void> _run() async {
     final result = widget.result;
     if (result == null || !mounted) return;
-    final provider = result.invoiceProvider;
-    await AdService.instance.showAppOpenOnDemand(
-      tier: provider.featureTier,
-      placement: AdPlacement.appOpenSplash,
-      ignoreInterval: true,
-    );
-    if (!mounted) return;
-    if (provider.hasCompletedOnboarding) {
-      await openPaywallIfFree(context, source: PaywallSource.launch);
-    }
-    if (!mounted) return;
     setState(() => _done = true);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Let the home screen paint before paywall / update prompts.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (!mounted) return;
+      if (result.invoiceProvider.hasCompletedOnboarding) {
+        await openPaywallIfFree(context, source: PaywallSource.launch);
+      }
       if (!mounted) return;
       AppUpdateService.promptIfAvailable(context);
     });

@@ -66,9 +66,17 @@ class SubscriptionService extends ChangeNotifier {
         notifyListeners();
       },
     );
+    notifyListeners();
+    unawaited(_loadCatalogAndEntitlements());
+  }
 
-    await loadProducts();
-    await refreshEntitlementsFromStore(silent: true);
+  Future<void> _loadCatalogAndEntitlements() async {
+    try {
+      await loadProducts();
+      await refreshEntitlementsFromStore(silent: true);
+    } catch (error) {
+      debugPrint('SubscriptionService background refresh: $error');
+    }
   }
 
   /// Play Store is the source of truth. After restore, downgrade if no active SKU.

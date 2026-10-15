@@ -46,7 +46,7 @@ class PlacementNativeAd extends StatelessWidget {
       valueListenable: AdRemoteConfig.instance.revision,
       builder: (context, _, _) {
         if (!AdConfig.isSupported) return const SizedBox.shrink();
-        if (!AdRemoteConfig.instance.isPlacementEnabled(placement)) {
+        if (!AdRemoteConfig.instance.isPlacementWanted(placement)) {
           return const SizedBox.shrink();
         }
         final invoices = context.watch<InvoiceProvider>();

@@ -85,12 +85,15 @@ class _RateFeedbackSheetState extends State<_RateFeedbackSheet> {
           await launchUrl(mail);
         }
       }
-    } catch (_) {}
+    } catch (error) {
+      debugPrint('Feedback submit failed: $error');
+    }
 
     if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _submitting = false);
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(content: Text(strings.thanksFeedback)),
     );
   }

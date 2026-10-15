@@ -514,6 +514,14 @@ class AppStrings {
   String get updateReadyTitle => t('updateReadyTitle');
   String get updateReadyBody => t('updateReadyBody');
   String get restartApp => t('restartApp');
+  String get checkForUpdates => t('checkForUpdates');
+  String get updateAvailableTitle => t('updateAvailableTitle');
+  String get updateAvailableBody => t('updateAvailableBody');
+  String get updateNow => t('updateNow');
+  String get upToDateTitle => t('upToDateTitle');
+  String get upToDateBody => t('upToDateBody');
+  String get updateCheckFailedTitle => t('updateCheckFailedTitle');
+  String get updateCheckFailedBody => t('updateCheckFailedBody');
   String get checklistTitle => t('checklistTitle');
   String get checklistLogo => t('checklistLogo');
   String get checklistPayment => t('checklistPayment');

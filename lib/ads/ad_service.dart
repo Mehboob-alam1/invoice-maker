@@ -6,6 +6,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../models/subscription_tier.dart';
 import '../providers/invoice_provider.dart';
 import 'ad_config.dart';
+import 'ad_consent.dart';
 import 'ad_manager.dart';
 import 'ad_placement.dart';
 import 'ad_remote_config.dart';
@@ -22,6 +23,7 @@ class AdService {
 
   Future<bool>? _interstitialLoadFuture;
   Future<bool>? _appOpenLoadFuture;
+  Future<bool>? _sdkReadyFuture;
   bool _awaitingMediaReturn = false;
   DateTime _suppressForegroundUntil = DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -33,11 +35,51 @@ class AdService {
 
   bool get isSdkReady => sdkReady.value > 0;
 
-  Future<void> initialize() async {
-    if (!AdConfig.isSupported) return;
+  /// Consent + Mobile Ads SDK, started the first time an ad slot needs it.
+  Future<bool> ensureMobileAdsReady({
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (!AdConfig.isSupported) return false;
+    if (isSdkReady) return true;
+    _sdkReadyFuture ??= _initMobileAds().then((ok) {
+      if (!ok) _sdkReadyFuture = null;
+      return ok;
+    });
+    try {
+      return await _sdkReadyFuture!.timeout(
+        timeout,
+        onTimeout: () {
+          debugPrint('Mobile Ads init timed out');
+          return isSdkReady;
+        },
+      );
+    } catch (error) {
+      debugPrint('Mobile Ads init failed: $error');
+      _sdkReadyFuture = null;
+      return false;
+    }
+  }
+
+  Future<bool> _initMobileAds() async {
     await AdRemoteConfig.instance.load();
     await AdManager.instance.loadCounters();
+    await AdConsent.instance.gather();
+    if (!AdConsent.instance.canRequestAds) {
+      debugPrint('Ads skipped until consent allows requests.');
+      return false;
+    }
+    await MobileAds.instance.initialize();
+    await MobileAds.instance.updateRequestConfiguration(
+      RequestConfiguration(
+        tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
+        tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
+      ),
+    );
     sdkReady.value++;
+    // Rebuild banner/native slots that were waiting on consent.
+    AdRemoteConfig.instance.revision.value++;
+    debugPrint('Mobile Ads SDK ready');
+    return true;
   }
 
   /// Camera or gallery is about to cover the app. The next resume shows an app-open ad.
@@ -54,19 +96,7 @@ class AdService {
 
   bool get appOpenReady => _appOpenAd != null;
 
-  /// Starts rewarded and interstitial loads in the background.
-  ///
-  /// The bottom banner is requested when its slot is on screen so the
-  /// collapsible overlay can open over the page. This does not wait for a fill.
-  Future<void> waitForStartupPreloads({
-    required SubscriptionTier tier,
-    Duration timeout = const Duration(seconds: 8),
-  }) async {
-    if (timeout < Duration.zero) return;
-    if (InvoiceProvider.adsHeldStatic || tier == SubscriptionTier.pro) return;
-    if (tier.showInterstitialAds) preloadInterstitial();
-    preloadRewarded();
-  }
+  bool get rewardedReady => _rewarded != null;
 
   bool get isShowingFullScreenAd => _isShowingFullScreenAd;
 
@@ -86,6 +116,10 @@ class AdService {
   }
 
   Future<bool> _loadInterstitialOnce() async {
+    if (_interstitial != null) return true;
+    if (!(await ensureMobileAdsReady(timeout: const Duration(seconds: 4)))) {
+      return false;
+    }
     if (_interstitial != null) return true;
     if (_interstitialLoading) {
       while (_interstitialLoading) {
@@ -111,9 +145,6 @@ class AdService {
           _interstitialLoading = false;
           debugPrint('Interstitial load failed: $error');
           if (!completer.isCompleted) completer.complete(false);
-          Future<void>.delayed(const Duration(seconds: 20), () {
-            if (_interstitial == null && !_interstitialLoading) preloadInterstitial();
-          });
         },
       ),
     );
@@ -121,14 +152,27 @@ class AdService {
     return completer.future;
   }
 
-  /// Fills the interstitial cache. Showing never waits on a new request.
-  void preloadInterstitial() {
-    if (!AdConfig.isSupported) return;
-    if (_interstitial != null || _interstitialLoading || _interstitialLoadFuture != null) return;
-    if (InvoiceProvider.adsHeldStatic || !_placementWanted(_interstitialPlacements)) return;
-    _interstitialLoadFuture = _loadInterstitialOnce().whenComplete(() {
+  Future<bool> _ensureInterstitialLoaded({
+    Duration timeout = const Duration(seconds: 4),
+  }) async {
+    if (_interstitial != null) return true;
+    if (InvoiceProvider.adsHeldStatic || !_placementWanted(_interstitialPlacements)) {
+      return false;
+    }
+    _interstitialLoadFuture ??= _loadInterstitialOnce().whenComplete(() {
       _interstitialLoadFuture = null;
     });
+    try {
+      return await _interstitialLoadFuture!.timeout(
+        timeout,
+        onTimeout: () {
+          debugPrint('Interstitial load timed out');
+          return _interstitial != null;
+        },
+      );
+    } catch (_) {
+      return _interstitial != null;
+    }
   }
 
   static const _interstitialPlacements = [
@@ -155,20 +199,19 @@ class AdService {
   bool _placementWanted(List<AdPlacement> placements) {
     final config = AdRemoteConfig.instance;
     for (final placement in placements) {
-      if (config.isPlacementEnabled(placement)) return true;
+      if (config.isPlacementWanted(placement)) return true;
     }
     return false;
   }
 
-  /// Shows a loaded interstitial. Returns whether the ad was presented.
+  /// Loads an interstitial when needed, then shows it. No background preload.
   Future<bool> showInterstitialIfEligible({required SubscriptionTier tier}) async {
+    await ensureMobileAdsReady(timeout: const Duration(seconds: 6));
     if (!shouldAttemptInterstitial(tier)) return false;
 
+    final loaded = await _ensureInterstitialLoaded();
     final ad = _interstitial;
-    if (ad == null) {
-      preloadInterstitial();
-      return false;
-    }
+    if (!loaded || ad == null) return false;
 
     _interstitial = null;
     _interstitialLoadFuture = null;
@@ -184,14 +227,12 @@ class AdService {
         ad.dispose();
         _isShowingFullScreenAd = false;
         AdManager.instance.recordInterstitialShown();
-        preloadInterstitial();
         if (!shown.isCompleted) shown.complete(true);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
         _isShowingFullScreenAd = false;
         debugPrint('Interstitial show failed: $error');
-        preloadInterstitial();
         if (!shown.isCompleted) shown.complete(false);
       },
     );
@@ -205,14 +246,14 @@ class AdService {
     } catch (e) {
       debugPrint('Interstitial show exception: $e');
       _isShowingFullScreenAd = false;
-      preloadInterstitial();
       return false;
     }
   }
 
-  Future<bool> ensureAppOpenLoaded({Duration timeout = const Duration(seconds: 14)}) async {
+  Future<bool> ensureAppOpenLoaded({Duration timeout = const Duration(seconds: 3)}) async {
     if (!AdConfig.isSupported) return false;
     if (_appOpenAd != null) return true;
+    if (!(await ensureMobileAdsReady(timeout: timeout))) return false;
 
     _appOpenLoadFuture ??= _loadAppOpenOnce();
     try {
@@ -266,10 +307,6 @@ class AdService {
     return completer.future;
   }
 
-  void preloadAppOpen() {
-    // On demand: the next show loads a fresh app-open ad.
-  }
-
   Future<void> handleResume({required SubscriptionTier tier}) async {
     if (takeMediaReturn()) {
       await showAppOpenOnDemand(
@@ -306,7 +343,7 @@ class AdService {
     }
     _suppressForegroundUntil = DateTime.now().add(const Duration(seconds: 8));
 
-    final loaded = await ensureAppOpenLoaded(timeout: const Duration(seconds: 8));
+    final loaded = await ensureAppOpenLoaded(timeout: const Duration(seconds: 3));
     final ad = _appOpenAd;
     if (!loaded || ad == null) return false;
 
@@ -339,45 +376,21 @@ class AdService {
     }
   }
 
-  Future<void> showAppOpenIfAvailable({SubscriptionTier tier = SubscriptionTier.free}) async {
-    final decision = AdManager.instance.decideAppOpen(
-      placement: AdPlacement.appOpenForeground,
-      tier: tier,
-    );
-    if (!AdConfig.isSupported || _isShowingFullScreenAd || !decision.allow) return;
-    final ad = _appOpenAd;
-    if (ad == null) {
-      preloadAppOpen();
-      return;
+  Future<bool> _waitForRewarded(Duration timeout) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      if (_rewarded != null) return true;
+      if (!_rewardedLoading) return false;
+      await Future<void>.delayed(const Duration(milliseconds: 80));
     }
-    _appOpenAd = null;
-    _isShowingFullScreenAd = true;
-    ad.fullScreenContentCallback = FullScreenContentCallback(
-      onAdDismissedFullScreenContent: (ad) {
-        ad.dispose();
-        _isShowingFullScreenAd = false;
-        AdManager.instance.recordAppOpenShown();
-        preloadAppOpen();
-      },
-      onAdFailedToShowFullScreenContent: (ad, error) {
-        ad.dispose();
-        _isShowingFullScreenAd = false;
-        preloadAppOpen();
-      },
-    );
-    await ad.show();
+    return _rewarded != null;
   }
 
-  Future<void> showColdStartAppOpen({SubscriptionTier tier = SubscriptionTier.free}) async {
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    await showAppOpenIfAvailable(tier: tier);
-  }
-
-  /// Fills the rewarded cache. The reward button only shows an ad that is already loaded.
-  void preloadRewarded() {
+  Future<void> _loadRewardedOnce() async {
     if (!AdConfig.isSupported || _rewarded != null || _rewardedLoading) return;
     if (InvoiceProvider.adsHeldStatic || !_placementWanted(_rewardedPlacements)) return;
     if (!AdManager.instance.canShowRewarded()) return;
+    if (!(await ensureMobileAdsReady(timeout: const Duration(seconds: 4)))) return;
 
     _rewardedLoading = true;
     RewardedAd.load(
@@ -391,17 +404,14 @@ class AdService {
         onAdFailedToLoad: (error) {
           _rewardedLoading = false;
           debugPrint('Rewarded load failed: $error');
-          Future<void>.delayed(const Duration(seconds: 20), () {
-            if (_rewarded == null && !_rewardedLoading) preloadRewarded();
-          });
         },
       ),
     );
   }
 
-  /// Shows the preloaded rewarded ad. True only when the user earns the reward.
+  /// Loads a rewarded ad when the user asks for one, then shows it.
   ///
-  /// A missing ad returns immediately and keeps loading in the background.
+  /// True only when the user earns the reward.
   Future<bool> showRewarded({
     required String adUnitId,
     AdPlacement placement = AdPlacement.rewardedTemplate,
@@ -412,15 +422,21 @@ class AdService {
         _isShowingFullScreenAd) {
       return false;
     }
+    if (!(await ensureMobileAdsReady(timeout: const Duration(seconds: 4)))) {
+      return false;
+    }
 
-    final ad = _rewarded;
+    var ad = _rewarded;
     if (ad == null || ad.adUnitId != adUnitId) {
       if (ad != null) {
         ad.dispose();
         _rewarded = null;
       }
-      preloadRewarded();
-      return false;
+      await _loadRewardedOnce();
+      final loaded = await _waitForRewarded(const Duration(seconds: 5));
+      if (!loaded) return false;
+      ad = _rewarded;
+      if (ad == null) return false;
     }
     _rewarded = null;
 
@@ -431,14 +447,12 @@ class AdService {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _isShowingFullScreenAd = false;
-        preloadRewarded();
         if (!finished.isCompleted) finished.complete(earned);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
         _isShowingFullScreenAd = false;
         debugPrint('Rewarded show failed: $error');
-        preloadRewarded();
         if (!finished.isCompleted) finished.complete(false);
       },
     );
@@ -451,7 +465,6 @@ class AdService {
     } catch (e) {
       debugPrint('Rewarded show exception: $e');
       _isShowingFullScreenAd = false;
-      preloadRewarded();
       return false;
     }
     final granted = await finished.future.timeout(const Duration(minutes: 2), onTimeout: () => earned);

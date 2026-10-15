@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../ads/ad_config.dart';
 import '../ads/ad_placement.dart';
 import '../ads/ad_remote_config.dart';
-import '../ads/ad_service.dart';
 import '../l10n/app_strings.dart';
 import '../ads/ad_flows.dart';
 import '../widgets/app_dialog.dart';
@@ -183,14 +182,11 @@ Future<bool> ensureAiGenerationAllowed(BuildContext context, {required String in
 enum _CapChoice { watch, upgrade }
 
 bool _rewardedPlacementOn(AdPlacement placement) {
-  return AdConfig.isSupported && AdRemoteConfig.instance.isPlacementEnabled(placement);
+  return AdConfig.isSupported && AdRemoteConfig.instance.isPlacementWanted(placement);
 }
 
 Future<bool> _watchRewarded(BuildContext context, AdPlacement placement) async {
-  final earned = await AdService.instance.showRewarded(
-    adUnitId: AdRemoteConfig.instance.rewardedAdUnitId,
-    placement: placement,
-  );
+  final earned = await showPlacementRewarded(context, placement);
   if (!context.mounted) return false;
   if (earned) return true;
   final strings = AppStrings.read(context);

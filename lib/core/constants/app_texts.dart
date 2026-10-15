@@ -500,6 +500,16 @@ class AppTexts {
   static const updateReadyBody =
       'A new version of Invoice GO is downloaded. Restart the app to finish the update.';
   static const restartApp = 'Restart';
+  static const checkForUpdates = 'Check for updates';
+  static const updateAvailableTitle = 'Update available';
+  static const updateAvailableBody =
+      'A new version of Invoice GO is on the Play Store. Update now to get the latest version.';
+  static const updateNow = 'Update';
+  static const upToDateTitle = "You're up to date";
+  static const upToDateBody = 'You already have the latest version of Invoice GO.';
+  static const updateCheckFailedTitle = 'Could not check';
+  static const updateCheckFailedBody =
+      'The update check did not finish. Try again when you are online.';
   static const customizeProOnly = 'Template customization is a Pro feature.';
   static const homeQuotaBanner = '{remaining}/{limit} invoices left today';
   static const premiumUpsellTitle = 'Unlock Premium';
@@ -1062,6 +1072,14 @@ class AppTexts {
     'updateReadyTitle': updateReadyTitle,
     'updateReadyBody': updateReadyBody,
     'restartApp': restartApp,
+    'checkForUpdates': checkForUpdates,
+    'updateAvailableTitle': updateAvailableTitle,
+    'updateAvailableBody': updateAvailableBody,
+    'updateNow': updateNow,
+    'upToDateTitle': upToDateTitle,
+    'upToDateBody': upToDateBody,
+    'updateCheckFailedTitle': updateCheckFailedTitle,
+    'updateCheckFailedBody': updateCheckFailedBody,
     'customizeProOnly': customizeProOnly,
     'homeQuotaBanner': homeQuotaBanner,
     'premiumUpsellTitle': premiumUpsellTitle,

@@ -5,6 +5,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
 import '../ads/ad_config.dart';
+import '../ads/ad_consent.dart';
 import '../ads/ad_placement.dart';
 import '../ads/ad_remote_config.dart';
 import '../ads/ad_service.dart';
@@ -62,21 +63,41 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
     if (_loading || _loaded || !mounted || !AdConfig.isSupported) return;
     if (!AdService.instance.isSdkReady) {
       if (_whenSdkReady != null) return;
+      var waiting = true;
       void onReady() {
         if (!AdService.instance.isSdkReady) return;
         AdService.instance.sdkReady.removeListener(onReady);
         _whenSdkReady = null;
+        waiting = false;
         if (mounted) _load(width);
       }
 
       _whenSdkReady = onReady;
       AdService.instance.sdkReady.addListener(onReady);
+      // Start the SDK only when a banner is on screen.
+      AdService.instance.ensureMobileAdsReady().then((ok) {
+        if (!mounted || !waiting) return;
+        if (!ok) {
+          AdService.instance.sdkReady.removeListener(onReady);
+          _whenSdkReady = null;
+          _scheduledWidth = null;
+          debugPrint('Banner ${widget.placement.remoteKey}: ads SDK not ready');
+        }
+      });
       return;
     }
     if (_attempts >= _maxAttempts || width < 1) return;
-    if (!AdRemoteConfig.instance.isPlacementEnabled(widget.placement)) return;
+    if (!AdRemoteConfig.instance.isPlacementWanted(widget.placement)) return;
+    if (!AdConsent.instance.canRequestAds) {
+      debugPrint('Banner ${widget.placement.remoteKey} waiting for consent');
+      _scheduledWidth = null;
+      return;
+    }
     final tier = context.read<InvoiceProvider>().featureTier;
-    if (!tier.showNativeAds || context.read<InvoiceProvider>().adsHeld) return;
+    if (!tier.showNativeAds || context.read<InvoiceProvider>().adsHeld) {
+      debugPrint('Banner ${widget.placement.remoteKey} skipped: tier/adsHeld');
+      return;
+    }
 
     final unitId = widget.collapsible
         ? AdRemoteConfig.instance.collapsibleBannerAdUnitId
@@ -144,7 +165,8 @@ class _PlacementBannerAdState extends State<PlacementBannerAd> {
     return ValueListenableBuilder<int>(
       valueListenable: AdRemoteConfig.instance.revision,
       builder: (context, _, _) {
-        if (!AdRemoteConfig.instance.isPlacementEnabled(widget.placement)) {
+        // Do not require consent here — that blocked SDK startup forever.
+        if (!AdRemoteConfig.instance.isPlacementWanted(widget.placement)) {
           if (_ad != null || _loaded) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _releaseAd();

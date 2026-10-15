@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -155,7 +156,8 @@ class InvoiceProvider extends ChangeNotifier {
     if (raw == null || raw.isEmpty) {
       _firstLaunchAt ??= DateTime.now();
       milestonesSeeded = true;
-      await _save();
+      // Don't hold the splash for the first empty write.
+      unawaited(_save());
       return;
     }
     var persistLaunch = false;

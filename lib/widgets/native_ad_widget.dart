@@ -99,6 +99,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
 
     _sdkListener = onReady;
     AdService.instance.sdkReady.addListener(onReady);
+    AdService.instance.ensureMobileAdsReady();
   }
 
   Future<void> _loadAd() async {

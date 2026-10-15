@@ -17,6 +17,7 @@ import '../../ads/ad_consent.dart';
 import '../../ads/ad_flows.dart';
 import '../../ads/ad_placement.dart';
 import '../../widgets/placement_native_ad.dart';
+import '../../services/app_update_service.dart';
 import '../../services/backup_service.dart';
 import '../../services/engagement_service.dart';
 import '../../services/invoice_reminder_service.dart';
@@ -132,6 +133,12 @@ class SettingsScreen extends StatelessWidget {
         label: strings.rateUs,
         onTap: () => showRateFeedbackSheet(context),
       ),
+      if (Platform.isAndroid)
+        _SettingsItem(
+          icon: Icons.system_update_rounded,
+          label: strings.checkForUpdates,
+          onTap: () => AppUpdateService.checkFromSettings(context),
+        ),
       _SettingsItem(
         icon: Icons.privacy_tip_rounded,
         label: strings.privacyPolicy,

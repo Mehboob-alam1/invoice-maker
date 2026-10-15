@@ -587,7 +587,7 @@ class _InvoiceList extends StatelessWidget {
     final insertAd = showNativeAd &&
         invoices.length >= 3 &&
         context.watch<InvoiceProvider>().featureTier.showNativeAds &&
-        AdRemoteConfig.instance.isPlacementEnabled(AdPlacement.nativeHomeList);
+        AdRemoteConfig.instance.isPlacementWanted(AdPlacement.nativeHomeList);
 
     return ListView.separated(
       primary: false,

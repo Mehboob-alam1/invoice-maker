@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../ads/ad_flows.dart';
 import '../ads/ad_placement.dart';
 import '../ads/ad_remote_config.dart';
-import '../ads/ad_service.dart';
 import '../l10n/app_strings.dart';
 import '../models/invoice.dart';
 import '../models/invoice_template.dart';
@@ -81,7 +80,7 @@ Future<bool> confirmPremiumTemplateUse(BuildContext context, InvoiceTemplateId t
   if (provider.canUseTemplate(templateId)) return true;
 
   final strings = AppStrings.read(context);
-  final rewardedOn = AdRemoteConfig.instance.isPlacementEnabled(AdPlacement.rewardedTemplate);
+  final rewardedOn = AdRemoteConfig.instance.isPlacementWanted(AdPlacement.rewardedTemplate);
   final choice = await showDialog<String>(
     context: context,
     builder: (ctx) => _TemplateChoiceDialog(
@@ -112,9 +111,7 @@ Future<bool> confirmPremiumTemplateUse(BuildContext context, InvoiceTemplateId t
     return context.read<InvoiceProvider>().canUseTemplate(templateId);
   }
 
-  final earned = await AdService.instance.showRewarded(
-    adUnitId: AdRemoteConfig.instance.rewardedAdUnitId,
-  );
+  final earned = await showPlacementRewarded(context, AdPlacement.rewardedTemplate);
   if (!context.mounted) return false;
   if (!earned) {
     await showDialog<void>(

@@ -1,10 +1,9 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-import '../ads/ad_config.dart';
-import '../ads/ad_consent.dart';
 import '../ads/ad_manager.dart';
 import '../ads/ad_remote_config.dart';
 import '../ads/ad_service.dart';
@@ -60,20 +59,13 @@ Widget resolveInitialScreen(InvoiceProvider provider) {
   return const BusinessNameScreen();
 }
 
+/// Splash waits only for Firebase + local prefs. Ads, store, and push start later.
 Future<AppBootstrapResult> runAppBootstrap({
   BootstrapStatusCallback? onStatus,
-  Duration minSplashDuration = const Duration(milliseconds: 1200),
-  Duration adPreloadTimeout = const Duration(seconds: 14),
 }) async {
   void status(String message) => onStatus?.call(message);
 
-  final started = DateTime.now();
-
   status('Starting…');
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  await UserDatabaseService.initialize();
-
   final invoiceProvider = InvoiceProvider();
   InvoiceReminderService.instance.afterSync =
       () => EngagementService.instance.reschedule(invoiceProvider);
@@ -89,61 +81,26 @@ Future<AppBootstrapResult> runAppBootstrap({
   invoiceProvider.onCloudSyncRequested = () => UserProfileSync.pushFromProvider(invoiceProvider);
   final themeProvider = ThemeProvider();
   final subscriptionService = SubscriptionService(invoiceProvider);
+
+  status('Loading your data…');
+  // Firebase must finish before AuthService (it reads FirebaseAuth.instance).
+  await Future.wait([
+    Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+    invoiceProvider.load(),
+    themeProvider.load(),
+  ]);
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   final authService = AuthService(
     invoiceProvider: invoiceProvider,
     subscriptionService: subscriptionService,
   );
-
-  status('Loading your data…');
-  await Future.wait([
-    invoiceProvider.load(),
-    themeProvider.load(),
-  ]);
   EngagementService.instance.applyDeviceLanguage(invoiceProvider);
 
-  status('Checking subscription…');
-  await subscriptionService.initialize();
-  await authService.initialize();
-
-  status('Loading configuration…');
-  await AdRemoteConfig.instance.load();
-  AdManager.instance.hasCreatedInvoice = () => invoiceProvider.hasCreatedFirstInvoice;
-
-  if (AdConfig.isSupported) {
-    status('Preparing ads…');
-    await AdConsent.instance.gather();
-    if (!AdConsent.instance.canRequestAds) {
-      debugPrint('Ads skipped until consent allows requests.');
-    } else {
-      await MobileAds.instance.initialize();
-      await MobileAds.instance.updateRequestConfiguration(
-        RequestConfiguration(
-          tagForChildDirectedTreatment: TagForChildDirectedTreatment.no,
-          tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
-        ),
-      );
-      await AdService.instance.initialize();
-      await AdService.instance.waitForStartupPreloads(
-        tier: invoiceProvider.featureTier,
-        timeout: adPreloadTimeout,
-      );
-    }
-  }
-
-  status('Almost ready…');
-  await PushNotificationService.instance.prepare();
-  await PushNotificationService.instance.syncTopics(
-    languageCode: invoiceProvider.languageCode,
-    pro: invoiceProvider.featureTier == SubscriptionTier.pro,
-    channels: await EngagementService.instance.enabledChannels(),
-  );
-  await ReferralService.instance.start(invoiceProvider);
-  await InvoiceReminderService.instance.prepare();
-
-  final elapsed = DateTime.now().difference(started);
-  if (elapsed < minSplashDuration) {
-    await Future.delayed(minSplashDuration - elapsed);
-  }
+  unawaited(_warmUp(
+    invoiceProvider: invoiceProvider,
+    subscriptionService: subscriptionService,
+    authService: authService,
+  ));
 
   return AppBootstrapResult(
     invoiceProvider: invoiceProvider,
@@ -152,4 +109,37 @@ Future<AppBootstrapResult> runAppBootstrap({
     authService: authService,
     initialScreen: resolveInitialScreen(invoiceProvider),
   );
+}
+
+/// Store, account, config, and notifications. Ads start only when a slot asks.
+Future<void> _warmUp({
+  required InvoiceProvider invoiceProvider,
+  required SubscriptionService subscriptionService,
+  required AuthService authService,
+}) async {
+  try {
+    await UserDatabaseService.initialize();
+    await Future.wait([
+      subscriptionService.initialize(),
+      authService.initialize(),
+      AdRemoteConfig.instance.load(),
+    ]);
+    invoiceProvider.applyRemoteInvoiceLimits();
+    AdManager.instance.hasCreatedInvoice = () => invoiceProvider.hasCreatedFirstInvoice;
+    // Consent + SDK after the first screen is up — does not hold the splash.
+    unawaited(AdService.instance.ensureMobileAdsReady());
+    unawaited(PushNotificationService.instance.prepare());
+    unawaited(() async {
+      final channels = await EngagementService.instance.enabledChannels();
+      await PushNotificationService.instance.syncTopics(
+        languageCode: invoiceProvider.languageCode,
+        pro: invoiceProvider.featureTier == SubscriptionTier.pro,
+        channels: channels,
+      );
+    }());
+    unawaited(ReferralService.instance.start(invoiceProvider));
+    unawaited(InvoiceReminderService.instance.prepare());
+  } catch (error, stack) {
+    debugPrint('Background startup failed: $error\n$stack');
+  }
 }

@@ -56,31 +56,35 @@ class AuthService extends ChangeNotifier {
 
     if (user.isAnonymous) return;
 
-    await UserDatabaseService.instance.upsertGoogleAccount(user);
-    final account = await UserDatabaseService.instance.fetchAccount(user.uid);
-    if (account != null) {
-      final b = account.business;
-      if (b.hasAnyField) {
-        _invoiceProvider.importFromCloudAccount(
-          name: b.name,
-          email: b.email,
-          phone: b.phone,
-          address: b.address,
-          taxId: b.taxId,
-          languageCode: account.languageCode,
-        );
+    try {
+      await UserDatabaseService.instance.upsertGoogleAccount(user);
+      final account = await UserDatabaseService.instance.fetchAccount(user.uid);
+      if (account != null) {
+        final b = account.business;
+        if (b.hasAnyField) {
+          _invoiceProvider.importFromCloudAccount(
+            name: b.name,
+            email: b.email,
+            phone: b.phone,
+            address: b.address,
+            taxId: b.taxId,
+            languageCode: account.languageCode,
+          );
+        }
       }
-    }
-    await _subscriptionService.refreshEntitlementsFromStore(silent: true);
-    if (_invoiceProvider.subscriptionTier == SubscriptionTier.free && account != null) {
-      final remoteTier = account.subscription.tier;
-      if (remoteTier != SubscriptionTier.free && !_subscriptionService.storeAvailable) {
-        _invoiceProvider.setSubscriptionTier(remoteTier);
+      await _subscriptionService.refreshEntitlementsFromStore(silent: true);
+      if (_invoiceProvider.subscriptionTier == SubscriptionTier.free && account != null) {
+        final remoteTier = account.subscription.tier;
+        if (remoteTier != SubscriptionTier.free && !_subscriptionService.storeAvailable) {
+          _invoiceProvider.setSubscriptionTier(remoteTier);
+        }
       }
-    }
-    await UserProfileSync.pushFromProvider(_invoiceProvider);
-    if (_invoiceProvider.subscriptionTier != SubscriptionTier.free) {
-      await _subscriptionService.syncTierToCloudIfNeeded();
+      await UserProfileSync.pushFromProvider(_invoiceProvider);
+      if (_invoiceProvider.subscriptionTier != SubscriptionTier.free) {
+        await _subscriptionService.syncTierToCloudIfNeeded();
+      }
+    } catch (error, stack) {
+      debugPrint('AuthService profile sync failed: $error\n$stack');
     }
     notifyListeners();
   }
